@@ -1,0 +1,30 @@
+@use 'mixins' as m;
+
+.app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: var(--fg);
+  background: var(--bg);
+  container-type: inline-size;
+}
+
+/* Alias warp/wrap */
+.page-warp, .page-wrap {
+  padding-block: 2rem;
+}
+
+.content-warp, .content-wrap {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* Secciones pesadas */
+.deferred {
+  content-visibility: auto;
+  contain-intrinsic-size: 600px;
+}
+
+/* Títulos */
+h1 { @include m.fluid(28px, 44px); margin: 0 0 1rem; }
+h2 { @include m.fluid(22px, 32px); margin: 0 0 .75rem; }

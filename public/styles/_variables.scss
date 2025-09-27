@@ -1,0 +1,48 @@
+/* === Color Palette === */
+$black: #080808;
+$white: #ffffff;
+
+$background-color: #0f0f0f; // fondo base
+$background-warp:  #161616; // surface 1
+$highlight-color:  #262626; // surface 2
+$primary-color:    #cfb690; // acento
+
+/* === Funciones helper === */
+@function tint($color, $percent)   { @return mix($white, $color, $percent); }
+@function shade($color, $percent)  { @return mix($black, $color, $percent); }
+@function alpha($color, $a)        { @return rgba($color, $a); }
+
+/* Texto en dark mode */
+$fg-strong: #e7e7e7;
+$fg-soft:   #b3b3b3;
+
+/* Derivados */
+$surface-0: $background-color;
+$surface-1: $background-warp;
+$surface-2: $highlight-color;
+
+$border-color: alpha($white, .08);
+$muted-color:  $fg-soft;
+
+/* Variantes de primary */
+$primary-hover:  tint($primary-color, 10%);
+$primary-active: shade($primary-color, 8%);
+$focus-ring:     alpha($primary-color, .6);
+
+/* === Exportar como custom properties === */
+:root {
+  --bg:         #{$surface-0};
+  --surface-1:  #{$surface-1};
+  --surface-2:  #{$surface-2};
+
+  --fg:         #{$fg-strong};
+  --muted:      #{$muted-color};
+
+  --border:     #{$border-color};
+  --shadow-1:   0 8px 24px #{alpha($black, .55)};
+
+  --primary:        #{$primary-color};
+  --primary-hover:  #{$primary-hover};
+  --primary-active: #{$primary-active};
+  --focus-ring:     #{$focus-ring};
+}

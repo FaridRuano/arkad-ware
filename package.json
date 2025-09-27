@@ -15,7 +15,8 @@
     "mongoose": "^8.18.1",
     "next": "15.5.3",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "sass": "^1.93.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

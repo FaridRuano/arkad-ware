@@ -1,0 +1,187 @@
+@use 'variables';
+@use 'mixins';
+@use 'reset';
+@use 'utilities';
+@use 'layout';
+@use 'components';
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Quicksand:wght@300..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Uncial+Antiqua&display=swap');
+
+body {
+  font-family: 'Quicksand', sans-serif;
+}
+
+a{
+  text-decoration: none;
+}
+
+.page {
+  height: 100vh;
+  margin: auto;
+}
+
+/* ===== Página de inicio ===== */
+.home {
+  width: 600px;
+
+  /* Centra suavemente la tarjeta en pantallas altas */
+  main {
+    min-height: 70dvh;
+    display: grid;
+    place-items: start center;
+  }
+
+  @media (max-width: 620px) {
+    width: 100%;
+    padding: 0 1rem;   
+  }
+}
+
+/* ===== Branding superior con líneas ===== */
+.brand {
+  .brand__row {
+    display: grid;
+    align-items: center;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1rem;
+    height: 250px;
+  }
+
+  .brand__line {
+    height: 2px;
+    background: var(--primary);
+    opacity: .7;
+  }
+
+  .brand__lockup {
+    display: grid;
+    justify-items: center;
+    gap: .25rem;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: .4em;
+  }
+
+  .brand__logo {
+    display: block;
+    height: 28px;
+    /* ajusta al alto de tu wordmark */
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+    /* no halo */
+  }
+
+  .brand__subtitle {
+    font-size: .75rem;
+    letter-spacing: .25em;
+    text-transform: none;
+    opacity: .85;
+  }
+}
+
+/* ===== Tarjeta central ===== */
+.card-portal {
+  width: min(560px, 100%);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 2rem 1.25rem 1.5rem;
+  box-shadow: var(--shadow-1);
+  position: relative;
+  overflow: clip;
+
+  @media (min-width: 480px) {
+    padding: 2.25rem 1.5rem 2rem;
+  }
+}
+
+/* ===== Lista de redes ===== */
+.social-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-decoration: none ; 
+}
+
+.social-item {
+  /* gap viene del .stack */
+}
+
+.social-link {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: .75rem;
+
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: .75rem .875rem;
+  border: 1px solid var(--border);
+  transition: transform .1s ease, background-color .15s ease, border-color .15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
+  }
+}
+
+.social-icon {
+  inline-size: 40px;
+  block-size: 40px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--bg), var(--surface-2) 60%);
+  border-radius: 999px;
+
+  img {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+}
+
+.social-text {
+  color: var(--fg);
+  font-weight: 500;
+  letter-spacing: .02em;
+  text-decoration: none;
+}
+
+/* ===== CTA grande ===== */
+.cta-wrap {
+  margin-top: 1rem;
+  display: grid;
+  justify-items: center;
+}
+
+.cta-lg {
+  width: 100%;
+  border-radius: 999px;
+  padding: .9rem 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  background: var(--primary);
+  color: #0b0b0b;
+
+  &:hover {
+    background: var(--primary-hover);
+  }
+
+  &:active {
+    background: var(--primary-active);
+    transform: translateY(1px);
+  }
+}
+
+/* ===== Emblema inferior dentro de la tarjeta ===== */
+.emblem {
+  display: grid;
+  place-items: center;
+  padding-block: 2.25rem .25rem;
+
+  img {
+    width: 38px;
+    height: auto;
+    opacity: .9;
+    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+  }
+}

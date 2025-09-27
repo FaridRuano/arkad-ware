@@ -1,0 +1,21 @@
+@use 'mixins' as m;
+
+/* Containers & stacks */
+.container { @include m.container; }
+
+.stack        { @include m.stack(); }
+.stack-tight  { @include m.stack(1rem); }
+.stack-loose  { @include m.stack(2rem); }
+
+.auto-grid        { @include m.auto-grid(); }
+.auto-grid-tight  { @include m.auto-grid(220px, 1rem); }
+
+.hidden-visually { @include m.sr-only; }
+
+/* Helpers */
+.round-2 { border-radius: 12px; }
+.shadow-1 { box-shadow: var(--shadow-1); }
+
+.text-muted  { color: var(--muted); }
+.text-accent { color: var(--primary); }
+.bg-accent   { background: var(--primary); color: #0b0b0b; }

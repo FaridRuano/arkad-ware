@@ -1,10 +1,22 @@
-import React from 'react'
+'use client'
+
+import AuthTrigger from '@public/components/AuthTrigger'
+import MainPage from '@public/components/MainPage'
+import AuthModal from '@public/components/AuthModal'
+import { useState } from 'react'
 
 const Home = () => {
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+
+  const toggleAuthModal = () => {
+    setIsAuthModalOpen(!isAuthModalOpen)
+  }
+
   return (
     <div className="page home">
       {/* Header: marca + líneas */}
-      <header className="brand container">
+      <header className="brand container" onClick={() => setIsAuthModalOpen(false)}>
         <div className="brand__row">
           <span aria-hidden="true" className="brand__line" />
           <div className="brand__lockup" role="img" aria-label="ARKAD — Master Barber Empire">
@@ -19,44 +31,12 @@ const Home = () => {
       {/* Main: tarjeta con enlaces y CTA */}
       <main className="container">
         <section className="portal card-portal">
-          <ul className="social-list stack" aria-label="Redes sociales">
-            <li className="social-item">
-              <a className="social-link" href="https://www.tiktok.com/@arkad1992" target="_blank" rel="noreferrer">
-                <span className="social-icon" aria-hidden="true">
-                  {/* Reemplaza por tu ícono */}
-                  <img src="/assets/icons/facebook.svg" alt="" />
-                </span>
-                <span className="social-text">arkad1992</span>
-              </a>
-            </li>
-
-            <li className="social-item">
-              <a className="social-link" href="https://www.instagram.com/arkad_barber" target="_blank" rel="noreferrer">
-                <span className="social-icon" aria-hidden="true">
-                  <img src="/assets/icons/instagram.svg" alt="" />
-                </span>
-                <span className="social-text">arkad_barber</span>
-              </a>
-            </li>
-
-            <li className="social-item">
-              <a className="social-link" href="https://www.facebook.com/profile.php?id=61562071806456" target="_blank" rel="noreferrer">
-                <span className="social-icon" aria-hidden="true">
-                  <img src="/assets/icons/tiktok.svg" alt="" />
-                </span>
-                <span className="social-text">ARKAD</span>
-              </a>
-            </li>
-          </ul>
-
-          <div className="cta-wrap">
-            <a className="button cta-lg" href="/reservas">Agenda una cita</a>
-          </div>
-
+          <MainPage isActive={!isAuthModalOpen} handler={() => toggleAuthModal()} />
+          <AuthModal isActive={isAuthModalOpen} handler={() => toggleAuthModal()} />
           {/* Emblema inferior */}
           <div className="emblem" aria-hidden="true">
             {/* Reemplaza por tu isotipo */}
-            <img src="/assets/logo-mark.svg" alt="" />
+            <img src="/assets/icons/arkad.svg" alt="" />
           </div>
         </section>
       </main>

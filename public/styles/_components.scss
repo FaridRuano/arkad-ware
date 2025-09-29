@@ -1,29 +1,56 @@
 @use 'mixins' as m;
 
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem;
-  box-shadow: var(--shadow-1);
-  transition: transform .15s ease, box-shadow .15s ease;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-1);
+    transition: transform .15s ease, box-shadow .15s ease;
 
-  &:hover { transform: translateY(-1px); }
+    &:hover {
+        transform: translateY(-1px);
+    }
 }
 
 .button {
-  display: inline-flex; align-items: center; gap: .5rem;
-  padding: .625rem 1rem;
-  border-radius: 10px; border: none;
-  background: var(--primary); color: #0b0b0b;
-  cursor: pointer; transition: background-color .15s ease, transform .1s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .625rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--primary);
+    color: #0b0b0b;
+    cursor: pointer;
+    transition: background-color .15s ease, transform .1s ease;
 
-  &:hover   { background: var(--primary-hover); }
-  &:active  { background: var(--primary-active); transform: translateY(1px); }
-  &:focus-visible { @include m.focus-ring; }
+    &:hover {
+        background: var(--primary-hover);
+    }
+
+    &:active {
+        background: var(--primary-active);
+        transform: translateY(1px);
+    }
+
+    &:focus-visible {
+        @include m.focus-ring;
+    }
+
+    &.center {
+        text-align: center;
+        justify-content: center;
+
+    }
 }
 
 a.link {
-  color: var(--primary); text-decoration: none;
-  &:hover { color: var(--primary-hover); text-decoration: underline; }
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--primary-hover);
+        text-decoration: underline;
+    }
 }

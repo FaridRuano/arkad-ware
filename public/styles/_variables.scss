@@ -31,6 +31,9 @@ $focus-ring:     alpha($primary-color, .6);
 
 /* === Exportar como custom properties === */
 :root {
+  --white:      #{$white};
+  --black:      #{$black};
+
   --bg:         #{$surface-0};
   --surface-1:  #{$surface-1};
   --surface-2:  #{$surface-2};

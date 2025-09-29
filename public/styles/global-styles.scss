@@ -11,7 +11,7 @@ body {
   font-family: 'Quicksand', sans-serif;
 }
 
-a{
+a {
   text-decoration: none;
 }
 
@@ -33,12 +33,14 @@ a{
 
   @media (max-width: 620px) {
     width: 100%;
-    padding: 0 1rem;   
+    padding: 0 1rem;
   }
 }
 
 /* ===== Branding superior con líneas ===== */
 .brand {
+  cursor: pointer;
+
   .brand__row {
     display: grid;
     align-items: center;
@@ -99,7 +101,7 @@ a{
   margin: 0;
   padding: 0;
   list-style: none;
-  text-decoration: none ; 
+  text-decoration: none;
 }
 
 .social-item {
@@ -176,7 +178,7 @@ a{
 .emblem {
   display: grid;
   place-items: center;
-  padding-block: 2.25rem .25rem;
+  padding-block: 5.25rem .25rem;
 
   img {
     width: 38px;
@@ -184,4 +186,128 @@ a{
     opacity: .9;
     filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
   }
+}
+
+/*  ======== Componente de Auth ======== */
+
+.auth-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.auth-input {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: .75rem;
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: .75rem .875rem;
+  border: 1px solid var(--border);
+  transition: transform .1s ease, background-color .15s ease, border-color .15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
+  }
+
+
+  &__icon {
+    inline-size: 40px;
+    block-size: 40px;
+    display: grid;
+    place-items: center;
+    background: color-mix(in oklab, var(--bg), var(--surface-2) 60%);
+    border-radius: 999px;
+
+    img {
+      width: 18px;
+      height: 18px;
+      display: block;
+    }
+  }
+
+  input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--fg);
+    font-weight: 500;
+    letter-spacing: .02em;
+
+    &::placeholder {
+      color: var(--primary);
+    }
+  }
+}
+
+.auth-button {
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--black);
+  font-weight: 600;
+  padding: .9rem 1rem;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+.auth-footer {
+  margin-top: 1rem;
+  text-align: center;
+  color: rgba(var(--white), .7);
+  font-size: .9rem;
+
+  .auth-link {
+    background: transparent;
+    border: 0;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+  }
+}
+
+.auth-close {
+  position: absolute;
+  top: .75rem;
+  right: .75rem;
+  background: transparent;
+  border: 0;
+  color: rgba(var(--white), .65);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--white);
+  }
+}
+
+/* SASS adicional para el feedback visual (reutiliza tu paleta) */
+.auth-input.is-invalid {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 2px rgba(255,107,107,.12);
+}
+.auth-error {
+  margin: .35rem 0 .15rem;
+  color: #ff6b6b;
+  font-size: .85rem;
+}
+.auth-grid-2 {
+  display: grid;
+  gap: .9rem;
+  grid-template-columns: 1fr;
+  @media (min-width: 620px) { grid-template-columns: 1fr 1fr; }
 }

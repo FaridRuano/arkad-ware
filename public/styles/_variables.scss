@@ -6,6 +6,7 @@ $background-color: #0f0f0f; // fondo base
 $background-warp:  #161616; // surface 1
 $highlight-color:  #262626; // surface 2
 $primary-color:    #cfb690; // acento
+$secondary-color:  #6f8a73;
 
 /* === Funciones helper === */
 @function tint($color, $percent)   { @return mix($white, $color, $percent); }
@@ -29,6 +30,10 @@ $primary-hover:  tint($primary-color, 10%);
 $primary-active: shade($primary-color, 8%);
 $focus-ring:     alpha($primary-color, .6);
 
+/* Variantes de secondary */
+$secondary-hover:  tint($secondary-color, 10%);
+$secondary-active: shade($secondary-color, 8%);
+$focus-ring-secondary:       alpha($secondary-color, .6);
 /* === Exportar como custom properties === */
 :root {
   --white:      #{$white};
@@ -48,4 +53,13 @@ $focus-ring:     alpha($primary-color, .6);
   --primary-hover:  #{$primary-hover};
   --primary-active: #{$primary-active};
   --focus-ring:     #{$focus-ring};
+
+  --secondary:      #{$secondary-color};
+  --secondary-hover: #{$secondary-hover};
+  --secondary-active: #{$secondary-active};
+  --focus-ring-secondary: #{$focus-ring-secondary};
+
+  --light : #{$fg-soft};
+
+  --negative: #be3535;
 }

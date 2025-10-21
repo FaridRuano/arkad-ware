@@ -1,11 +1,15 @@
 // AuthModal.jsx — Validación en TIEMPO REAL sin mostrar errores cuando el campo está vacío
 'use client'
 
+import { useRouter } from '@node_modules/next/navigation'
 import { useState } from 'react'
 
 const emailRx = /^\S+@\S+\.\S+$/
 
 const AuthModal = ({ isActive, handler }) => {
+
+    const router = useRouter()
+
     const [loginMode, setLoginMode] = useState(true)
     const handleModeSwitch = () => {
         setLoginMode(!loginMode)
@@ -114,7 +118,7 @@ const AuthModal = ({ isActive, handler }) => {
                         </label>
                         {loginDisplayErrors.password && <p className="auth-error">{loginDisplayErrors.password}</p>}
 
-                        <button className="auth-button" type="submit" disabled={!isLoginValid} aria-disabled={!isLoginValid}>
+                        <button className="auth-button" type="submit" onClick={() => router.push('/client')} disabled={!isLoginValid} aria-disabled={!isLoginValid}>
                             Ingresar
                         </button>
                     </form>

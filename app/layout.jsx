@@ -1,3 +1,4 @@
+import Footer from "@public/components/shared/Footer";
 import "@public/styles/global-styles.scss";
 
 export const metadata = {
@@ -12,6 +13,8 @@ export default function RootLayout({ children }) {
         <div className="app">
           {children}
         </div>
+        <Footer/>
+
       </body>
     </html>
   );

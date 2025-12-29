@@ -16,8 +16,12 @@ a {
 }
 
 .page {
-  height: 100vh;
+  min-height: 100vh;
   margin: auto;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 /* ===== Página de inicio ===== */
@@ -137,8 +141,10 @@ a {
   border-radius: 999px;
 
   img {
-    width: 18px;
-    height: 18px;
+    background-color: var(--primary);
+    border-radius: 20px;
+    width: 23px;
+    height: 23px;
     display: block;
   }
 }
@@ -213,7 +219,6 @@ a {
     border-color: color-mix(in oklab, var(--primary) 30%, var(--border));
   }
 
-
   &__icon {
     inline-size: 40px;
     block-size: 40px;
@@ -221,12 +226,24 @@ a {
     place-items: center;
     background: color-mix(in oklab, var(--bg), var(--surface-2) 60%);
     border-radius: 999px;
+    background-color: var(--primary);
 
     img {
-      width: 18px;
-      height: 18px;
+      width: 23px;
+      height: 23px;
       display: block;
+      opacity: .9;
     }
+  }
+
+  &__prefix {
+    span {
+      color: var(--primary);
+      font-weight: 900;
+    }
+
+    display: flex;
+    gap: .5rem;
   }
 
   input {
@@ -241,6 +258,38 @@ a {
 
     &::placeholder {
       color: var(--primary);
+    }
+  }
+}
+
+.auth-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+
+
+
+  .auth-terms {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3rem;
+    font-size: .9rem;
+    color: var(--fg);
+    cursor: pointer;
+
+    input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    span {
+      a {
+        color: var(--primary);
+        font-weight: 600;
+      }
     }
   }
 }
@@ -262,6 +311,14 @@ a {
 
   &:active {
     transform: translateY(1px);
+  }
+
+  &.disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: none;
+    transform: none;
   }
 }
 
@@ -476,6 +533,135 @@ a {
 
 /* ===========  Dashboard Cliente ============ */
 
+.policies-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.policies-container {
+  display: flex;
+  gap: 40px;
+
+  .policies-index {
+    flex: 0 0 250px;
+    background: var(--surface-1);
+    padding: 20px;
+    border-radius: 8px;
+    position: sticky;
+    top: 20px;
+    
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.2em;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+
+      li {
+        margin-bottom: 5px;
+
+        a {
+          text-decoration: none;
+          color: var(--fg);
+          font-size: 15px;
+          font-weight: 500;
+          opacity: .6;
+          transition: .3s ease-out;
+          cursor: pointer;
+
+          &:hover {
+            opacity: 1;
+          }
+
+          &.active {
+            opacity: 1;
+          }
+        }
+      }
+    }
+  }
+
+  .policies-content {
+    flex: 1;
+    background: var(--surface-1);
+    padding: 20px;
+    border-radius: 8px;
+
+    section {
+      min-height: 500px;
+      margin-bottom: 5rem;
+    }
+
+    #title {
+      padding: 1rem;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 25px;
+      background-color: var(--bg);
+      border: 1px solid var(--surface-2);
+    }
+
+    h1 {
+      margin: 0;
+      padding: 0;
+    }
+
+    h2,
+    h3 {
+      color: var(--primary);
+    }
+
+    p {
+      line-height: 1.6;
+      margin-bottom: 1rem;
+      color: var(--fg);
+
+      &.subtitle {
+        font-size: small;
+        font-weight: 300;
+        margin: 0;
+        margin-bottom: 1.5rem;
+      }
+    }
+
+    ul {
+      list-style: disc inside;
+      margin-bottom: 1rem;
+
+      li {
+        margin-bottom: 0.5rem;
+        color: var(--fg);
+      }
+    }
+  }
+
+}
+
+.policies-footer {
+  height: 200px;
+}
+
+@media (max-width: 768px) {
+  .policies-container {
+    flex-direction: column;
+  }
+
+  .policies-index {
+    display: none;
+  }
+}
+
+/* ===========  Dashboard Cliente ============ */
+
 .client-dashboard {
   display: flex;
   flex-direction: column;
@@ -587,6 +773,18 @@ a {
     }
   }
 
+}
+
+.dashboard-pending-appointments {
+  width: 100%;
+  height: 60px;
+  background-color: var(--surface-1);
+  border: 1px solid var(--border);
+  display: flex;
+  border-radius: 10px;
+  align-items: center;
+  padding: 0 20px;
+  box-shadow: var(--shadow-1);
 }
 
 /* =======  Horizontal Calendar ======== */

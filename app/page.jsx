@@ -4,6 +4,7 @@ import AuthTrigger from '@public/components/AuthTrigger'
 import MainPage from '@public/components/MainPage'
 import AuthModal from '@public/components/AuthModal'
 import { useState } from 'react'
+import Footer from '@public/components/shared/Footer'
 
 const Home = () => {
 
@@ -29,7 +30,7 @@ const Home = () => {
       </header>
 
       {/* Main: tarjeta con enlaces y CTA */}
-      <main className="container">
+      <main className="container m-b">
         <section className="portal card-portal">
           <MainPage isActive={!isAuthModalOpen} handler={() => toggleAuthModal()} />
           <AuthModal isActive={isAuthModalOpen} handler={() => toggleAuthModal()} />
@@ -41,7 +42,6 @@ const Home = () => {
         </section>
       </main>
 
-      <footer className="container page-warp" />
     </div>
   )
 }

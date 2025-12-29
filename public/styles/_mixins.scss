@@ -2,9 +2,10 @@
 
 /* Tipografía fluida */
 @mixin fluid($min, $max, $vw: 100vw, $fallback: null) {
-  @if $fallback != null {
+  @if $fallback !=null {
     font-size: $fallback;
   }
+
   font-size: clamp(#{$min}, calc(#{$min} + (#{strip-unit($max - $min)} * (#{$vw} / 100))), #{$max});
 }
 
@@ -12,6 +13,11 @@
 @mixin container {
   width: min(100% - 2rem, 1200px);
   margin-inline: auto;
+
+  &.m-b {
+    margin-bottom: 100px;
+  }
+
 }
 
 @mixin stack($gap: 1.5rem) {
@@ -28,10 +34,14 @@
 /* Accesibilidad */
 @mixin sr-only {
   position: absolute;
-  width: 1px; height: 1px;
-  margin: -1px; padding: 0;
-  overflow: hidden; clip: rect(0 0 0 0);
-  white-space: nowrap; border: 0;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 @mixin focus-ring {

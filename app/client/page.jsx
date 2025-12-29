@@ -8,7 +8,6 @@ import { es } from 'date-fns/locale'
 
 const page = () => {
 
-
   /* Form */
 
   const [formActive, setFormActive] = useState(false);
@@ -59,6 +58,16 @@ const page = () => {
     handleFormToggle()
   }
 
+  /* Cita Pendiente */
+
+  const [pendingAppointments, setPendingAppointments] = useState([
+    /* {
+      _id: '1',
+      start: new Date(2025, 9, 22, 10, 30, 0, 0),
+      status: 'confirmed',
+    } */
+  ]);
+
   return (
     <>
       <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} />
@@ -108,6 +117,20 @@ const page = () => {
             }
           </div>
         </div>
+        {
+          pendingAppointments.length > 0 && (
+            <div className="dashboard-pending-appointments">
+              <h4>Citas Pendientes</h4>
+              <ul>
+                {pendingAppointments.map((appointment, index) => (
+                  <li key={index}>
+                    {format(appointment.start, 'EEEE, d LLLL', { locale: es })}, a las {format(appointment.start, 'HH:mm')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        }
 
       </div>
     </>

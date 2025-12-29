@@ -17,6 +17,8 @@ const AuthModal = ({ isActive, handler }) => {
 
     const router = useRouter()
 
+    const [loading, setLoading] = useState(false)
+
     const [loginMode, setLoginMode] = useState(true)
     const handleModeSwitch = () => {
         setLoginMode(!loginMode)
@@ -175,20 +177,29 @@ const AuthModal = ({ isActive, handler }) => {
             password: password,
         };
         try {
-            const res = await signIn("credentials", {
-                email: newLogin.email,
-                password: newLogin.password,
-                redirect: false,
+            setLoading(true);
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: newLogin.email,
+                    password: newLogin.password,
+                }),
             });
-            if (res?.error) {
-                setModalConfirmText("Credenciales inválidas, intenta de nuevo.");
+
+            const data = await res.json();
+
+            if (!res.ok || data.error) {
+                setLoading(false);
+                setModalConfirmText(data.message || "Credenciales inválidas");
                 setModalConfirmActive(true);
                 return;
             }
-
             router.push("/client");
         } catch (error) {
-            console.error('Error al iniciar sesión:', error);
+            console.error("Error al iniciar sesión:", error);
         }
     }
 
@@ -243,6 +254,12 @@ const AuthModal = ({ isActive, handler }) => {
     }
 
     if (!isActive) return null
+
+    if (loading) return (
+        <div className="auth-modal loading">
+            <div className="spinner" aria-hidden="true"></div>
+        </div>
+    );
 
     return (
         <>

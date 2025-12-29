@@ -9,7 +9,7 @@ export async function POST(request) {
     const { email } = await request.json();
 
     try {
-        const user = await User.findOne({ email: email }).select('_id email subscription name')
+        const user = await User.findOne({ email: email })
         if (!user) {
             return NextResponse.json({ exists: false })
         }

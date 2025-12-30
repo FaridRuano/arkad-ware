@@ -3,7 +3,6 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import User from "@models/User";
-import connectMongoDB from "@libs/mongodb";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     providers: [
@@ -13,6 +12,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 password: {},
             },
             async authorize(credentials) {
+                const { default: connectMongoDB } = await import("@libs/mongodb");
                 await connectMongoDB();
 
                 const user = await User.findOne({ email: credentials.email })

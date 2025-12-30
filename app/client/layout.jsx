@@ -1,9 +1,13 @@
-import ClientHeader from "@public/components/ClientHeader";
+import ClientHeader from "@public/components/client/ClientHeader";
+import { auth } from "@auth";
 
-export default function RootLayout({ children }) {
+export default async function ClientLayout({ children }) {
+    const session = await auth();
+
+    const userName = session?.user?.name || "Usuario";
     return (
         <div className="container client">
-            <ClientHeader/>
+            <ClientHeader userName={userName}/>
             {children}
         </div>
     );

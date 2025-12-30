@@ -26,8 +26,8 @@ $border-color: alpha($white, .08);
 $muted-color:  $fg-soft;
 
 /* Variantes de primary */
-$primary-hover:  tint($primary-color, 10%);
-$primary-active: shade($primary-color, 8%);
+$primary-hover:  rgba($primary-color, 0.5);
+$primary-active: rgba($primary-color, 0.9);;
 $focus-ring:     alpha($primary-color, .6);
 
 /* Variantes de secondary */

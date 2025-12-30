@@ -1,10 +1,8 @@
 'use client'
 
-import AuthTrigger from '@public/components/AuthTrigger'
-import MainPage from '@public/components/MainPage'
-import AuthModal from '@public/components/AuthModal'
+import MainPage from '@public/components/public/MainPage'
+import AuthModal   from '@public/components/public/AuthModal'
 import { useState } from 'react'
-import Footer from '@public/components/shared/Footer'
 
 const Home = () => {
 

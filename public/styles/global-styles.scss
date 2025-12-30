@@ -205,15 +205,8 @@ html {
   justify-content: center;
   align-items: center;
   margin: auto;
-  .spinner {
-    border: 8px solid var(--surface-2);
-    border-top: 8px solid var(--primary);
-    border-radius: 50%;
-    width: 100px;
-    height: 100px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-  }
+
+
 
   &.loading {
     pointer-events: none;
@@ -407,6 +400,7 @@ html {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-bottom: 150px;
 }
 
 /*======= Componente header cliente ======*/
@@ -694,6 +688,16 @@ html {
   width: 100%;
   margin: 0 auto;
   max-width: 1200px;
+
+  &.loading { 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 250px);
+    pointer-events: none;
+    opacity: .6;
+    animation: loading 1.5s infinite;
+  }
 }
 
 .dashboard-header {
@@ -747,10 +751,132 @@ html {
         margin-top: .25rem;
       }
 
+      &__type-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1rem 0;
+
+        .type-button {
+          display: flex;
+          justify-content: start;
+          align-items: center;
+          padding: 10px 10px;
+          border: 1px solid var(--bg);
+          background: var(--bg);
+          cursor: pointer;
+          border-radius: 5px;
+          transition: background 0.3s;
+
+          &__image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 200px;
+            height: 100px;
+            flex-shrink: 0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-right: 15px;
+            background-color: var(--bg);
+
+            img {
+              transition: .3s ease-out;
+              filter: saturate(0) blur(5px);
+            }
+          }
+
+          &__text {
+            display: flex;
+            flex-direction: column;
+
+            h1,
+            p {
+              margin: 0;
+              padding: 0;
+              color: var(--fg);
+            }
+
+            h1 {
+              font-size: 1rem;
+              font-weight: 700;
+
+              span {
+                font-size: .8rem;
+                opacity: .5;
+              }
+
+              &.gold {
+                color: var(--primary);
+              }
+            }
+
+            p {
+              font-size: .9rem;
+            }
+          }
+
+          &.active {
+            color: white;
+            border-color: var(--primary-active);
+            background-color: var(--surface-2);
+
+            h1,
+            p {}
+
+            &:hover {
+              background: var(--surface-1);
+            }
+          }
+
+          &:hover {
+            background: var(--primary-hover);
+
+            .type-button__image {
+              img {
+                filter: none;
+              }
+            }
+          }
+        }
+
+        @media (max-width: 650px) {
+          .type-button {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+
+            &__image {
+              width: 100%;
+              height: 200px;
+              margin: 0 0 10px 0;
+            }
+
+            &__text {
+              width: 100%;
+
+              h1,
+              p {
+                text-align: start;
+              }
+            }
+          }
+        }
+      }
+
       &__calendar {
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      &__timepicker {
+
+        &.loading {
+          pointer-events: none;
+          opacity: .6;
+          animation: loading 1.5s infinite;
+        }
       }
 
       &__button {
@@ -802,14 +928,38 @@ html {
 
 .dashboard-pending-appointments {
   width: 100%;
-  height: 60px;
+  height: 40px;
   background-color: var(--surface-1);
   border: 1px solid var(--border);
   display: flex;
   border-radius: 10px;
   align-items: center;
-  padding: 0 20px;
+  padding: 20px;
   box-shadow: var(--shadow-1);
+  justify-content: space-between;
+  h4{
+    padding: 0;
+    margin: 0;
+  }
+  ul{
+    width: 350px;
+    text-align: start;
+  }
+
+  span{
+    color: var(--negative);
+    font-weight: 700;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: .9rem;
+  }
+
+  @media (max-width: 650px) {
+    flex-direction: column;
+    height: fit-content;
+    align-items: start;
+    
+  }
 }
 
 /* =======  Horizontal Calendar ======== */
@@ -931,7 +1081,7 @@ html {
         gap: .2rem;
 
         .day-card {
-          width: 45px;
+          width: 55px;
           padding: 10px 0;
 
           .day-label {
@@ -939,7 +1089,7 @@ html {
           }
 
           .day-number {
-            font-size: 14px;
+            font-size: 26px;
           }
 
           .month-label {

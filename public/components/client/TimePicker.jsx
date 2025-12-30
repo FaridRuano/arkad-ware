@@ -13,9 +13,11 @@ import {
 import { fromZonedTime, toZonedTime } from '@node_modules/date-fns-tz/dist/cjs';
 
 const TUTOR_TIME_ZONE = 'America/Guayaquil'
+const overlaps = (startA, endA, startB, endB) => startA < endB && startB < endA;
+const STEP_MINUTES = 30;
 
 /**
- * TimePicker: muestra botones con franjas de 30 minutos para un día dado.
+ * TimePicker: muestra botones con franjas de X minutos para un día dado.
  * Si selectedDate es hoy, solo permite slots cuya hora de inicio esté
  * 4h o más después del momento actual.
  *
@@ -28,6 +30,7 @@ const TUTOR_TIME_ZONE = 'America/Guayaquil'
 export default function TimePicker({
   selectedDate,
   onTimeSelect,
+  selectedTime = 30,
   startTime = '08:00',
   endTime = '20:00',
   reservedSlots = [],
@@ -41,6 +44,14 @@ export default function TimePicker({
 
   const [slots, setSlots] = useState([])
   const [selectedSlot, setSelectedSlot] = useState(null)
+
+  const getSelectedTypeDuration = () => {
+    if (selectedTime === 'opcion1') {
+      return 30; // minutos
+    } else if (selectedTime === 'opcion2') {
+      return 60; // minutos
+    }
+  }
 
   useEffect(() => {
     if (!selectedDate) {
@@ -64,13 +75,18 @@ export default function TimePicker({
     let cursor = baseUtc
 
     while (isBefore(cursor, limitUtc) || isEqual(cursor, limitUtc)) {
-      const end = addMinutes(cursor, 30)
+
+      const slotDuration = getSelectedTypeDuration();
+      const end = addMinutes(cursor, slotDuration);
       const startsAfterMin = isSameDay(selectedDate, now)
         ? isBefore(minAllowedUtc, cursor) || isEqual(minAllowedUtc, cursor)
         : true
 
-      const slotIso = cursor.toISOString()
-      const isTaken = reservedSlots.includes(slotIso)
+      const isTaken = reservedSlots.some((r) => {
+        const rStart = new Date(r.startAt);
+        const rEnd = addMinutes(rStart, Number(r.durationMinutes || 0));
+        return overlaps(cursor, end, rStart, rEnd);
+      });
 
       if (startsAfterMin && (isBefore(end, addMinutes(limitUtc, 1)))) {
         // 5. Convertimos cada slot a la hora local del usuario para mostrar
@@ -83,7 +99,7 @@ export default function TimePicker({
           disabled: isTaken
         })
       }
-      cursor = end
+      cursor = addMinutes(cursor, STEP_MINUTES)
     }
     setSlots(generated)
     setSelectedSlot(null)
@@ -120,6 +136,7 @@ export default function TimePicker({
         {slots.map((slot) => (
           <button
             key={slot.value.toISOString()}
+            disabled={slot.disabled}
             className={`slot-button 
               ${slot.disabled ? 'taken' : ''}
               ${selectedSlot?.toISOString() === slot.value.toISOString() ? 'selected' : ''}`}

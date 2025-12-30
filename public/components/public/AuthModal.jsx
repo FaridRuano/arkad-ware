@@ -7,7 +7,7 @@ import { useRouter } from '@node_modules/next/navigation'
 import { ecPhoneErrorMessage, formatEcMobileRemainderPretty, normalizeEcMobileRemainder, toEcE164FromRemainder } from '@utils/ecPhone'
 import { cedulaErrorMessage, validateEcuadorCedula } from '@utils/ecuadorId'
 import { useState } from 'react'
-import ModalConfirm from './ModalConfirm'
+import ModalConfirm from '../shared/ModalConfirm'
 import { CredentialsSignin } from '@node_modules/next-auth'
 import { signIn } from '@auth'
 

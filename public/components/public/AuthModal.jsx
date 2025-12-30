@@ -206,6 +206,7 @@ const AuthModal = ({ isActive, handler }) => {
     const onSubmit = async (e) => {
         e.preventDefault();
         // Aquí iría la llamada a la API para registrar al usuario
+        setLoading(true);
         const newUser = {
             cedula,
             email: reg.email,
@@ -234,14 +235,13 @@ const AuthModal = ({ isActive, handler }) => {
                 return;
 
             } else {
-
                 setReg({ email: '', nombre: '', apellido: '', password: '', confirm: '', address: '' });
                 setCedula('');
                 setPhone('');
                 setAcceptTerms(false);
                 setTouched({ cedula: false, email: false, nombre: false, apellido: false, password: false, confirm: false, address: false, phone: false });
                 setLoginMode(true);
-
+                setLoading(false);
                 setModalConfirmText("Registro exitoso, ya puedes iniciar sesión.");
                 setModalConfirmActive(true);
 

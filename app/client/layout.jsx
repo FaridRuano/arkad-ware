@@ -6,10 +6,9 @@ export default async function ClientLayout({ children }) {
 
     const userName = session?.user?.name || "Usuario";
 
-    console.log("ClientLayout session:", session.user);
     return (
         <div className="container client">
-            <ClientHeader userName={userName}/>
+            <ClientHeader userName={userName} />
             {children}
         </div>
     );

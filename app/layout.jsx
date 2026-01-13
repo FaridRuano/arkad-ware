@@ -13,8 +13,7 @@ export default function RootLayout({ children }) {
         <div className="app">
           {children}
         </div>
-        <Footer/>
-
+        
       </body>
     </html>
   );

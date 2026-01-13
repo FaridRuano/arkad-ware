@@ -61,7 +61,7 @@ const ClientHeader = ({ userName = "Usuario" }) => {
 
                     <div className={"menu-dropdown" + (isMenuOpen ? " active" : "")}>
                         <ul className="menu-dropdown__list">
-                            <li className="menu-dropdown__item">
+                            <li className="menu-dropdown__item" onClick={()=> router.push('/client/profile')}>
                                 <button className="menu-dropdown__button">Ver perfil</button>
                             </li>
                             <li className="menu-dropdown__item" onClick={() => router.push('/')}>

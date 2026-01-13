@@ -1,5 +1,6 @@
 import { auth } from "@auth";
 import { redirect } from "@node_modules/next/navigation";
+import AdminSideBar from "@public/components/admin/AdminSideBar";
 
 export default async function ClientLayout({ children }) {
     const session = await auth();
@@ -13,7 +14,10 @@ export default async function ClientLayout({ children }) {
     }
     return (
         <div className="admin">
-            {children}
+            <AdminSideBar />
+            <div className="admin-content">
+                {children}
+            </div>
         </div>
     );
 }

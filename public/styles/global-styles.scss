@@ -425,10 +425,17 @@ html {
   max-width: 1200px;
 
   &__logo {
+    cursor: pointer;
+    transition: .3s ease-out;
+
     img {
       display: block;
       height: 38px;
       width: auto;
+    }
+
+    &:hover {
+      opacity: .8;
     }
   }
 
@@ -613,8 +620,13 @@ html {
     border-radius: 8px;
 
     section {
-      min-height: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: start;
+      justify-content: center;
       margin-bottom: 5rem;
+      padding-bottom: 5rem;
+      border-bottom: 1px solid var(--border);
     }
 
     #title {
@@ -659,6 +671,19 @@ html {
       li {
         margin-bottom: 0.5rem;
         color: var(--fg);
+      }
+    }
+
+    p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    ul {
+      margin: 12px 0 16px 20px;
+
+      li {
+        margin-bottom: 6px;
       }
     }
   }
@@ -1227,6 +1252,7 @@ html {
 /* =============== Admin ============== */
 
 .admin {
+  display: flex;
 
   h1,
   h2,
@@ -1304,19 +1330,57 @@ html {
   }
 
   &__card {
-    background-color: var(--surface-1);
     padding: 20px;
     border-radius: 5px;
+    border: 1px solid var(--border);
     box-shadow: var(--shadow-1);
     transition: .3s ease-out;
+
+    &.current {
+      background-color: var(--surface-1);
+    }
+
+    &.no-current {
+      background-color: var(--surface-2);
+      opacity: .5;
+
+      .__header {
+        border: none;
+        padding: 0;
+        margin: 0;
+      }
+    }
+
+    &.next {
+      background-color: var(--black);
+    }
 
     .__header {
       width: 100%;
       padding-bottom: 10px;
       border-bottom: 1px solid var(--border);
-      color: var(--primary);
+      color: var(--fg);
       margin-bottom: 10px;
-      font-size: 1rem;
+      font-size: .8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .__type {
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        padding: 5px;
+        font-size: .8rem;
+        font-weight: 600;
+        margin-top: .5rem;
+        color: var(--fg);
+
+        &.premium {
+          border-color: var(--primary);
+          color: var(--primary);
+          font-weight: 800;
+        }
+      }
     }
 
     .__appointment {
@@ -1326,9 +1390,82 @@ html {
       gap: .5rem;
 
       .__name {
-        font-size: 3rem;
-        font-weight: 700;
+        display: flex;
+        flex-direction: column;
+        font-size: 1rem;
+        font-weight: 400;
         margin-bottom: .5rem;
+
+        b {
+          font-size: 1.2rem;
+        }
+      }
+
+      .__status {
+        font-size: .9rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 5px;
+        text-align: center;
+
+        .status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 500;
+
+          .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: currentColor;
+            opacity: 0.9;
+          }
+
+          &.pending {
+            .status-dot {
+              background-color: var(--focus-ring);
+            }
+          }
+
+          &.confirmed {
+            .status-dot {
+              background-color: var(--secondary);
+            }
+          }
+
+          &.in-progress {
+            .status-dot {
+              background-color: var(--negative);
+            }
+          }
+
+          &.completed {
+            .status-dot {
+              background-color: var(--positive);
+            }
+          }
+
+          &.cancelled {
+            .status-dot {
+              background-color: var(--muted);
+            }
+          }
+
+          &.no-assistance {
+            .status-dot {
+              background-color: var(--warning);
+            }
+          }
+
+          &.unknown {
+            .status-dot {
+              background-color: var(--gray);
+            }
+          }
+        }
+
       }
 
       .__datetime {
@@ -1352,30 +1489,22 @@ html {
       }
     }
 
-    .__type{
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 5px;
-      font-size: 1rem;
-      font-weight: 600;
-      margin-top: .5rem;
-      color: var(--fg);
-
-      &.premium{
-        background-color: var(--primary);
-        color: var(--black);
-        font-weight: 800;
-      }
-    }
-
     .__buttons {
       display: flex;
       gap: 1rem;
       margin-top: 1rem;
+      justify-content: space-between;
+      align-items: center;
 
       a {
         text-decoration: none;
+      }
+
+      .row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: .4rem;
       }
 
       .__button {
@@ -1385,14 +1514,33 @@ html {
         font-weight: 600;
         cursor: pointer;
         transition: .3s ease-out;
+        outline: none;
+        border: none;
 
-        &.cancel{
+
+        &.cancel {
           background-color: var(--negative);
-          color: var(--black);
+          color: var(--fg);
+        }
+
+        &.primary {
+          background-color: var(--primary);
+          color: var(--bg);
+        }
+
+        &.pay {
+          background-color: var(--secondary);
+          color: var(--fg);
+          opacity: 0.5;
         }
 
         &.phone {
-          background-color: var(--secondary);
+          padding: 3px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 50px;
+          background-color: #17d86e;
           color: var(--black);
         }
 
@@ -1410,6 +1558,236 @@ html {
     }
   }
 
+  /* Contenedor de la sección */
+  .today-appointments {
+    margin-bottom: 30px;
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--fg);
+      letter-spacing: .2px;
+    }
+
+    /* Card */
+    .appointment-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+
+      background: var(--surface-1);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+      box-shadow: var(--shadow-1);
+
+      /* si quieres más compacto, baja el padding de los items */
+    }
+
+    /* Item */
+    .appointment-item {
+      display: grid;
+      grid-template-columns: 1.2fr auto;
+      gap: 12px;
+
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+
+      transition: background-color .2s ease, transform .2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: var(--surface-2);
+      }
+    }
+
+    /* Columna izquierda */
+    .appointment-main {
+      min-width: 0;
+      /* evita overflow feo */
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .appointment-name {
+      font-weight: 700;
+      color: var(--fg);
+      font-size: .95rem;
+      line-height: 1.2;
+    }
+
+    .appointment-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    /* Teléfono (WhatsApp link) */
+    .appointment-phone {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      opacity: .95;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+
+    /* Columna derecha */
+    .appointment-side {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    /* “Chip” para hora */
+    .time-chip {
+      font-size: .8rem;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--fg);
+    }
+
+    /* “Chip” para tipo */
+    .type-chip {
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .type-chip.premium {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .type-chip.standard {
+      color: var(--secondary);
+      border-color: var(--secondary);
+    }
+
+
+    /* Empty state */
+    .appointment-empty {
+      padding: 14px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .cancel-btn {
+      appearance: none;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 600;
+
+      color: var(--muted);
+      opacity: 0;
+      pointer-events: none;
+
+      transition: opacity .15s ease, background-color .15s ease, color .15s ease;
+    }
+
+    /* aparece solo al hover del item */
+    .appointment-item:hover .cancel-btn {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .cancel-btn:hover {
+      background: var(--surface-2);
+      color: var(--negative);
+    }
+  }
+
+}
+
+.admin-content {
+  width: 100%;
+  margin-left: 250px;
+
+  .admin__dashboard {}
+}
+
+.admin-sidebar {
+  width: 250px;
+  height: 100vh;
+  background-color: var(--surface-1);
+  color: var(--fg);
+  padding: 20px;
+  box-shadow: var(--shadow-1);
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+  z-index: 1;
+
+  h2 {
+    color: var(--primary);
+    margin-bottom: 30px;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  nav {
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      li {
+        margin-bottom: 10px;
+
+        a {
+          display: block;
+          padding: 12px 16px;
+          color: var(--fg);
+          text-decoration: none;
+          border-radius: 8px;
+          transition: background-color 0.3s ease, color 0.3s ease;
+
+          &:hover {
+            background-color: var(--surface-2);
+            color: var(--primary);
+          }
+
+          &.active {
+            background-color: var(--primary);
+            color: var(--bg);
+          }
+        }
+      }
+    }
+  }
 }
 
 /* ============ Color Texts ========== */

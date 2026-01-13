@@ -24,11 +24,24 @@ const AppointmentSchema = new mongoose.Schema(
       min: 30,
     },
 
-    // ───────────── ESTADO (opcional pero MUY útil) ─────────────
+    // ───────────── PRECIO ─────────────
+    price: {
+      type: Number,
+      required: true,
+      min: 8,
+    },
+
+    // ───────────── ESTADOS ─────────────
     status: {
       type: String,
-      enum: ["scheduled", "in progress", "completed", "cancelled"],
-      default: "scheduled",
+      enum: ["pending", "confirmed", "in progress", "completed", "cancelled", "no assistance"],
+      default: "pending",
+    },
+
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid"],
+      default: "unpaid",
     },
 
     // ───────────── NOTAS (opcional) ─────────────

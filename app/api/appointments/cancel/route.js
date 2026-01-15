@@ -5,7 +5,7 @@ import Appointment from "@models/Appointment";
 
 export async function POST(req) {
   try {
-    // 1️⃣ Sesión
+    // 1) Sesión
     const session = await auth();
     const userId = session?.user?.id;
 
@@ -16,9 +16,9 @@ export async function POST(req) {
       );
     }
 
-    // 2️⃣ Body
-    const body = await req.json();
-    const { id } = body;
+    // 2) Body
+    const body = await req.json().catch(() => null);
+    const { id, reason } = body || {};
 
     if (!id) {
       return NextResponse.json(
@@ -27,33 +27,62 @@ export async function POST(req) {
       );
     }
 
-    // 3️⃣ DB
     await connectMongoDB();
 
-    // 4️⃣ Cancelar (solo si pertenece al usuario y no está cancelada)
+    // 3) Leer la cita (para conocer el status actual y poder guardar "from")
+    const appointment = await Appointment.findOne({ _id: id, user: userId })
+      .select("_id status user")
+      .lean();
+
+    if (!appointment) {
+      return NextResponse.json(
+        { error: true, message: "No se encontró la cita o no tienes permisos" },
+        { status: 404 }
+      );
+    }
+
+    // 4) Reglas: no cancelar si ya está finalizada o ya cancelada
+    const nonCancellable = ["cancelled", "completed", "no assistance"];
+    if (nonCancellable.includes(appointment.status)) {
+      return NextResponse.json(
+        {
+          error: true,
+          message: `No puedes cancelar una cita en estado: ${appointment.status}`,
+        },
+        { status: 409 }
+      );
+    }
+
+    const safeReason =
+      typeof reason === "string" ? reason.trim().slice(0, 200) : "";
+
+    // 5) Update atómico: cambia status + push al historial
     const updatedAppointment = await Appointment.findOneAndUpdate(
+      { _id: id, user: userId, status: appointment.status }, // evita carreras
       {
-        _id: id,
-        user: userId,
-        status: { $ne: "cancelled" },
-      },
-      {
-        $set: {
-          status: "cancelled",
-          cancelledAt: new Date(),
+        $set: { status: "cancelled" },
+        $push: {
+          statusHistory: {
+            from: appointment.status,
+            to: "cancelled",
+            changedAt: new Date(),
+            changedBy: userId,
+            reason: safeReason || "user_cancelled",
+          },
         },
       },
       { new: true }
-    ).lean();
+    )
+      .select("_id status statusHistory updatedAt")
+      .lean();
 
     if (!updatedAppointment) {
       return NextResponse.json(
         {
           error: true,
-          message:
-            "No se encontró la cita, ya fue cancelada o no tienes permisos",
+          message: "No se pudo cancelar (posible cambio simultáneo de estado)",
         },
-        { status: 404 }
+        { status: 409 }
       );
     }
 
@@ -63,7 +92,12 @@ export async function POST(req) {
         appointment: {
           id: updatedAppointment._id.toString(),
           status: updatedAppointment.status,
-          cancelledAt: updatedAppointment.cancelledAt,
+          updatedAt: updatedAppointment.updatedAt,
+          // opcional: te devuelvo el último evento del historial
+          lastStatusEvent:
+            updatedAppointment.statusHistory?.[
+              updatedAppointment.statusHistory.length - 1
+            ] || null,
         },
       },
       { status: 200 }

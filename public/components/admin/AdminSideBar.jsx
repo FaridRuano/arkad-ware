@@ -17,13 +17,13 @@ const AdminSideBar = () => {
             <Link href="/admin" className={isActive('/admin') ? 'active' : ''}>Dashboard</Link>
           </li>
           <li>
-            <Link href="/admin/appointments" className={isActive('/admin/appointments') ? 'active' : ''}>Appointments</Link>
+            <Link href="/admin/appointments" className={isActive('/admin/appointments') ? 'active' : ''}>Agenda</Link>
           </li>
           <li>
-            <Link href="/admin/clients" className={isActive('/admin/clients') ? 'active' : ''}>Clients</Link>
+            <Link href="/admin/clients" className={isActive('/admin/clients') ? 'active' : ''}>Clientes</Link>
           </li>
           <li>
-            <Link href="/admin/data" className={isActive('/admin/data') ? 'active' : ''}>Data</Link>
+            <Link href="/admin/data" className={isActive('/admin/data') ? 'active' : ''}>Datos</Link>
           </li>
         </ul>
       </nav>

@@ -1355,6 +1355,17 @@ html {
       background-color: var(--black);
     }
 
+    &.no-next {
+      background-color: var(--black);
+      opacity: .5;
+
+      .__header {
+        border: none;
+        padding: 0;
+        margin: 0;
+      }
+    }
+
     .__header {
       width: 100%;
       padding-bottom: 10px;
@@ -1524,12 +1535,16 @@ html {
         }
 
         &.primary {
-          background-color: var(--primary);
-          color: var(--bg);
+          background-color: var(--secondary);
+          color: var(--fg);
+        }
+
+        &.no-assis {
+          background-color: var(--warning);
+          color: var(--fg);
         }
 
         &.pay {
-          background-color: var(--secondary);
           color: var(--fg);
           opacity: 0.5;
         }

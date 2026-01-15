@@ -1,15 +1,31 @@
 'use client'
 import Image from '@node_modules/next/image';
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+
+const TZ = "America/Guayaquil";
+
+// helpers
+const formatTimeEC = (iso) =>
+    new Intl.DateTimeFormat("es-EC", {
+        timeZone: TZ,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    }).format(new Date(iso));
+
+const formatDateEC = (iso) =>
+    new Intl.DateTimeFormat("es-EC", {
+        timeZone: TZ,
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+    }).format(new Date(iso));
 
 const page = () => {
 
-    const [dashboardData, setDashboardData] = useState({
-        currentAppointment: null,
-        nextAppointment: null,
-        todaysAppointments: [],
-        latestUsers: []
-    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
 
     // Static data for demonstration
     const currentDate = new Date().toLocaleDateString('es-ES', {
@@ -24,81 +40,127 @@ const page = () => {
         minute: '2-digit'
     });
 
-    const currentAppointment = [
-        {
-            name: 'Carlos Pérez',
-            status: 'in progress',
-            paymentStatus: 'pay',
-            type: 60,
-            phone: '+593968844354',
-            price: 16,
-        },
-        {
-            name: 'Marco Lozano',
-            status: 'in progress',
-            paymentStatus: 'pay',
-            type: 30,
-            phone: '+593968844355',
-            price: 8,
+    // ✅ fuente única: TODAS las citas de hoy
+    const [todaysAppointments, setTodaysAppointments] = useState([]);
+
+
+    // ✅ derivadas
+    const currentAppointments = useMemo(() => {
+        return todaysAppointments.filter((a) => a.status === "in progress");
+    }, [todaysAppointments]);
+
+    const nextAppointment = useMemo(() => {
+        const now = Date.now();
+
+        // próxima: pending/confirmed con startAt en el futuro
+        const next = todaysAppointments
+            .filter(
+                (a) =>
+                    (a.status === "pending" || a.status === "confirmed") &&
+                    new Date(a.startAt).getTime() >= now
+            )
+            .sort((a, b) => new Date(a.startAt) - new Date(b.startAt))[0];
+
+        if (!next) return null;
+
+        return {
+            name: next.name,
+            phone: next.phone,
+            time: formatTimeEC(next.startAt),
+            type: next.durationMinutes,
+            date: formatDateEC(next.startAt),
+            paymentStatus: next.paymentStatus,
+            price: next.price,
+            id: next.id,
+            status: next.status,
+            startAt: next.startAt,
+        };
+    }, [todaysAppointments]);
+
+    async function fetchTodayAppointments() {
+        setLoading(true);
+        setError("");
+
+        try {
+            // ✅ ejemplo: trae las citas del día ya en orden
+            const res = await fetch("/api/admin/appointments/today", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                cache: "no-store",
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data?.ok) {
+                throw new Error(data?.message || "No se pudo cargar la agenda");
+            }
+
+            // data.appointments debería venir normalizada:
+            // [{ id, name, phone, startAt, durationMinutes, status, paymentStatus, price }]
+            setTodaysAppointments(Array.isArray(data.appointments) ? data.appointments : []);
+        } catch (e) {
+            setError(e.message || "Error inesperado");
+            setTodaysAppointments([]);
+        } finally {
+            setLoading(false);
         }
-    ];
+    }
 
-    const nextAppointment = {
-        name: 'Farid Ruano',
-        phone: '+593968844354',
-        time: '10:00 AM',
-        type: 30,
-        date: '29 de diciembre de 2025',
-        paymentStatus: 'unpaid',
-    };
+    async function updateAppointmentStatus(appointment, action, reason = "") {
+        if (!appointment?.id) return;
+        setLoading(true);
+        try {
+            const res = await fetch("/api/admin/appointments/status", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ id: appointment.id, action, reason }),
+            });
 
-    const todaysAppointments = [
-        {
-            id: "apt-001",
-            name: "Carlos Montalvo",
-            phone: "593987654321",
-            startAt: "2025-12-30T14:00:00.000+00:00", // 09:00 EC
-            duration: 60, // Premium
-            status: "completed",
-            paymentStatus: "paid",
-        },
-        {
-            id: "apt-002",
-            name: "Andrés López",
-            phone: "593998112233",
-            startAt: "2025-12-30T15:00:00.000+00:00", // 10:00 EC
-            duration: 30, // Estándar
-            status: "completed",
-            paymentStatus: "unpaid",
-        },
-        {
-            id: "apt-003",
-            name: "Mateo Rivera",
-            phone: "593969887744",
-            startAt: "2025-12-30T16:00:00.000+00:00", // 11:00 EC
-            duration: 60, // Premium
-            status: "in-progress",
-            paymentStatus: "unpaid",
-        },
-        {
-            id: "apt-004",
-            name: "Juan Sebastián Torres",
-            phone: "593984556677",
-            startAt: "2025-12-30T17:00:00.000+00:00", // 12:00 EC
-            duration: 30, // Estándar
-            status: "confirmed",
-            paymentStatus: "unpaid",
-        },
-        {
-            id: "apt-005",
-            name: "Diego Almeida",
-            phone: "593972334455",
-            startAt: "2025-12-30T18:00:00.000+00:00", // 13:00 EC
-            duration: 30, // Estándar
-            status: "pending",
-            paymentStatus: "unpaid",
-        },
-    ];
+            const data = await res.json();
+
+            if (!res.ok || !data?.ok) {
+                throw new Error(data?.message || "No se pudo actualizar la cita");
+            }
+
+            // 🔄 refrescar agenda
+            fetchTodayAppointments();
+        } catch (error) {
+            console.error("Update appointment status error:", error);
+            alert(error.message || "Error al actualizar la cita");
+        }
+    }
+
+    async function markAppointmentAsPaid(appointment) {
+        if (!appointment?.id) return;
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/admin/appointments/payment", {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    id: appointment.id,
+                    method: "cash", // opcional: cash | transfer | card
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data?.ok) {
+                throw new Error(data?.message || "No se pudo registrar el pago");
+            }
+
+            // 🔄 refrescar agenda
+            fetchTodayAppointments();
+        } catch (error) {
+            console.error("Mark as paid error:", error);
+            alert(error.message || "Error al cobrar");
+        }
+    }
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -179,70 +241,73 @@ const page = () => {
         }).format(d);
     };
 
-    const formatDate = (isoDate) => {
-        const d = new Date(isoDate);
-        return new Intl.DateTimeFormat("es-EC", {
-            timeZone: "America/Guayaquil",
-            day: "2-digit",
-            month: "short",
-        }).format(d);
-    };
-
     const onCancelAppointment = (appointment) => {
         return
     }
 
     useEffect(() => {
+        fetchTodayAppointments();
 
+        // opcional: refrescar cada 30s
+        /* const id = setInterval(fetchTodayAppointments, 30000);
+        return () => clearInterval(id); */
     }, []);
+
+    if (loading) {
+        return (
+            <div className='client-dashboard loading'>
+                <div className="spinner" aria-hidden="true"></div>
+            </div>
+        )
+    }
 
     return (
         <>
             <div className="admin__dashboard">
                 <div className="admin__header">
                     <h1>Bienvenido Administrador</h1>
-                    <div className='__datetime'>
+                    <div className="__datetime">
                         <div className="__date">
-                            <span>{currentDate}</span>
+                            <span>{currentDate ?? "—"}</span>
                         </div>
                         <div className="__time">
-                            <span>{currentTime}</span>
+                            <span>{currentTime ?? "—"}</span>
                         </div>
                     </div>
                 </div>
 
                 {/* Current Appointment Big Card */}
+                {Array.isArray(currentAppointments) && currentAppointments.length > 0 ? (
+                    <>
+                        {currentAppointments.map((appointment, index) => {
+                            const minutes = appointment?.type ?? appointment?.durationMinutes ?? 0;
+                            const isPremium = minutes === 60;
 
+                            return (
+                                <div key={appointment?.id ?? index} className="admin__card current">
+                                    <div className="__header">
+                                        <h2>En Curso</h2>
+                                        <div className={isPremium ? "__type premium" : "__type"}>
+                                            {isPremium ? "Servicio Premium" : "Servicio Estandar"}
+                                        </div>
+                                    </div>
 
-                {
-                    currentAppointment.length > 0 ? (
-                        <>
-                            {
-                                currentAppointment.map((appointment, index) => (
-                                    <div key={index} className="admin__card current">
-
-                                        <div className="__header">
-                                            <h2>En Curso</h2>
-                                            <div className={appointment.type === 60 ? '__type premium' : '__type'}>{appointment.type === 60 ? 'Servicio Premium' : 'Servicio Estandar'}</div>
+                                    <div className="__appointment">
+                                        <div className="__name">
+                                            <span>Nombre:</span>
+                                            <span>
+                                                <b>{appointment?.name ?? "—"}</b>
+                                            </span>
                                         </div>
 
-                                        <div className="__appointment">
-                                            <div className='__name'>
-                                                <span>Nombre:</span>
-                                                <span>
-                                                    <b>
-                                                        {appointment.name}
-                                                    </b>
-                                                </span>
-                                            </div>
-                                            <div className="__status">
-                                                {getStatusBadge(appointment.status)}
-                                            </div>
+                                        <div className="__status">
+                                            {appointment?.status ? getStatusBadge(appointment.status) : null}
                                         </div>
+                                    </div>
 
-
-                                        <div className="__buttons">
-                                            <div className="row">
+                                    <div className="__buttons">
+                                        <div className="row">
+                                            {appointment?.phone ? (
                                                 <a
                                                     href={`https://wa.me/${appointment.phone}`}
                                                     target="_blank"
@@ -250,183 +315,235 @@ const page = () => {
                                                     className="link"
                                                 >
                                                     <div className="__button phone">
-
                                                         <Image
                                                             src="/assets/icons/whastapp.svg"
-                                                            alt="Arkad logo"
+                                                            alt="WhatsApp"
                                                             width={30}
                                                             height={30}
                                                         />
                                                     </div>
                                                 </a>
-                                            </div>
-                                            <div className="row">
-                                                {
-                                                    appointment.paymentStatus === 'unpaid' ? (
-                                                        <button className="__button unpaid">
-                                                            Cobrar
-                                                        </button>
-                                                    ) : (
-                                                        <button className="__button pay">
-                                                            Pagado
-                                                        </button>
-                                                    )
-                                                }
-                                                <button className="__button primary">
-                                                    Completar
+                                            ) : (
+                                                <div className="__button phone disabled" title="Sin teléfono">
+                                                    <Image
+                                                        src="/assets/icons/whastapp.svg"
+                                                        alt="WhatsApp"
+                                                        width={30}
+                                                        height={30}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="row">
+                                            {appointment?.paymentStatus === "unpaid" ? (
+                                                <button
+                                                    className="__button unpaid"
+                                                    onClick={() => markAppointmentAsPaid(appointment)}
+                                                >
+                                                    Cobrar
                                                 </button>
-                                                <button className="__button cancel">
-                                                    Cancelar
-                                                </button>
-                                            </div>
+                                            ) : (
+                                                <button className="__button pay">Pagado</button>
+                                            )}
+
+                                            <button
+                                                className="__button primary"
+                                                onClick={() => updateAppointmentStatus(appointment, "complete")}
+                                            >
+                                                Completar
+                                            </button>
+                                            <button className="__button cancel">Cancelar</button>
                                         </div>
                                     </div>
-                                ))
-                            }
-                        </>
-                    ) : (
-                        <div className="admin__card no-current">
-
-                            <div className="__header">
-                                <h2>No hay citas en curso</h2>
-
-                            </div>
-
+                                </div>
+                            );
+                        })}
+                    </>
+                ) : (
+                    <div className="admin__card no-current">
+                        <div className="__header">
+                            <h2>No hay citas en curso</h2>
                         </div>
-                    )
-                }
-
-
-
+                    </div>
+                )}
 
                 {/* Next Appointment Big Card */}
-                <div className="admin__card next">
+                {nextAppointment ? (
+                    <div className="admin__card next">
+                        <div className="__header">
+                            <h2>Próxima Cita</h2>
 
-                    <div className="__header">
-                        <h2>Próxima Cita</h2>
-                        <div className={nextAppointment.type === 60 ? '__type premium' : '__type'}>{nextAppointment.type === 60 ? 'Servicio Premium' : 'Servicio Estandar'}</div>
+                            {(() => {
+                                const minutes =
+                                    nextAppointment?.type ?? nextAppointment?.durationMinutes ?? 0;
+                                const isPremium = minutes === 60;
 
-                    </div>
-
-                    <div className="__appointment">
-                        <div className='__name'>
-                            <span>Nombre:</span>
-                            <span>
-                                <b>
-                                    {nextAppointment.name}
-                                </b>
-                            </span>
+                                return (
+                                    <div className={isPremium ? "__type premium" : "__type"}>
+                                        {isPremium ? "Servicio Premium" : "Servicio Estandar"}
+                                    </div>
+                                );
+                            })()}
                         </div>
-                        <div className='__datetime'>
-                            <div className="date">
-                                {nextAppointment.date}
+
+                        <div className="__appointment">
+                            <div className="__name">
+                                <span>Nombre:</span>
+                                <span>
+                                    <b>{nextAppointment?.name ?? "—"}</b>
+                                </span>
                             </div>
-                            <div className="time">
-                                {nextAppointment.time}
+
+                            <div className="__datetime">
+                                <div className="date">{nextAppointment?.date ?? "—"}</div>
+                                <div className="time">{nextAppointment?.time ?? "—"}</div>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="__buttons">
-                        <div className="row">
-                            <a
-                                href={`https://wa.me/${nextAppointment.phone}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="link"
-                            >
-                                <div className="__button phone">
+                        <div className="__buttons">
+                            <div className="row">
+                                {nextAppointment?.phone ? (
+                                    <a
+                                        href={`https://wa.me/${nextAppointment.phone}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="link"
+                                    >
+                                        <div className="__button phone">
+                                            <Image
+                                                src="/assets/icons/whastapp.svg"
+                                                alt="WhatsApp"
+                                                width={30}
+                                                height={30}
+                                            />
+                                        </div>
+                                    </a>
+                                ) : (
+                                    <div className="__button phone disabled" title="Sin teléfono">
+                                        <Image
+                                            src="/assets/icons/whastapp.svg"
+                                            alt="WhatsApp"
+                                            width={30}
+                                            height={30}
+                                        />
+                                    </div>
+                                )}
+                            </div>
 
-                                    <Image
-                                        src="/assets/icons/whastapp.svg"
-                                        alt="Arkad logo"
-                                        width={30}
-                                        height={30}
-                                    />
-                                </div>
-                            </a>
-                        </div>
-                        <div className="row">
-                            {
-                                nextAppointment.paymentStatus === 'unpaid' ? (
-                                    <button className="__button unpaid">
+                            <div className="row">
+                                {nextAppointment?.paymentStatus === "unpaid" ? (
+                                    <button
+                                        className="__button unpaid"
+                                        onClick={() => markAppointmentAsPaid(nextAppointment)}
+                                    >
                                         Cobrar
                                     </button>
                                 ) : (
-                                    <button className="__button pay">
-                                        Pagado
-                                    </button>
-                                )
-                            }
+                                    <button className="__button pay">Pagado</button>
+                                )}
 
-                            <button className="__button primary">
-                                Iniciar
-                            </button>
-                            <button className="__button cancel">
-                                Cancelar
-                            </button>
+                                <button
+                                    className="__button primary"
+                                    onClick={() => updateAppointmentStatus(nextAppointment, "start")}
+                                >
+                                    Iniciar
+                                </button>
+                                <button
+                                    className="__button no-assis"
+                                    onClick={() => updateAppointmentStatus(nextAppointment, "no_assistance")}
+                                >
+                                    No asistió
+                                </button>
+                                <button
+                                    className="__button cancel"
+                                    onClick={() => updateAppointmentStatus(nextAppointment, "cancel")}
+                                >
+                                    X
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="admin__card no-next">
+                        <div className="__header">
+                            <h2>No hay próxima cita</h2>
+                        </div>
+                    </div>
+
+                )}
 
                 {/* Today's Appointments */}
                 <div className="today-appointments">
                     <h2>Citas de Hoy</h2>
 
                     <ul className="appointment-list">
-                        {todaysAppointments.length === 0 ? (
-                            <li className="appointment-empty">No hay citas para hoy.</li>
+                        {!Array.isArray(todaysAppointments) || todaysAppointments.length === 0 ? (
+                            <li className="appointment-empty">No hay citas para hoy</li>
                         ) : (
-                            todaysAppointments.map((appointment) => (
-                                <li key={appointment.id} className="appointment-item">
-                                    <div className="appointment-main">
-                                        <div className="appointment-name">
-                                            {appointment.name}
+                            todaysAppointments.map((appointment) => {
+                                const minutes =
+                                    appointment?.duration ?? appointment?.durationMinutes ?? 0;
+
+                                return (
+                                    <li
+                                        key={appointment?.id ?? appointment?._id ?? crypto.randomUUID()}
+                                        className="appointment-item"
+                                    >
+                                        <div className="appointment-main">
+                                            <div className="appointment-name">
+                                                {appointment?.name ?? "—"}
+                                            </div>
+
+                                            <div className="appointment-meta">
+                                                {appointment?.phone ? (
+                                                    <a
+                                                        href={`https://wa.me/${appointment.phone}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="appointment-phone"
+                                                    >
+                                                        {appointment.phone}
+                                                    </a>
+                                                ) : (
+                                                    <span className="appointment-phone muted">Sin teléfono</span>
+                                                )}
+
+                                                <span>•</span>
+                                                <span>{getServiceLabel(minutes)}</span>
+                                            </div>
                                         </div>
 
-                                        <div className="appointment-meta">
-                                            <a
-                                                href={`https://wa.me/${appointment.phone}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="appointment-phone"
+                                        <div className="appointment-side">
+                                            <span className="time-chip">
+                                                {appointment?.startAt ? formatTime(appointment.startAt) : "—"}
+                                            </span>
+
+                                            <span
+                                                className={`type-chip ${minutes === 60 ? "premium" : "standard"
+                                                    }`}
                                             >
-                                                {appointment.phone}
-                                            </a>
+                                                {minutes} min
+                                            </span>
 
-                                            <span>•</span>
-                                            <span>{getServiceLabel(appointment.duration)}</span>
+                                            <button
+                                                className="cancel-btn"
+                                                title="Cancelar cita"
+                                                onClick={() => appointment && onCancelAppointment(appointment)}
+                                                disabled={!appointment?.id}
+                                            >
+                                                ×
+                                            </button>
                                         </div>
-                                    </div>
-
-                                    <div className="appointment-side">
-                                        <span className="time-chip">
-                                            {formatTime(appointment.startAt)}
-                                        </span>
-
-                                        <span
-                                            className={`type-chip ${appointment.duration === 60 ? "premium" : "standard"
-                                                }`}
-                                        >
-                                            {appointment.duration} min
-                                        </span>
-                                        {/* Cancel button */}
-                                        <button
-                                            className="cancel-btn"
-                                            title="Cancelar cita"
-                                            onClick={() => onCancelAppointment(appointment)}
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                </li>
-                            ))
+                                    </li>
+                                );
+                            })
                         )}
                     </ul>
                 </div>
-
             </div>
         </>
+
     )
 }
 

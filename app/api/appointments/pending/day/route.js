@@ -29,7 +29,6 @@ export async function GET(req) {
       );
     }
 
-    // Validación extra
     const parsed = parseISO(dateStr);
     if (!isValid(parsed)) {
       return NextResponse.json(
@@ -38,21 +37,23 @@ export async function GET(req) {
       );
     }
 
-    // Rango del día en zona del tutor convertido a UTC
+    // Rango del día en la zona horaria del negocio, convertido a UTC
     const startUtc = fromZonedTime(`${dateStr}T00:00:00`, TUTOR_TIME_ZONE);
     const nextDayStr = addDays(parsed, 1).toISOString().slice(0, 10);
     const endUtc = fromZonedTime(`${nextDayStr}T00:00:00`, TUTOR_TIME_ZONE);
 
     await connectMongoDB();
 
-    // Trae todas las citas del día (menos canceladas)
+    // Estados que NO quieres mostrar en la agenda del día (ajusta a tu UX)
+    const excludedStatuses = ["cancelled", "completed", "no assistance"];
+
     const appointments = await Appointment.find({
-      user: userId,
-      status: { $ne: "cancelled" },
+      user: userId, // ✅ Vista del cliente. Si es agenda global/admin, QUITA esto.
+      status: { $nin: excludedStatuses },
       startAt: { $gte: startUtc, $lt: endUtc },
     })
       .sort({ startAt: 1 })
-      .select("startAt durationMinutes status")
+      .select("startAt durationMinutes status price paymentStatus")
       .lean();
 
     return NextResponse.json(
@@ -60,9 +61,11 @@ export async function GET(req) {
         ok: true,
         appointments: appointments.map((a) => ({
           id: a._id.toString(),
-          startAt: a.startAt, // ISO/Date (frontend lo convierte a Date)
+          startAt: a.startAt,
           durationMinutes: a.durationMinutes,
           status: a.status,
+          price: a.price,
+          paymentStatus: a.paymentStatus,
         })),
       },
       { status: 200 }

@@ -5,7 +5,7 @@ import Appointment from "@models/Appointment";
 
 export async function POST(req) {
     try {
-        // 1️⃣ Sesión
+        // 1) Sesión
         const session = await auth();
         const userId = session?.user?.id;
 
@@ -16,10 +16,9 @@ export async function POST(req) {
             );
         }
 
-        // 2️⃣ Body
-        const body = await req.json();
-        const { date, time, type } = body;
-
+        // 2) Body
+        const body = await req.json().catch(() => null);
+        const { date, time, type, notes } = body || {};
 
         if (!date || !time || !type) {
             return NextResponse.json(
@@ -28,7 +27,7 @@ export async function POST(req) {
             );
         }
 
-        // 3️⃣ Duración (type = 30 o 60)
+        // 3) Duración (type = 30 o 60)
         const durationMinutes = Number(type);
 
         if (![30, 60].includes(durationMinutes)) {
@@ -38,9 +37,7 @@ export async function POST(req) {
             );
         }
 
-
-        // 4️⃣ Construir fecha + hora
-        // date y time vienen como ISO strings
+        // 4) Construir fecha + hora
         const dateObj = new Date(date);
         const timeObj = new Date(time);
 
@@ -51,14 +48,8 @@ export async function POST(req) {
             );
         }
 
-        // Combinar fecha + hora
         const startAt = new Date(dateObj);
-        startAt.setHours(
-            timeObj.getHours(),
-            timeObj.getMinutes(),
-            0,
-            0
-        );
+        startAt.setHours(timeObj.getHours(), timeObj.getMinutes(), 0, 0);
 
         if (Number.isNaN(startAt.getTime())) {
             return NextResponse.json(
@@ -69,12 +60,13 @@ export async function POST(req) {
 
         await connectMongoDB();
 
-        // 5️⃣ Evitar solapamiento de citas
+        // 5) Evitar solapamiento (agenda GLOBAL)
+        // Si en tu negocio hay 1 sola agenda, NO filtres por user.
         const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
 
         const overlap = await Appointment.findOne({
-            user: userId,
-            status: { $ne: "cancelled" },
+            // user: userId, // <- (quitar para agenda global)
+            status: { $nin: ["cancelled", "no assistance"] },
             startAt: { $lt: endAt },
             $expr: {
                 $gt: [
@@ -82,7 +74,7 @@ export async function POST(req) {
                     startAt,
                 ],
             },
-        });
+        }).lean();
 
         if (overlap) {
             return NextResponse.json(
@@ -91,12 +83,19 @@ export async function POST(req) {
             );
         }
 
-        // 6️⃣ Crear cita
+        // 6) Crear cita (adaptado a tu enum)
+        // status default = "pending" según schema.
+        // paymentStatus default = "unpaid" según schema.
+        // Precio según duración
+        const price = durationMinutes === 30 ? 8 : 12;
+
         const appointment = await Appointment.create({
             user: userId,
             startAt,
             durationMinutes,
-            status: "scheduled",
+            price: price, // <-- AJUSTA: tu schema requiere price y min 8
+            notes: typeof notes === "string" ? notes : "",
+            // status: "pending", // opcional, el default ya lo pone
         });
 
         return NextResponse.json(
@@ -107,6 +106,8 @@ export async function POST(req) {
                     startAt: appointment.startAt,
                     durationMinutes: appointment.durationMinutes,
                     status: appointment.status,
+                    paymentStatus: appointment.paymentStatus,
+                    statusHistory: appointment.statusHistory, // útil para debug/UX
                 },
             },
             { status: 201 }

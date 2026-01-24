@@ -1,5 +1,6 @@
 'use client'
 import Image from '@node_modules/next/image';
+import ModalConfirm from '@public/components/shared/ModalConfirm';
 import React, { useEffect, useMemo, useState } from 'react'
 
 const TZ = "America/Guayaquil";
@@ -49,6 +50,12 @@ const page = () => {
         return todaysAppointments.filter((a) => a.status === "in progress");
     }, [todaysAppointments]);
 
+
+    // ✅ pendientes
+    const pendingAppointments = Array.isArray(todaysAppointments)
+        ? todaysAppointments.filter(a => a?.status === "pending")
+        : [];
+
     const nextAppointment = useMemo(() => {
         const now = Date.now();
 
@@ -78,7 +85,6 @@ const page = () => {
     }, [todaysAppointments]);
 
     async function fetchTodayAppointments() {
-        setLoading(true);
         setError("");
 
         try {
@@ -106,6 +112,21 @@ const page = () => {
         }
     }
 
+    /* Confirm Modal */
+
+    const [confirmModalText, setConfirmModalText] = useState('');
+    const [confirmModal, setConfirmModal] = useState(false);
+
+    const [modalAppointment, setModalAppointment] = useState(null)
+
+    const handleConfirmModal = (appointment) => {
+        setModalAppointment(appointment)
+
+        setConfirmModalText(`¿Estás seguro de que quieres cancelar esta cita?`)
+        setConfirmModal(current => !current)
+    }
+
+
     async function updateAppointmentStatus(appointment, action, reason = "") {
         if (!appointment?.id) return;
         setLoading(true);
@@ -130,6 +151,11 @@ const page = () => {
             console.error("Update appointment status error:", error);
             alert(error.message || "Error al actualizar la cita");
         }
+    }
+
+    const responseConfirmModal = async () => {
+        updateAppointmentStatus(modalAppointment, 'cancel')
+        setConfirmModal(current => !current)
     }
 
     async function markAppointmentAsPaid(appointment) {
@@ -242,6 +268,8 @@ const page = () => {
     };
 
     const onCancelAppointment = (appointment) => {
+
+
         return
     }
 
@@ -249,8 +277,8 @@ const page = () => {
         fetchTodayAppointments();
 
         // opcional: refrescar cada 30s
-        /* const id = setInterval(fetchTodayAppointments, 30000);
-        return () => clearInterval(id); */
+        const id = setInterval(fetchTodayAppointments, 30000);
+        return () => clearInterval(id);
     }, []);
 
     if (loading) {
@@ -263,6 +291,8 @@ const page = () => {
 
     return (
         <>
+            <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} />
+
             <div className="admin__dashboard">
                 <div className="admin__header">
                     <h1>Bienvenido Administrador</h1>
@@ -457,7 +487,7 @@ const page = () => {
                                 </button>
                                 <button
                                     className="__button cancel"
-                                    onClick={() => updateAppointmentStatus(nextAppointment, "cancel")}
+                                    onClick={() => handleConfirmModal(nextAppointment)}
                                 >
                                     X
                                 </button>
@@ -478,10 +508,10 @@ const page = () => {
                     <h2>Citas de Hoy</h2>
 
                     <ul className="appointment-list">
-                        {!Array.isArray(todaysAppointments) || todaysAppointments.length === 0 ? (
+                        {!Array.isArray(pendingAppointments) || pendingAppointments.length === 0 ? (
                             <li className="appointment-empty">No hay citas para hoy</li>
                         ) : (
-                            todaysAppointments.map((appointment) => {
+                            pendingAppointments.map((appointment) => {
                                 const minutes =
                                     appointment?.duration ?? appointment?.durationMinutes ?? 0;
 
@@ -529,7 +559,7 @@ const page = () => {
                                             <button
                                                 className="cancel-btn"
                                                 title="Cancelar cita"
-                                                onClick={() => appointment && onCancelAppointment(appointment)}
+                                                onClick={() => handleConfirmModal(appointment)}
                                                 disabled={!appointment?.id}
                                             >
                                                 ×

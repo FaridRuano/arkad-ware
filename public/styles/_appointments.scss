@@ -1,0 +1,569 @@
+.appointments__page {
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+
+    // Tarjetas / secciones
+    .appointments__filters,
+    .appointments__tableSection,
+    .appointments__pagination {
+        background: var(--surface-1);
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        box-shadow: var(--shadow-1);
+    }
+
+    // ------------------------------------------------------------
+    // 1) FILTROS
+    // ------------------------------------------------------------
+    .appointments__filters {
+        padding: 14px;
+
+        .appointments__filtersHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+
+            .appointments__title {
+                margin: 0;
+                font-size: 18px;
+                color: var(--fg);
+                letter-spacing: 0.2px;
+            }
+
+            .appointments__filtersActions {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+        }
+
+        .appointments__filtersGrid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: 1.6fr 1fr 1fr 1fr;
+
+            @media (max-width: 1100px) {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            @media (max-width: 640px) {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+
+            .field__label {
+                font-size: 12px;
+                color: var(--muted);
+            }
+
+            .field__input,
+            .field__select {
+                height: 42px;
+                padding: 0px 12px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--bg);
+                color: var(--fg);
+                outline: none;
+                transition: .3s ease-out;
+
+                &::placeholder {
+                    color: var(--gray);
+                }
+
+                &:focus {
+                    border-color: var(--primary);
+                    box-shadow: 0 0 10px 1px var(--focus-ring);
+                }
+            }
+        }
+
+        // Chips rápidos
+        .appointments__quickFilters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--fg);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+
+            &:hover {
+                background: var(--surface-1);
+                transform: translateY(-1px);
+                border-color: color-mix(in srgb, var(--border) 70%, var(--primary) 30%);
+            }
+
+            &:active {
+                transform: translateY(2px);
+            }
+
+            &.active {
+                background: var(--focus-ring);
+                border-color: var(--primary);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // BOTONES (si ya tienes estilos globales, esto solo los "afina")
+    // ------------------------------------------------------------
+    .__button {
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--fg);
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+
+        &:hover {
+            background: var(--surface-1);
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        &.secondary {
+            background: var(--bg);
+
+            &:hover {
+                background: var(--surface-2);
+            }
+        }
+
+        &.primary {
+            background: var(--primary);
+            color: var(--white);
+            border-color: color-mix(in srgb, var(--primary) 70%, var(--black) 30%);
+
+            &:hover {
+                background: var(--primary-hover);
+            }
+
+            &:active {
+                background: var(--primary-active);
+            }
+        }
+
+        &.danger {
+            background: color-mix(in srgb, var(--negative) 18%, var(--bg) 82%);
+            border-color: color-mix(in srgb, var(--negative) 35%, var(--border) 65%);
+            color: var(--fg);
+
+            &:hover {
+                background: color-mix(in srgb, var(--negative) 24%, var(--bg) 76%);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 2) TABLA
+    // ------------------------------------------------------------
+    .appointments__tableSection {
+        padding: 14px;
+
+        .appointments__tableHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+
+            .appointments__subtitle {
+                margin: 0;
+                font-size: 14px;
+                color: var(--muted);
+                font-weight: 600;
+                letter-spacing: 0.2px;
+            }
+
+            .appointments__count {
+                font-size: 13px;
+                color: var(--gray);
+            }
+        }
+
+        .appointments__tableWrap {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: auto;
+            background: var(--bg);
+        }
+
+        .appointments__table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: collapse;
+
+            .appointments__thead {
+                .appointments__trHead {
+                    background: var(--surface-2);
+
+                    .appointments__th {
+                        position: sticky;
+                        top: 0;
+                        z-index: 2;
+                        text-align: left;
+                        font-size: 12px;
+                        color: var(--muted);
+                        font-weight: 600;
+                        padding: 12px;
+                        border-bottom: 1px solid var(--border);
+                        white-space: nowrap;
+                    }
+
+                    .appointments__thActions {
+                        text-align: right;
+                    }
+                }
+            }
+
+            .appointments__tbody {
+                .appointments__tr {
+                    transition: background 120ms ease;
+
+                    &:hover {
+                        background: color-mix(in srgb, var(--surface-2) 60%, var(--bg) 40%);
+                    }
+                }
+
+                .appointments__td {
+                    padding: 12px;
+                    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent 30%);
+                    color: var(--fg);
+                    font-size: 13px;
+
+                    &.appointments__tdEmpty {
+                        text-align: center;
+                        color: var(--gray);
+                        padding: 18px;
+                    }
+
+                    .appointments__tdActions {
+                        text-align: right;
+                    }
+
+                    .appointments__actions {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                    }
+
+                    .actionBtn {
+                        width: 34px;
+                        height: 34px;
+                        border-radius: 10px;
+                        border: 1px solid var(--border);
+                        background: var(--bg);
+                        cursor: pointer;
+                        display: grid;
+                        place-items: center;
+                        font-size: 15px;
+                        line-height: 1;
+                        transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+
+                        &:hover {
+                            transform: translateY(-1px);
+                        }
+
+                        &:active {
+                            transform: translateY(0);
+                        }
+                    }
+
+                    /* Cancelar */
+                    .actionBtn--cancel {
+                        color: var(--warning);
+                        border-color: color-mix(in srgb, var(--warning) 40%, var(--border) 60%);
+
+                        &:hover {
+                            background: color-mix(in srgb, var(--warning) 12%, var(--bg) 88%);
+                        }
+                    }
+
+                    /* No asistencia */
+                    .actionBtn--noassist {
+                        color: var(--negative);
+                        border-color: color-mix(in srgb, var(--negative) 40%, var(--border) 60%);
+
+                        &:hover {
+                            background: color-mix(in srgb, var(--negative) 12%, var(--bg) 88%);
+                        }
+                    }
+
+                    /* Eliminar */
+                    .actionBtn--delete {
+                        color: var(--gray);
+                        border-color: var(--border);
+
+                        &:hover {
+                            background: color-mix(in srgb, var(--negative) 10%, var(--bg) 90%);
+                            border-color: var(--negative);
+                            color: var(--negative);
+                        }
+                    }
+
+                }
+
+                .appointments__tdState {
+                    padding: 32px 16px;
+                }
+
+                .appointments__state {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 6px;
+                    text-align: center;
+                    color: var(--fg);
+
+                    .appointments__stateTitle {
+                        font-size: 14px;
+                        font-weight: 600;
+                    }
+
+                    .appointments__stateText {
+                        font-size: 13px;
+                        color: var(--muted);
+                    }
+
+                    .appointments__stateAction {
+                        margin-top: 10px;
+                    }
+                }
+
+                .appointments__stateLoading {
+                    opacity: 0.85;
+                }
+
+                .appointments__stateError {
+                    color: var(--negative);
+                }
+
+                .appointments__stateEmpty {
+                    opacity: 0.9;
+                }
+            }
+        }
+
+        // Estados debajo de la tabla (loading / error)
+        .appointments__tableStates {
+            margin-top: 10px;
+
+            .appointments__loading,
+            .appointments__error {
+                padding: 10px 12px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--surface-2);
+                color: var(--fg);
+                font-size: 13px;
+            }
+
+            .appointments__error {
+                border-color: color-mix(in srgb, var(--negative) 35%, var(--border) 65%);
+                background: color-mix(in srgb, var(--negative) 10%, var(--bg) 90%);
+            }
+
+            .hidden {
+                display: none;
+            }
+        }
+    }
+
+    // Badges de estado (por si luego los agregas)
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--fg);
+        background: var(--surface-2);
+        white-space: nowrap;
+
+        &::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: var(--muted);
+        }
+
+        &.s-pending {
+            border-color: color-mix(in srgb, var(--warning) 35%, var(--border) 65%);
+            background: color-mix(in srgb, var(--warning) 12%, var(--bg) 88%);
+
+            &::before {
+                background: var(--warning);
+            }
+        }
+
+        &.s-confirmed {
+            border-color: color-mix(in srgb, var(--secondary) 35%, var(--border) 65%);
+            background: color-mix(in srgb, var(--secondary) 12%, var(--bg) 88%);
+
+            &::before {
+                background: var(--secondary);
+            }
+        }
+
+        &.s-in-progress {
+            border-color: color-mix(in srgb, var(--primary) 35%, var(--border) 65%);
+            background: color-mix(in srgb, var(--primary) 10%, var(--bg) 90%);
+
+            &::before {
+                background: var(--primary);
+            }
+        }
+
+        &.s-completed {
+            border-color: color-mix(in srgb, var(--positive) 35%, var(--border) 65%);
+            background: color-mix(in srgb, var(--positive) 10%, var(--bg) 90%);
+
+            &::before {
+                background: var(--positive);
+            }
+        }
+
+        &.s-cancelled,
+        &.s-no-assistance {
+            border-color: color-mix(in srgb, var(--negative) 35%, var(--border) 65%);
+            background: color-mix(in srgb, var(--negative) 10%, var(--bg) 90%);
+
+            &::before {
+                background: var(--negative);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
+    // 3) PAGINACIÓN
+    // ------------------------------------------------------------
+    .appointments__pagination {
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+
+        .appointments__pageInfo {
+            font-size: 13px;
+            color: var(--muted);
+
+            b {
+                color: var(--fg);
+                font-weight: 700;
+            }
+        }
+
+        .appointments__paginationRight {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .appointments__navBtn {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--fg);
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            line-height: 1;
+            transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+
+            &:hover:not(:disabled) {
+                transform: translateY(-1px);
+                border-color: color-mix(in srgb, var(--border) 70%, var(--primary) 30%);
+                background: var(--surface-2);
+            }
+
+            &:active:not(:disabled) {
+                transform: translateY(0);
+            }
+
+            &:disabled,
+            &.is-disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+        }
+
+        .appointments__pageDots {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .pageMark {
+            display: inline-block;
+            opacity: 0.6;
+            transition: opacity 120ms ease, transform 120ms ease, background 120ms ease;
+
+            &.is-active {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+        }
+
+        .pageMark--dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: var(--gray);
+
+            &.is-active {
+                background: var(--primary);
+            }
+        }
+
+        .pageMark--square {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: var(--gray);
+
+            &.is-active {
+                background: var(--primary);
+            }
+        }
+    }
+
+
+}

@@ -254,6 +254,23 @@ export default function page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queryString])
 
+  const STATUS_LABELS = {
+    pending: 'Pendiente',
+    confirmed: 'Confirmada',
+    'in progress': 'En proceso',
+    completed: 'Completada',
+    cancelled: 'Cancelada',
+    'no assistance': 'Sin asistencia',
+  }
+
+  const STATUS_CLASS = {
+    pending: 'pending',
+    confirmed: 'confirmed',
+    'in progress': 'in-progress',
+    completed: 'completed',
+    cancelled: 'cancelled',
+    'no assistance': 'no-assistance',
+  }
 
   return (
     <>
@@ -481,9 +498,17 @@ export default function page() {
                           {typeof a?.price === 'number' ? `$${a.price}` : '—'}
                         </td>
                         <td className="appointments__td">
-                          <span className={`status-badge s-${a?.status ?? 'pending'}`}>
-                            {a?.status ?? 'pendiente'}
-                          </span>
+                          {(() => {
+                            const st = a?.status || 'pending'
+                            const label = STATUS_LABELS[st] || st
+                            const cls = STATUS_CLASS[st] || 'pending'
+
+                            return (
+                              <span className={`status-badge s-${cls}`}>
+                                {label}
+                              </span>
+                            )
+                          })()}
                         </td>
                         {/* ✅ ACCIONES CON MODAL */}
                         <td className="appointments__td appointments__tdActions">

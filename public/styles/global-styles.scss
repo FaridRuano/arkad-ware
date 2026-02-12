@@ -5,6 +5,9 @@
 @use 'layout';
 @use 'components';
 @use 'appointments';
+@use 'clients';
+@use 'modal';
+@use 'schedule';
 
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&family=Quicksand:wght@300..700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Uncial+Antiqua&display=swap');
 
@@ -1173,79 +1176,6 @@ html {
       &.selected {
         background-color: var(--primary);
         color: var(--black);
-      }
-    }
-  }
-}
-
-/* ============== Modal ============== */
-
-.modal-container {
-  z-index: 11;
-  background-color: rgba(0, 0, 0, .8);
-  width: 100vw;
-  height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn .5s forwards;
-
-  .modal-warp {
-    width: 315px;
-    height: fit-content;
-    padding: 20px;
-    border-radius: 20px;
-    background-color: rgba(0, 0, 0, .5);
-    border: solid 1px var(--fg);
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    box-shadow: 0 0 40px #000;
-    animation: scaleUp .5s forwards;
-
-    .warp-header {
-      color: var(--fg);
-
-      h4 {
-        margin: 0;
-      }
-    }
-
-    .warp-options {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-
-      .option-modal {
-        width: 50%;
-        background-color: var(--light);
-        font-size: 15px;
-        font-weight: 700;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 40px;
-        border-radius: 10px;
-        cursor: pointer;
-        transition: .3s ease-out;
-
-        &.confirm {
-          color: var(--black);
-          background-color: var(--primary);
-        }
-
-        &.cancel {
-          color: var(--fg);
-          background-color: var(--negative);
-        }
-
-        &:hover {
-          transform: scale(1.02);
-        }
       }
     }
   }

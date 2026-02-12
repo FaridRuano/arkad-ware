@@ -1,52 +1,82 @@
-import React from 'react'
+'use client'
+import React, { useEffect } from 'react'
 
-const ModalConfirm = ({ mainText, active, setActive, response, type = 'confirm' }) => {
+const ModalConfirm = ({
+    mainText,
+    active,
+    setActive,
+    response,
+    type = 'confirm',
+}) => {
 
-    switch (type) {
-        case 'alert':
-            if (active) {
-                return (
-                    <div className='modal-container' >
-                        <div className="modal-warp">
-                            <div className="warp-header">
-                                <h4>
-                                    {mainText}
-                                </h4>
-                            </div>
-                            <div className="warp-options">
-                                <div className="option-modal confirm" onClick={() => response()}>
-                                    Continuar
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-        case 'confirm':
-            if (active) {
-                return (
-                    <div className='modal-container' >
-                        <div className="modal-warp">
-                            <div className="warp-header">
-                                <h4>
-                                    {mainText}
-                                </h4>
-                            </div>
-                            <div className="warp-options">
-                                <div className="option-modal confirm" onClick={() => response()}>
-                                    Continuar
-                                </div>
-                                <div className="option-modal cancel" onClick={() => setActive()}>
-                                    Cancelar
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-        default:
-            return null;
-    }
+    useEffect(() => {
+        if (!active) return
+
+        const onKey = (e) => {
+            if (e.key === 'Escape') setActive(false)
+        }
+
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [active, setActive])
+
+    if (!active) return null
+
+    const isAlert = type === 'alert'
+
+    return (
+        <div
+            className="modalOverlay"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) setActive(false)
+            }}
+        >
+            <div className="modalCard" style={{ maxWidth: 480 }}>
+                <header className="modalHeader">
+                    <h3 className="modalTitle">
+                        Confirmación
+                    </h3>
+
+                    <button
+                        className="modalClose"
+                        onClick={() => setActive(false)}
+                        aria-label="Cerrar"
+                    >
+                        ✕
+                    </button>
+                </header>
+
+                <div className="modalBody" style={{ paddingTop: 24 }}>
+                    <p style={{ margin: 0, color: 'var(--fg)', lineHeight: 1.5 }}>
+                        {mainText}
+                    </p>
+                </div>
+
+                <footer className="modalFooter">
+                    {!isAlert && (
+                        <button
+                            className="__button secondary"
+                            onClick={() => setActive(false)}
+                        >
+                            Cancelar
+                        </button>
+                    )}
+
+                    <button
+                        className="__button primary"
+                        onClick={() => {
+                            response?.()
+                            setActive(false)
+                        }}
+                    >
+                        Continuar
+                    </button>
+                </footer>
+            </div>
+        </div>
+    )
 }
 
 export default ModalConfirm

@@ -1,12 +1,12 @@
-.appointments__page {
+.clients__page {
     display: grid;
     gap: 16px;
     padding: 18px;
 
     // Tarjetas / secciones
-    .appointments__filters,
-    .appointments__tableSection,
-    .appointments__pagination {
+    .clients__filters,
+    .clients__tableSection,
+    .clients__pagination {
         background: var(--surface-1);
         border: 1px solid var(--border);
         border-radius: 5px;
@@ -16,31 +16,31 @@
     // ------------------------------------------------------------
     // 1) FILTROS
     // ------------------------------------------------------------
-    .appointments__filters {
+    .clients__filters {
         padding: 14px;
 
-        .appointments__filtersHeader {
+        .clients__filtersHeader {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             margin-bottom: 12px;
 
-            .appointments__title {
+            .clients__title {
                 margin: 0;
                 font-size: 18px;
                 color: var(--fg);
                 letter-spacing: 0.2px;
             }
 
-            .appointments__filtersActions {
+            .clients__filtersActions {
                 display: flex;
                 gap: 10px;
                 flex-wrap: wrap;
             }
         }
 
-        .appointments__filtersGrid {
+        .clients__filtersGrid {
             display: grid;
             gap: 12px;
             grid-template-columns: 1.6fr 1fr 1fr 1fr;
@@ -87,7 +87,7 @@
         }
 
         // Chips rápidos
-        .appointments__quickFilters {
+        .clients__quickFilters {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -119,22 +119,82 @@
                 border-color: var(--primary);
             }
         }
-    } 
+    }
+
+    // ------------------------------------------------------------
+    // BOTONES (si ya tienes estilos globales, esto solo los "afina")
+    // ------------------------------------------------------------
+    .__button {
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        color: var(--fg);
+        cursor: pointer;
+        font-size: 13px;
+        transition: background 120ms ease, transform 120ms ease, border-color 120ms ease;
+
+        &:hover {
+            background: var(--surface-1);
+        }
+
+        &:active {
+            transform: translateY(1px);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        &.secondary {
+            background: var(--bg);
+
+            &:hover {
+                background: var(--surface-2);
+            }
+        }
+
+        &.primary {
+            background: var(--primary);
+            color: var(--white);
+            border-color: color-mix(in srgb, var(--primary) 70%, var(--black) 30%);
+
+            &:hover {
+                background: var(--primary-hover);
+            }
+
+            &:active {
+                background: var(--primary-active);
+            }
+        }
+
+        &.danger {
+            background: color-mix(in srgb, var(--negative) 18%, var(--bg) 82%);
+            border-color: color-mix(in srgb, var(--negative) 35%, var(--border) 65%);
+            color: var(--fg);
+
+            &:hover {
+                background: color-mix(in srgb, var(--negative) 24%, var(--bg) 76%);
+            }
+        }
+    }
 
     // ------------------------------------------------------------
     // 2) TABLA
     // ------------------------------------------------------------
-    .appointments__tableSection {
+    .clients__tableSection {
         padding: 14px;
 
-        .appointments__tableHeader {
+        .clients__tableHeader {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
             margin-bottom: 12px;
 
-            .appointments__subtitle {
+            .clients__subtitle {
                 margin: 0;
                 font-size: 14px;
                 color: var(--muted);
@@ -142,29 +202,29 @@
                 letter-spacing: 0.2px;
             }
 
-            .appointments__count {
+            .clients__count {
                 font-size: 13px;
                 color: var(--gray);
             }
         }
 
-        .appointments__tableWrap {
+        .clients__tableWrap {
             border: 1px solid var(--border);
             border-radius: 14px;
             overflow: auto;
             background: var(--bg);
         }
 
-        .appointments__table {
+        .clients__table {
             width: 100%;
             min-width: 980px;
             border-collapse: collapse;
 
-            .appointments__thead {
-                .appointments__trHead {
+            .clients__thead {
+                .clients__trHead {
                     background: var(--surface-2);
 
-                    .appointments__th {
+                    .clients__th {
                         position: sticky;
                         top: 0;
                         z-index: 2;
@@ -177,14 +237,14 @@
                         white-space: nowrap;
                     }
 
-                    .appointments__thActions {
+                    .clients__thActions {
                         text-align: right;
                     }
                 }
             }
 
-            .appointments__tbody {
-                .appointments__tr {
+            .clients__tbody {
+                .clients__tr {
                     transition: background 120ms ease;
 
                     &:hover {
@@ -192,23 +252,23 @@
                     }
                 }
 
-                .appointments__td {
+                .clients__td {
                     padding: 12px;
                     border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent 30%);
                     color: var(--fg);
                     font-size: 13px;
 
-                    &.appointments__tdEmpty {
+                    &.clients__tdEmpty {
                         text-align: center;
                         color: var(--gray);
                         padding: 18px;
                     }
 
-                    .appointments__tdActions {
+                    .clients__tdActions {
                         text-align: right;
                     }
 
-                    .appointments__actions {
+                    .clients__actions {
                         display: inline-flex;
                         align-items: center;
                         gap: 8px;
@@ -270,11 +330,11 @@
 
                 }
 
-                .appointments__tdState {
+                .clients__tdState {
                     padding: 32px 16px;
                 }
 
-                .appointments__state {
+                .clients__state {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
@@ -282,41 +342,41 @@
                     text-align: center;
                     color: var(--fg);
 
-                    .appointments__stateTitle {
+                    .clients__stateTitle {
                         font-size: 14px;
                         font-weight: 600;
                     }
 
-                    .appointments__stateText {
+                    .clients__stateText {
                         font-size: 13px;
                         color: var(--muted);
                     }
 
-                    .appointments__stateAction {
+                    .clients__stateAction {
                         margin-top: 10px;
                     }
                 }
 
-                .appointments__stateLoading {
+                .clients__stateLoading {
                     opacity: 0.85;
                 }
 
-                .appointments__stateError {
+                .clients__stateError {
                     color: var(--negative);
                 }
 
-                .appointments__stateEmpty {
+                .clients__stateEmpty {
                     opacity: 0.9;
                 }
             }
         }
 
         // Estados debajo de la tabla (loading / error)
-        .appointments__tableStates {
+        .clients__tableStates {
             margin-top: 10px;
 
-            .appointments__loading,
-            .appointments__error {
+            .clients__loading,
+            .clients__error {
                 padding: 10px 12px;
                 border-radius: 12px;
                 border: 1px solid var(--border);
@@ -325,7 +385,7 @@
                 font-size: 13px;
             }
 
-            .appointments__error {
+            .clients__error {
                 border-color: color-mix(in srgb, var(--negative) 35%, var(--border) 65%);
                 background: color-mix(in srgb, var(--negative) 10%, var(--bg) 90%);
             }
@@ -407,14 +467,14 @@
     // ------------------------------------------------------------
     // 3) PAGINACIÓN
     // ------------------------------------------------------------
-    .appointments__pagination {
+    .clients__pagination {
         padding: 10px 14px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
 
-        .appointments__pageInfo {
+        .clients__pageInfo {
             font-size: 13px;
             color: var(--muted);
 
@@ -424,13 +484,13 @@
             }
         }
 
-        .appointments__paginationRight {
+        .clients__paginationRight {
             display: inline-flex;
             align-items: center;
             gap: 10px;
         }
 
-        .appointments__navBtn {
+        .clients__navBtn {
             width: 34px;
             height: 34px;
             border-radius: 999px;
@@ -461,7 +521,7 @@
             }
         }
 
-        .appointments__pageDots {
+        .clients__pageDots {
             display: inline-flex;
             align-items: center;
             gap: 7px;

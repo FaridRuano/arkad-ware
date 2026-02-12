@@ -1,0 +1,318 @@
+/* =========================
+   SCHEDULE HEADER (AGENDA)
+   ========================= */
+
+.schedule__page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+.schedule__header {
+    background: color-mix(in oklab, var(--surface-1) 88%, transparent 12%);
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    border-radius: 5px;
+    padding: 14px 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .18);
+}
+
+.schedule__headerTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.schedule__title {
+    margin: 0;
+    color: var(--fg);
+    font-size: 20px;
+    letter-spacing: .2px;
+}
+
+.schedule__headerActions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.schedule__ymControls {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 860px) {
+    .schedule__ymControls {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .schedule__weekNav {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+.schedule__ymGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.schedule__ymLabel {
+    font-size: 12px;
+    color: color-mix(in oklab, var(--muted) 78%, var(--fg) 22%);
+}
+
+.schedule__ymPicker {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.schedule__ymBtn,
+.schedule__ymValue,
+.schedule__weekBtn {
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 80%, transparent 20%);
+    color: var(--fg);
+    border-radius: 14px;
+    height: 40px;
+    padding: 0 12px;
+    cursor: pointer;
+
+    transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.schedule__ymBtn {
+    width: 42px;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+}
+
+.schedule__ymValue {
+    min-width: 140px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    letter-spacing: .2px;
+}
+
+.schedule__weekNav {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.schedule__weekBtn:hover,
+.schedule__ymBtn:hover,
+.schedule__ymValue:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--surface-2) 90%, transparent 10%);
+    border-color: color-mix(in oklab, var(--border) 90%, transparent 10%);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, .12);
+}
+
+.schedule__weekBtn:active,
+.schedule__ymBtn:active,
+.schedule__ymValue:active {
+    transform: translateY(0) scale(.99);
+}
+
+.schedule__weekStrip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 860px) {
+    .schedule__weekStrip {
+        gap: 8px;
+    }
+}
+
+.schedule__dayChip {
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    border-radius: 16px;
+    padding: 10px 8px;
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.schedule__dayChip:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--surface-2) 88%, transparent 12%);
+    border-color: color-mix(in oklab, var(--border) 90%, transparent 10%);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, .14);
+}
+
+.schedule__dayChip:active {
+    transform: translateY(0) scale(.99);
+}
+
+.schedule__dayName {
+    font-size: 12px;
+    color: color-mix(in oklab, var(--muted) 75%, var(--fg) 25%);
+    letter-spacing: .2px;
+}
+
+.schedule__dayNum {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fg);
+}
+
+/* Seleccionado */
+.schedule__dayChip.is-active {
+    border-color: color-mix(in oklab, var(--primary) 70%, var(--border) 30%);
+    background: color-mix(in oklab, var(--primary) 18%, var(--surface-2) 82%);
+    background-color: var(--primary);
+    .schedule__dayName{
+        color: var(--black);
+    }
+    .schedule__dayNum{
+        color: var(--black);
+    }
+
+}
+
+/* Hoy (borde sutil si no está activo) */
+.schedule__dayChip.is-today:not(.is-active) {
+    border-color: color-mix(in oklab, var(--primary) 45%, var(--border) 55%);
+
+}
+
+/* =========================
+   SCHEDULE METRICS
+   ========================= */
+
+.schedule__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+/* Card base */
+.schedule__metricCard {
+  position: relative;
+  overflow: hidden;
+
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--surface-1) 92%, #fff 8%),
+    var(--surface-1)
+  );
+
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+  border-radius: 18px;
+
+  padding: 18px 16px;
+
+  box-shadow: 0 10px 30px rgba(0,0,0,.18);
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  transition: 
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+/* Hover elegante */
+.schedule__metricCard:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+  border-color: color-mix(in oklab, var(--primary) 40%, var(--border) 60%);
+}
+
+/* Shine sutil */
+.schedule__metricCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: radial-gradient(
+    400px 140px at 10% -10%,
+    color-mix(in oklab, var(--primary) 18%, transparent 82%),
+    transparent 60%
+  );
+  opacity: .9;
+}
+
+/* Label */
+.schedule__metricLabel {
+  font-size: 13px;
+  letter-spacing: .3px;
+  color: color-mix(in oklab, var(--muted) 75%, var(--fg) 25%);
+}
+
+/* Value */
+.schedule__metricValue {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  color: var(--fg);
+}
+
+/* Indicador lateral */
+.schedule__metricCard::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  border-radius: 4px 0 0 4px;
+  background: var(--primary);
+  opacity: .9;
+}
+
+/* Variantes por tipo (opcional pero recomendado) */
+.schedule__metricCard--pending::after {
+  background: var(--warning);
+}
+
+.schedule__metricCard--confirmed::after {
+  background: var(--primary);
+}
+
+.schedule__metricCard--unpaid::after {
+  background: var(--negative);
+}
+
+.schedule__metricCard--total::after {
+  background: var(--secondary);
+}
+
+/* Animación suave de entrada */
+@keyframes metricFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schedule__metricCard {
+  animation: metricFadeIn 280ms ease both;
+}

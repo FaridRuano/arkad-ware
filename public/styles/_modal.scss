@@ -1,0 +1,336 @@
+/* ============ Modal Form ========== */
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: grid;
+    place-items: center;
+    padding: 18px;
+
+    /* Fondo glass */
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    /* Animación entrada */
+    animation: modalOverlayIn 180ms ease-out both;
+}
+
+@keyframes modalOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Contenedor del modal */
+.modalCard {
+    width: min(860px, 100%);
+    border-radius: 22px;
+    overflow: hidden;
+
+    background: linear-gradient(180deg,
+            color-mix(in oklab, var(--surface-1) 92%, #fff 8%),
+            var(--surface-1));
+
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    box-shadow: var(--shadow-1);
+
+    /* Animación pop */
+    transform-origin: center;
+    animation: modalCardIn 220ms cubic-bezier(.2, .9, .2, 1) both;
+
+    /* Para el “shine” */
+    position: relative;
+}
+
+@keyframes modalCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(.985);
+        filter: blur(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Shine sutil arriba */
+.modalCard::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background: radial-gradient(900px 280px at 15% -10%,
+            color-mix(in oklab, var(--primary) 18%, transparent 82%),
+            transparent 55%);
+    opacity: .9;
+}
+
+/* Header */
+.modalHeader {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 18px 20px;
+
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+}
+
+.modalTitle {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: .2px;
+    color: var(--fg);
+}
+
+.modalClose {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    color: color-mix(in oklab, var(--fg) 80%, var(--muted) 20%);
+
+    cursor: pointer;
+    transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.modalClose:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--surface-2) 88%, transparent 12%);
+    border-color: color-mix(in oklab, var(--border) 85%, transparent 15%);
+}
+
+.modalClose:active {
+    transform: translateY(0px) scale(.98);
+}
+
+.modalClose:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* Body */
+.modalBody {
+    position: relative;
+    z-index: 1;
+    padding: 16px 20px 6px;
+}
+
+.modalError {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 12px 14px;
+    border-radius: 16px;
+
+    color: color-mix(in oklab, var(--fg) 88%, var(--negative) 12%);
+    background: color-mix(in oklab, var(--negative) 12%, transparent 88%);
+    border: 1px solid color-mix(in oklab, var(--negative) 24%, transparent 76%);
+
+    margin-bottom: 12px;
+
+    animation: modalErrorIn 160ms ease-out both;
+}
+
+@keyframes modalErrorIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Grid del formulario */
+.modalGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 12px;
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+    .modalCard {
+        width: min(760px, 100%);
+    }
+}
+
+@media (max-width: 720px) {
+    .modalGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .modalBody {
+        padding: 14px 14px 6px;
+    }
+
+    .modalHeader {
+        padding: 14px 14px;
+    }
+}
+
+/* Campos - usando tus clases existentes */
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.modalGrid .field__label {
+    color: color-mix(in oklab, var(--muted) 70%, var(--fg) 30%);
+    font-size: 12px;
+    letter-spacing: .2px;
+}
+
+.modalGrid .field__input,
+.modalGrid .field__select,
+.modalGrid textarea.field__input {
+    width: 100%;
+    border-radius: 14px;
+
+    background: color-mix(in oklab, var(--surface-2) 75%, transparent 25%);
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+
+    color: var(--fg);
+
+    padding: 12px 12px;
+
+    outline: none;
+
+    transition:
+        border-color 140ms ease,
+        box-shadow 140ms ease,
+        transform 140ms ease,
+        background 140ms ease;
+}
+
+/* Hover sutil */
+.modalGrid .field__input:hover,
+.modalGrid .field__select:hover,
+.modalGrid textarea.field__input:hover {
+    background: color-mix(in oklab, var(--surface-2) 85%, transparent 15%);
+    border-color: color-mix(in oklab, var(--border) 90%, transparent 10%);
+}
+
+/* Focus ring con tu variable */
+.modalGrid .field__input:focus,
+.modalGrid .field__select:focus,
+.modalGrid textarea.field__input:focus {
+    border-color: color-mix(in oklab, var(--primary) 70%, var(--border) 30%);
+    transform: translateY(-1px);
+}
+
+/* Hint */
+.field__hint {
+    color: color-mix(in oklab, var(--muted) 85%, var(--fg) 15%);
+    font-size: 12px;
+}
+
+/* Footer */
+.modalFooter {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+
+    padding: 14px 20px 18px;
+    border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+}
+
+/* Botones dentro del modal (sin romper tus __button) */
+.modalFooter .__button {
+    border-radius: 12px;
+    padding: 7px 10px;
+    transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease;
+    cursor: pointer;
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    outline: none;
+    font-size: 13px;
+
+    &.secondary {
+        background-color: var(--surface-2);
+        color: var(--fg);
+    }
+
+    &.primary {
+        background-color: var(--primary);
+        color: var(--black);
+
+        font-weight: 500;
+    }
+}
+
+.modalFooter .__button:hover {
+    transform: translateY(-1px);
+}
+
+.modalFooter .__button:active {
+    transform: translateY(0px) scale(.99);
+}
+
+.modalFooter .__button.primary {
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+.modalFooter .__button.primary:hover {
+    box-shadow: 0 14px 34px color-mix(in oklab, var(--primary) 22%, transparent 78%);
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+
+    .modalOverlay,
+    .modalCard,
+    .modalError {
+        animation: none !important;
+    }
+
+    .modalGrid .field__input,
+    .modalGrid .field__select,
+    .modalFooter .__button,
+    .modalClose {
+        transition: none !important;
+    }
+}
+
+.modalError {
+    animation: fadeIn 150ms ease;
+}
+
+.modalError.fadeOut {
+    animation: fadeOut 250ms ease forwards;
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+}

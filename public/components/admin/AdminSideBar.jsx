@@ -17,6 +17,9 @@ const AdminSideBar = () => {
             <Link href="/admin" className={isActive('/admin') ? 'active' : ''}>Dashboard</Link>
           </li>
           <li>
+            <Link href="/admin/schedule" className={isActive('/admin/schedule') ? 'active' : ''}>Agenda</Link>
+          </li>
+          <li>
             <Link href="/admin/appointments" className={isActive('/admin/appointments') ? 'active' : ''}>Citas</Link>
           </li>
           <li>

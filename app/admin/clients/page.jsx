@@ -28,13 +28,41 @@ const page = () => {
   /* ======================Confirm Modal====================== */
   const [confirmModal, setConfirmModal] = useState(false);
   const [confirmModalText, setConfirmModalText] = useState("");
+  const [selectedClient, setSelectedClient] = useState(null)
 
   const handleConfirmModal = () => {
     setConfirmModal((prev) => !prev);
   }
 
-  const responseConfirmModal = () => {
-    handleConfirmModal()
+  const responseConfirmModal = async () => {
+    if (!selectedClient?.id && !selectedClient?._id) return
+
+    const id = selectedClient.id ?? selectedClient._id
+
+    try {
+      setLoading(true)
+
+      const res = await fetch(`/api/admin/clients/${id}`, {
+        method: 'DELETE',
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Error eliminando cliente')
+      }
+
+      // 🔥 Refrescar lista
+      await fetchClients()
+
+    } catch (err) {
+      console.error(err)
+      alert(err.message)
+    } finally {
+      setLoading(false)
+      setConfirmModal(false)
+      setSelectedClient(null)
+    }
   }
   /* ========================================================= */
 
@@ -130,7 +158,7 @@ const page = () => {
 
   return (
     <>
-      <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} />
+      <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} type="confirm"/>
       <ClientModal
         open={clientModalOpen}
         mode={editingClient ? "edit" : "create"}
@@ -304,8 +332,10 @@ const page = () => {
                               className="actionBtn actionBtn--delete"
                               title="Eliminar cliente"
                               onClick={() => {
+                                setSelectedClient(c)
                                 setConfirmModalText(`¿Confirma que desea eliminar al cliente "${name}"? Esta acción no se puede deshacer.`)
-                                handleConfirmModal(c, 'delete')}}
+                                handleConfirmModal(c, 'delete')
+                              }}
                               disabled={loading}
                             >
                               🗑

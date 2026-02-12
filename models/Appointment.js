@@ -84,22 +84,19 @@ const AppointmentSchema = new mongoose.Schema(
 );
 
 AppointmentSchema.pre("save", function (next) {
-  // Si es nuevo doc y no hay historial, guarda el estado inicial
   if (this.isNew && (!this.statusHistory || this.statusHistory.length === 0)) {
     this.statusHistory = [
       {
         from: "",
-        to: this.status,
+        to: this.status || "pending",
         changedAt: new Date(),
-        changedBy: this.user, // o null si prefieres
+        changedBy: null,   // ✅ nunca el cliente aquí
         reason: "created",
       },
     ];
   }
-
   next();
 });
-
 const Appointment =
   mongoose.models?.Appointment ||
   mongoose.model("Appointment", AppointmentSchema);

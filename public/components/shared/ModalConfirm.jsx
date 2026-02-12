@@ -65,10 +65,10 @@ const ModalConfirm = ({
                     )}
 
                     <button
+                        type="button"
                         className="__button primary"
                         onClick={() => {
                             response?.()
-                            setActive(false)
                         }}
                     >
                         Continuar

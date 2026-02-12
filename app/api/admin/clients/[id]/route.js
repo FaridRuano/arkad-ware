@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
 import mongoose from "mongoose";
+import Appointment from "@models/Appointment";
 
 export async function PATCH(req, { params }) {
   try {
@@ -121,3 +122,55 @@ export async function PATCH(req, { params }) {
     );
   }
 }
+
+export async function DELETE(req, { params }) {
+  try {
+    await connectMongoDB();
+
+    const { id } = params || {};
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "ID inválido" },
+        { status: 400 }
+      );
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Cliente no encontrado" },
+        { status: 404 }
+      );
+    }
+
+    // ✅ Seguridad: no borrar admins
+    if (user.role === "admin") {
+      return NextResponse.json(
+        { error: "No puedes eliminar un administrador" },
+        { status: 403 }
+      );
+    }
+
+    // ✅ Opcional: bloquear si tiene citas
+    // (Si prefieres permitirlo, deja comentado)
+    const hasAppointments = await Appointment.exists({ user: user._id });
+    if (hasAppointments) {
+      return NextResponse.json(
+        { error: "No se puede eliminar: el cliente tiene citas registradas" },
+        { status: 409 }
+      );
+    }
+
+    await User.findByIdAndDelete(id);
+
+    return NextResponse.json({ ok: true, id });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err?.message || "Error eliminando cliente" },
+      { status: 500 }
+    );
+  }
+}
+

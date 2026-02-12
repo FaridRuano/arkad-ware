@@ -1,12 +1,33 @@
 'use client'
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const AdminSideBar = () => {
+
+  const router = useRouter()
+
   const pathname = usePathname();
 
   const isActive = (href) => pathname === href;
+
+  // 🔐 LOGOUT
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        console.error("No se pudo cerrar sesión");
+        return;
+      }
+
+      router.push("/"); // vuelve al login
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+  };
 
   return (
     <div className="admin-sidebar">
@@ -30,6 +51,16 @@ const AdminSideBar = () => {
           </li>
         </ul>
       </nav>
+      {/* 🔥 Logout Section */}
+      <div className="admin-sidebar__logout">
+        <button
+          type="button"
+          className="admin-sidebar__logoutBtn"
+          onClick={handleLogout}
+        >
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   );
 };

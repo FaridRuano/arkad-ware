@@ -3,6 +3,17 @@ import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
 import bcrypt from "bcryptjs";
 
+function toTitleCase(value = "") {
+    return value
+        .toLowerCase()
+        .trim()
+        .split(/\s+/)
+        .map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        )
+        .join(" ");
+}
+
 export async function POST(req) {
     try {
         await connectMongoDB();
@@ -76,8 +87,8 @@ export async function POST(req) {
 
         const created = await User.create({
             cedula,
-            firstName,
-            lastName,
+            firstName: toTitleCase(firstName),
+            lastName: toTitleCase(lastName),
             email,
             phone,
             address,

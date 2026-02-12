@@ -198,17 +198,22 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    &.dis{
+        opacity: .4;
+        pointer-events: none;
+    }
 }
 
-.modalGrid .field__label {
+.field__label {
     color: color-mix(in oklab, var(--muted) 70%, var(--fg) 30%);
     font-size: 12px;
     letter-spacing: .2px;
 }
 
-.modalGrid .field__input,
-.modalGrid .field__select,
-.modalGrid textarea.field__input {
+.field__input,
+.field__select,
+textarea.field__input {
     width: 100%;
     border-radius: 14px;
 
@@ -229,17 +234,17 @@
 }
 
 /* Hover sutil */
-.modalGrid .field__input:hover,
-.modalGrid .field__select:hover,
-.modalGrid textarea.field__input:hover {
+.field__input:hover,
+.field__select:hover,
+textarea.field__input:hover {
     background: color-mix(in oklab, var(--surface-2) 85%, transparent 15%);
     border-color: color-mix(in oklab, var(--border) 90%, transparent 10%);
 }
 
 /* Focus ring con tu variable */
-.modalGrid .field__input:focus,
-.modalGrid .field__select:focus,
-.modalGrid textarea.field__input:focus {
+.field__input:focus,
+.field__select:focus,
+textarea.field__input:focus {
     border-color: color-mix(in oklab, var(--primary) 70%, var(--border) 30%);
     transform: translateY(-1px);
 }
@@ -254,7 +259,7 @@
 .modalFooter {
     position: relative;
     z-index: 1;
-
+    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -333,4 +338,141 @@
         opacity: 0;
         transform: translateY(-6px);
     }
+}
+
+/* =========================
+   MODAL - CLIENT SEARCH
+   ========================= */
+
+.modalClient {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.modalClient__searchWrap {
+  position: relative;
+}
+
+.modalClient__dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+
+  border-radius: 16px;
+  overflow: hidden;
+
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+  background: color-mix(in oklab, var(--surface-2) 86%, transparent 14%);
+  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+
+  animation: modalDropIn 160ms ease both;
+}
+
+@keyframes modalDropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modalClient__dropdownState {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.modalClient__dropdownList {
+  max-height: 280px;
+  overflow: auto;
+}
+
+.modalClient__option {
+  width: 100%;
+  text-align: left;
+  border: none;
+
+  padding: 12px 12px;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  background: transparent;
+  color: var(--fg);
+
+  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.modalClient__option:hover {
+  background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
+}
+
+.modalClient__option:active {
+  transform: scale(.995);
+}
+
+.modalClient__optionName {
+  font-weight: 800;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modalClient__optionPhone {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.modalClient__hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: color-mix(in oklab, var(--muted) 80%, var(--fg) 20%);
+}
+
+/* Selected client “chip/card” */
+.modalClient__selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 16px;
+
+  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+  background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
+}
+
+.modalClient__selectedText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.modalClient__selectedName {
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modalClient__selectedPhone {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.modalClient__changeBtn {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
 }

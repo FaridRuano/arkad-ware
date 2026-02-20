@@ -134,7 +134,7 @@ export default function page() {
   }
 
   function canNoAssistance(st) {
-    return st === 'confirmed' || st === 'in progress'
+    return st === 'confirmed' || st === 'in_progress'
   }
 
   function canDelete(st) {
@@ -227,6 +227,8 @@ export default function page() {
   // CONFIRM MODAL RESPONSE
   // -----------------------------
   const responseConfirmModal = async () => {
+    closeConfirmModal()
+
     if (!modalAppointment || !modalAction) return
 
     if (modalAction === 'cancel') {
@@ -241,7 +243,6 @@ export default function page() {
       await deleteAppointment(modalAppointment)
     }
 
-    closeConfirmModal()
   }
 
   useEffect(() => {
@@ -257,19 +258,19 @@ export default function page() {
   const STATUS_LABELS = {
     pending: 'Pendiente',
     confirmed: 'Confirmada',
-    'in progress': 'En proceso',
+    in_progress: 'En proceso',
     completed: 'Completada',
     cancelled: 'Cancelada',
-    'no assistance': 'Sin asistencia',
+    no_assistance: 'Sin asistencia',
   }
 
   const STATUS_CLASS = {
     pending: 'pending',
     confirmed: 'confirmed',
-    'in progress': 'in-progress',
+    in_progress: 'in-progress',
     completed: 'completed',
     cancelled: 'cancelled',
-    'no assistance': 'no-assistance',
+    no_assistance: 'no-assistance',
   }
 
   return (

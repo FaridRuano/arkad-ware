@@ -36,6 +36,7 @@ export default function TimePicker({
   reservedSlots = [],
 }) {
 
+
   const [loading, setLoading] = useState(true)
 
   const userTimeZone = typeof Intl !== 'undefined'
@@ -74,7 +75,7 @@ export default function TimePicker({
     const generated = []
     let cursor = baseUtc
 
-    while (isBefore(cursor, limitUtc) || isEqual(cursor, limitUtc)) {
+    while (isBefore(cursor, limitUtc)) {
 
       const slotDuration = getSelectedTypeDuration();
       const end = addMinutes(cursor, slotDuration);
@@ -84,11 +85,15 @@ export default function TimePicker({
 
       const isTaken = reservedSlots.some((r) => {
         const rStart = new Date(r.startAt);
-        const rEnd = addMinutes(rStart, Number(r.durationMinutes || 0));
+        if (Number.isNaN(rStart.getTime())) return false;
+
+        const dur = Number(r?.durationMinutes ?? STEP_MINUTES); // ✅ NO 0
+        const rEnd = addMinutes(rStart, dur);
+
         return overlaps(cursor, end, rStart, rEnd);
       });
 
-      if (startsAfterMin && (isBefore(end, addMinutes(limitUtc, 1)))) {
+      if (startsAfterMin && (isBefore(end, limitUtc) || isEqual(end, limitUtc))) {
         // 5. Convertimos cada slot a la hora local del usuario para mostrar
         const localStart = toZonedTime(cursor, userTimeZone)
         const localEnd = toZonedTime(end, userTimeZone)
@@ -99,7 +104,7 @@ export default function TimePicker({
           disabled: isTaken
         })
       }
-      cursor = addMinutes(cursor, STEP_MINUTES)
+      cursor = addMinutes(cursor, STEP_MINUTES);
     }
     setSlots(generated)
     setSelectedSlot(null)

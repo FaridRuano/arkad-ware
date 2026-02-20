@@ -20,7 +20,7 @@ export async function GET() {
     const now = new Date();
 
     // Próximas citas del usuario (ajusta si quieres incluir/excluir estados)
-    const upcomingStatuses = ["pending", "confirmed", "in progress"];
+    const upcomingStatuses = ["pending", "confirmed", "i_progress"];
 
     const appointments = await Appointment.find({
       user: userId,

@@ -80,7 +80,7 @@ export async function POST(req) {
     endAt.setMinutes(endAt.getMinutes() + durationMinutes);
 
     const overlap = await Appointment.findOne({
-      status: { $nin: ["cancelled", "no assistance"] },
+      status: { $nin: ["cancelled", "no_assistance"] },
       startAt: { $type: "date", $lt: endAt },
       $expr: {
         $gt: [

@@ -1,15 +1,54 @@
 'use client'
+import App from '@node_modules/next/app'
 import AppointmentModal from '@public/components/admin/AppointmentModal'
+import AppointmentOverlay from '@public/components/admin/AppointmentOverlay'
+import { MetricCard } from '@public/components/admin/MetricCard'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
 const STATUS_LABELS = {
   pending: 'Pendiente',
   confirmed: 'Confirmada',
-  'in progress': 'En proceso',
+  in_progress: 'En proceso',
   completed: 'Completada',
   cancelled: 'Cancelada',
-  'no assistance': 'No asistió',
+  no_assistance: 'No asistió',
 }
+const NON_BLOCKING_STATUSES = new Set(["cancelled", "no_assistance"]);
+
+const parseHMToMinutes = (hm) => {
+  // "19:30" o "19h30"
+  if (!hm) return 0;
+  const normalized = hm.replace("h", ":");
+  const [h, m] = normalized.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+const isRangeFree = ({ startMin, span, step, timelineModel }) => {
+  for (let i = 0; i < span; i++) {
+    const t = startMin + i * step;
+    if (timelineModel.slotMap.has(t)) return false;
+    if (timelineModel.hiddenSlots.has(t)) return false;
+  }
+  return true;
+};
+
+const getAllowedDurations = ({ startMin, schedule, timelineModel }) => {
+  const step = schedule.stepMinutes; // ej 30
+  const startM = schedule.startHour * 60;
+  const endM = schedule.endHour * 60;
+
+  const candidates = [30, 60]; // tus planes actuales
+
+  return candidates.filter((d) => {
+    const span = Math.ceil(d / step);
+    const end = startMin + span * step;
+
+    if (startMin < startM) return false;
+    if (end > endM) return false;
+
+    return isRangeFree({ startMin, span, step, timelineModel });
+  });
+};
 
 const Page = () => {
 
@@ -79,8 +118,6 @@ const Page = () => {
     setDate(toISO(d))
   }
 
-  const minutesFromHM = (h, m) => h * 60 + m
-
   const parseTimeToMinutes = (isoDate, dateISO) => {
     // isoDate: Date string (startAt)
     // dateISO: 'YYYY-MM-DD' seleccionado
@@ -139,15 +176,6 @@ const Page = () => {
     setDate(`${yyyy}-${mm}-${dd}`)
   }
 
-  const shiftDate = (dir = 1) => {
-    // dir: -1 prev day, +1 next day
-    const d = new Date(`${date}T00:00:00`)
-    d.setDate(d.getDate() + dir)
-    const yyyy = d.getFullYear()
-    const mm = String(d.getMonth() + 1).padStart(2, '0')
-    const dd = String(d.getDate()).padStart(2, '0')
-    setDate(`${yyyy}-${mm}-${dd}`)
-  }
   /* ========================================================= */
 
 
@@ -201,6 +229,7 @@ const Page = () => {
   const [createOpen, setCreateOpen] = useState(false)
   const [createSaving, setCreateSaving] = useState(false)
   const [createErr, setCreateErr] = useState('')
+  const [allowedDurations, setAllowedDurations] = useState([30, 60]);
 
   // slot seleccionado para crear
   const [createTimeHM, setCreateTimeHM] = useState('') // 'HH:MM'
@@ -210,6 +239,11 @@ const Page = () => {
     // slot: { startMin, label }
     const hm = slot?.label || (typeof slot?.startMin === 'number' ? fmtHM(slot.startMin) : '')
     if (!date || !hm) return
+
+    const startMin = slot.startMin ?? parseHMToMinutes(slot.label ?? slot.timeHM);
+    const allowed = getAllowedDurations({ startMin, schedule, timelineModel });
+
+    setAllowedDurations(allowed);
 
     setCreateErr('')
     setCreateTimeHM(hm)
@@ -282,20 +316,78 @@ const Page = () => {
 
   /* ========================================================= */
 
+  /* =====================Appt Overlay======================== */
+  const [overlayOpen, setOverlayOpen] = React.useState(false);
+  const [selectedAppt, setSelectedAppt] = React.useState(null);
+
+  const openApptOverlay = (block) => {
+    const appt = buildOverlayAppointment(block);
+    setSelectedAppt(appt);
+    setOverlayOpen(true);
+  };
+
+  const closeApptOverlay = () => {
+    setOverlayOpen(false);
+    setSelectedAppt(null);
+  };
+
+  /* ========================================================= */
+
   /* =======================Handlers=========================== */
+
+  const GRID_STEP_MIN = 30;
+
+  const toLocalDate = (input) => {
+    if (!input) return null;
+    if (input instanceof Date) return input;
+
+    if (typeof input === "string") {
+      const m = input.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (m) {
+        return new Date(+m[1], +m[2] - 1, +m[3]);
+      }
+      return new Date(input);
+    }
+
+    return null;
+  };
+
+  const startOfDay = (input) => {
+    const d = toLocalDate(input);
+    if (!d) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  };
+
+  const getDayRelation = (viewDateInput) => {
+    const today = startOfDay(new Date());
+    const viewDay = startOfDay(viewDateInput);
+
+    if (!viewDay) return "today";
+
+    if (viewDay.getTime() < today.getTime()) return "past";
+    if (viewDay.getTime() > today.getTime()) return "future";
+    return "today";
+  };
+
+  const clamp01 = (n) => Math.max(0, Math.min(1, n));
+
+  const getSlotMinutes = (label) => {
+    if (!label) return 0;
+
+    // Soporta "12:00" o "12h00"
+    const normalized = label.replace('h', ':');
+    const [h, m] = normalized.split(':').map(Number);
+
+    return h * 60 + (m || 0);
+  };
+
+  const getNowMinutes = () => {
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  };
 
   const getStatusLabel = (status) => {
     return STATUS_LABELS[status] || status || '—'
-  }
-
-  const openDrawer = (appt) => {
-    setSelectedAppointment(appt)
-    setDrawerOpen(true)
-  }
-
-  const closeDrawer = () => {
-    setDrawerOpen(false)
-    setSelectedAppointment(null)
   }
 
   // ✅ (Opcional) horario base para timeline luego
@@ -337,6 +429,7 @@ const Page = () => {
     const hiddenSlots = new Set()  // startMin of slots that are "covered" by a previous block
 
     for (const a of appointments || []) {
+      if (NON_BLOCKING_STATUSES.has(a?.status)) continue;
       const startMin = parseTimeToMinutes(a?.startAt, date)
       const duration = Number(a?.durationMinutes || 30)
 
@@ -374,6 +467,7 @@ const Page = () => {
         phone: a?.phone ?? '',
         paymentStatus: a?.paymentStatus ?? 'unpaid',
         serviceType: serviceLabelFromDuration(duration),
+        price: a?.price ?? 0,
         raw: a, // guardamos el objeto original por si luego abres modal
       })
     }
@@ -381,9 +475,49 @@ const Page = () => {
     return { slotMap, hiddenSlots }
   }, [appointments, date, schedule])
 
+
+  const buildOverlayAppointment = (block) => {
+    const raw = block?.raw || {};
+
+    // intenta leer del raw si existe, si no usa el block
+    const startAt = raw.startAt ?? raw.start ?? raw.dateStart ?? null;
+    const endAt = raw.endAt ?? raw.end ?? raw.dateEnd ?? null;
+
+    return {
+      // IDs
+      _id: raw._id ?? block?.id ?? raw.id ?? null,
+      id: block?.id ?? raw.id ?? raw._id ?? null,
+
+      // Datos principales (block suele ser más estable para nombre/phone en tu timeline)
+      name: block?.name ?? raw.name ?? raw.clientName ?? raw.client?.name ?? '—',
+      phone: block?.phone ?? raw.phone ?? raw.client?.phone ?? '',
+      serviceType: block?.serviceType ?? raw.serviceType ?? raw.service ?? '—',
+      price: block?.price ?? raw.price ?? raw.amount ?? 0,
+
+      // Estados
+      status: raw.status ?? block?.status ?? 'pending',
+      paymentStatus: raw.paymentStatus ?? block?.paymentStatus ?? 'unpaid',
+      statusHistory: raw.statusHistory ?? [],
+
+      // Notas
+      notes: raw.notes ?? raw.note ?? block?.notes ?? '',
+
+      // Fechas
+      startAt,
+
+      // Extras útiles para UI (por si quieres mostrar duración o debugging)
+      durationMinutes: raw.durationMinutes ?? block?.durationMinutes ?? 30,
+      span: block?.span ?? null,
+      startMin: block?.startMin ?? null,
+
+      // por si necesitas todo el doc para acciones avanzadas
+      raw,
+    };
+  };
+
   const handleAppointmentClick = (block) => {
     // para drawer (info rápida)
-    openDrawer(block.raw)
+    openApptOverlay(block)
   }
 
   const handleAppointmentDoubleClick = (block) => {
@@ -393,6 +527,80 @@ const Page = () => {
     console.log('Double click appointment:', block?.id)
   }
   /* ========================================================= */
+
+  /* =======================Api Handlers=========================== */
+
+  const mergeStatusUpdate = (prev, patch) => {
+    if (!prev) return prev;
+    return {
+      ...prev,
+      status: patch?.status ?? prev.status,
+      statusHistory: patch?.statusHistory ?? prev.statusHistory,
+      // si en tu doc viene updatedAt:
+      updatedAt: patch?.updatedAt ?? prev.updatedAt,
+    };
+  };
+
+  const handleUpdateStatus = async (id, newStatus) => {
+    const res = await fetch(`/api/admin/schedule/appointments/status/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: newStatus, reason: "admin_update" }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Error actualizando estado");
+
+    const patch = data.appointment; // doc mongo (puede venir sin name/phone)
+
+    // ✅ 1) overlay: NO reemplazar, solo merge
+    setSelectedAppt((prev) =>
+      (prev?._id === id || prev?.id === id) ? mergeStatusUpdate(prev, patch) : prev
+    );
+
+    // ✅ 2) lista principal: NO reemplazar, solo merge
+    setAppointments((prev) =>
+      prev.map((a) =>
+        String(a._id) === String(id) ? mergeStatusUpdate(a, patch) : a
+      )
+    );
+  };
+
+
+  const mergeBillingUpdate = (prev, patch) => {
+    if (!prev) return prev;
+    return {
+      ...prev,
+      paymentStatus: patch?.paymentStatus ?? prev.paymentStatus,
+      updatedAt: patch?.updatedAt ?? prev.updatedAt,
+    };
+  };
+
+  const handleTogglePaid = async (id, newPayStatus) => {
+    const res = await fetch(`/api/admin/schedule/appointments/billing/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentStatus: newPayStatus }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Error actualizando pago");
+
+    const patch = data.appointment;
+
+    setSelectedAppt((prev) =>
+      (prev?._id === id || prev?.id === id) ? mergeBillingUpdate(prev, patch) : prev
+    );
+
+    setAppointments((prev) =>
+      prev.map((a) =>
+        String(a._id) === String(id) ? mergeBillingUpdate(a, patch) : a
+      )
+    );
+  };
+
+  /* ========================================================= */
+
 
   if (!hydrated) return null
   return (
@@ -405,6 +613,18 @@ const Page = () => {
         timeHM={createTimeHM}
         onClose={closeCreateModal}
         onCreate={createAppointment}
+        allowedDurations={allowedDurations}
+      />
+
+      <AppointmentOverlay
+        open={overlayOpen}
+        appointment={selectedAppt}
+        onClose={closeApptOverlay}
+        onUpdateStatus={handleUpdateStatus}
+        onTogglePaid={handleTogglePaid}
+        onCancel={(id) => {
+          // TODO: patch status:'cancelled' o endpoint cancel
+        }}
       />
 
 
@@ -546,27 +766,54 @@ const Page = () => {
           </div>
         </section>
 
-        {/* RESUMEN / METRICS (placeholder) */}
-        <section className="schedule__metrics">
-          <div className="schedule__metricCard schedule__metricCard--total">
-            <span className="schedule__metricLabel">Total</span>
-            <span className="schedule__metricValue">{meta.total ?? 0}</span>
-          </div>
+        {/* RESUMEN / METRICS */}
+        <section className="schedule__metrics" aria-label="Resumen de agenda">
+          <MetricCard
+            variant="total"
+            label="Total"
+            value={meta.total ?? 0}
+            icon={
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
+          />
 
-          <div className="schedule__metricCard schedule__metricCard--pending">
-            <span className="schedule__metricLabel">Pendientes</span>
-            <span className="schedule__metricValue">{meta.pending ?? 0}</span>
-          </div>
+          <MetricCard
+            variant="pending"
+            label="Pendientes"
+            value={meta.pending ?? 0}
+            icon={
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 7v6l4 2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9Z" fill="none" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            }
+          />
 
-          <div className="schedule__metricCard schedule__metricCard--confirmed">
-            <span className="schedule__metricLabel">Confirmadas</span>
-            <span className="schedule__metricValue">{meta.confirmed ?? 0}</span>
-          </div>
+          <MetricCard
+            variant="confirmed"
+            label="Confirmadas"
+            value={meta.confirmed ?? 0}
+            icon={
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            }
+          />
 
-          <div className="schedule__metricCard schedule__metricCard--unpaid">
-            <span className="schedule__metricLabel">Por cobrar</span>
-            <span className="schedule__metricValue">{meta.unpaid ?? 0}</span>
-          </div>
+          <MetricCard
+            variant="unpaid"
+            label="Por cobrar"
+            value={meta.unpaid ?? 0}
+            icon={
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 7h12v14H6z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M9 3h6v4H9z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+                <path d="M9 11h6M9 15h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            }
+          />
         </section>
 
         {/* BODY: TIMELINE + DRAWER */}
@@ -605,12 +852,49 @@ const Page = () => {
             {!loading && !error && daySlots.length > 0 && (
               <div className="schedule__grid" role="grid" aria-label="Agenda por horarios">
                 {daySlots.map((slot) => {
-                  const startMin = slot.startMin
+
+                  const startMin = slot.startMin;
 
                   // si este slot está cubierto por una cita anterior (ej: 60min), lo saltamos
-                  if (timelineModel.hiddenSlots.has(startMin)) return null
+                  if (timelineModel.hiddenSlots.has(startMin)) return null;
 
-                  const block = timelineModel.slotMap.get(startMin)
+                  const block = timelineModel.slotMap.get(startMin);
+
+                  // ✅ duración REAL de la celda renderizada
+                  const cellDuration =
+                    block ? (block.span || 1) * GRID_STEP_MIN : GRID_STEP_MIN;
+
+                  const cellEndMin = startMin + cellDuration;
+
+                  // ⚠️ usa aquí tu variable real del día mostrado (ej: selectedDate / activeDay / currentDay)
+                  // Cambia "selectedDate" por la que tú tengas en tu componente:
+                  const relation = getDayRelation(date);
+
+                  const nowMinutes = getNowMinutes();
+                  const slotMinutes = getSlotMinutes(slot.label);
+                  const slotDuration = slot.durationMinutes || 60;
+                  const slotEnd = slotMinutes + slotDuration;
+
+                  let isCurrent = false;
+                  let isPast = false;
+                  let isFuture = false;
+                  let pastFade = 0;
+
+                  if (relation === "past") {
+                    isPast = true;
+                    pastFade = 1;
+                  } else if (relation === "future") {
+                    isFuture = true;
+                    pastFade = 0;
+                  } else {
+                    // ✅ hoy: usa startMin y cellEndMin (no label)
+                    isCurrent = nowMinutes >= startMin && nowMinutes < cellEndMin;
+                    isPast = nowMinutes >= cellEndMin;
+                    isFuture = nowMinutes < startMin;
+
+                    const minutesPast = Math.max(0, nowMinutes - cellEndMin);
+                    pastFade = clamp01(minutesPast / 120);
+                  }
 
                   return (
                     <div
@@ -619,12 +903,28 @@ const Page = () => {
                       role="row"
                     >
                       {/* Columna hora */}
-                      <div className="schedule__timeCell" role="gridcell">
-                        <span className="schedule__timeLabel">{slot.label}</span>
+                      <div
+                        className={`schedule__timeCell 
+                          ${isCurrent ? 'schedule__timeCell--current' : ''}
+                          ${isPast ? 'schedule__timeCell--past' : ''}
+                          ${isFuture ? 'schedule__timeCell--future' : ''}
+                        `}
+                        role="gridcell"
+                      >
+                        <span className="schedule__timeLabel">
+                          {slot.label}
+                        </span>
                       </div>
 
                       {/* Columna contenido */}
-                      <div className="schedule__slotCell" role="gridcell">
+                      <div
+                        className={`schedule__slotCell
+                            ${isPast ? "schedule__slotCell--past" : ""}
+                            ${isCurrent ? "schedule__slotCell--current" : ""}
+                          `}
+                        role="gridcell"
+                        style={{ "--pastFade": pastFade }}
+                      >
                         {!block ? (
                           <button
                             className="schedule__slotEmpty"
@@ -638,8 +938,8 @@ const Page = () => {
                           <div
                             className={`schedule__apptCard s-${block.status || 'pending'}`}
                             style={{
-                              // ✅ Esto hace que visualmente “ocupe” más alto cuando dura 60 min
-                              minHeight: `calc(${block.span} * 56px)`, // ajustaremos con CSS luego
+                              minHeight: `calc(${block.span} * 58px)`,
+                              "--pastFade": pastFade, // también para cards
                             }}
                             onClick={() => handleAppointmentClick(block)}
                             onDoubleClick={() => handleAppointmentDoubleClick(block)}

@@ -8,6 +8,7 @@ export default function AppointmentModal({
     timeHM = '',       // 'HH:MM' (ej '08:30')
     onClose,
     onCreate,          // (payload) => void
+    allowedDurations = [30, 60],
 }) {
 
     const justPickedRef = useRef(false)
@@ -163,6 +164,13 @@ export default function AppointmentModal({
 
         onCreate?.(payload)
     }
+
+
+    useEffect(() => {
+        if (!allowedDurations.includes(durationMinutes)) {
+            setDurationMinutes(allowedDurations[0] ?? 30);
+        }
+    }, [allowedDurations, durationMinutes]);
 
 
     if (!open) return null
@@ -321,8 +329,12 @@ export default function AppointmentModal({
                             onChange={(e) => setDurationMinutes(Number(e.target.value))}
                             disabled={saving}
                         >
-                            <option value={30}>Estándar · 30 min</option>
-                            <option value={60}>Premium · 60 min</option>
+                            <option value={30} disabled={!allowedDurations.includes(30)}>
+                                Estándar · 30 min
+                            </option>
+                            <option value={60} disabled={!allowedDurations.includes(60)}>
+                                Premium · 60 min
+                            </option>
                         </select>
                     </div>
 

@@ -129,7 +129,6 @@ const page = () => {
 
     async function updateAppointmentStatus(appointment, action, reason = "") {
         if (!appointment?.id) return;
-        setLoading(true);
         try {
             const res = await fetch("/api/admin/appointments/status", {
                 method: "PATCH",
@@ -160,7 +159,6 @@ const page = () => {
 
     async function markAppointmentAsPaid(appointment) {
         if (!appointment?.id) return;
-        setLoading(true);
 
         try {
             const res = await fetch("/api/admin/appointments/payment", {
@@ -294,8 +292,14 @@ const page = () => {
             <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} />
 
             <div className="admin__dashboard">
+
+                {/* HEADER */}
                 <div className="admin__header">
-                    <h1>Bienvenido Administrador</h1>
+                    <div className="admin__headerLeft">
+                        <h1>Bienvenido Administrador</h1>
+                        <p className="admin__headerSub">Panel de control de citas</p>
+                    </div>
+
                     <div className="__datetime">
                         <div className="__date">
                             <span>{currentDate ?? "—"}</span>
@@ -306,55 +310,147 @@ const page = () => {
                     </div>
                 </div>
 
-                {/* Current Appointment Big Card */}
-                {Array.isArray(currentAppointments) && currentAppointments.length > 0 ? (
-                    <>
-                        {currentAppointments.map((appointment, index) => {
-                            const minutes = appointment?.type ?? appointment?.durationMinutes ?? 0;
-                            const isPremium = minutes === 60;
+                {/* GRID */}
+                <div className="admin__grid">
 
-                            return (
-                                <div key={appointment?.id ?? index} className="admin__card current">
-                                    <div className="__header">
-                                        <h2>En Curso</h2>
-                                        <div className={isPremium ? "__type premium" : "__type"}>
-                                            {isPremium ? "Servicio Premium" : "Servicio Estandar"}
+                    {/* LEFT COLUMN */}
+                    <div className="admin__col admin__col--left">
+
+                        {/* Current Appointment Big Card */}
+                        <div className="admin__sectionTitle">En curso</div>
+
+                        {Array.isArray(currentAppointments) && currentAppointments.length > 0 ? (
+                            <>
+                                {currentAppointments.map((appointment, index) => {
+                                    const minutes = appointment?.type ?? appointment?.durationMinutes ?? 0;
+                                    const isPremium = minutes === 60;
+
+                                    return (
+                                        <div key={appointment?.id ?? index} className="admin__card current">
+                                            <div className="__header">
+                                                <h2>En Curso</h2>
+                                                <div className={isPremium ? "__type premium" : "__type"}>
+                                                    {isPremium ? "Servicio Premium" : "Servicio Estandar"}
+                                                </div>
+                                            </div>
+
+                                            <div className="__appointment">
+                                                <div className="__name">
+                                                    <span>Nombre:</span>
+                                                    <span><b>{appointment?.name ?? "—"}</b></span>
+                                                </div>
+
+                                                <div className="__status">
+                                                    {appointment?.status ? getStatusBadge(appointment.status) : null}
+                                                </div>
+                                            </div>
+
+                                            <div className="__buttons">
+                                                <div className="row">
+                                                    {appointment?.phone ? (
+                                                        <a
+                                                            href={`https://wa.me/${appointment.phone}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="link"
+                                                        >
+                                                            <div className="__button phone">
+                                                                <Image
+                                                                    src="/assets/icons/whastapp.svg"
+                                                                    alt="WhatsApp"
+                                                                    width={30}
+                                                                    height={30}
+                                                                />
+                                                            </div>
+                                                        </a>
+                                                    ) : (
+                                                        <div className="__button phone disabled" title="Sin teléfono">
+                                                            <Image
+                                                                src="/assets/icons/whastapp.svg"
+                                                                alt="WhatsApp"
+                                                                width={30}
+                                                                height={30}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="row">
+                                                    {appointment?.paymentStatus === "unpaid" ? (
+                                                        <button
+                                                            className="__button unpaid"
+                                                            onClick={() => markAppointmentAsPaid(appointment)}
+                                                        >
+                                                            Cobrar
+                                                        </button>
+                                                    ) : (
+                                                        <button className="__button pay" >Pagado</button>
+                                                    )}
+
+                                                    <button
+                                                        className="__button primary"
+                                                        onClick={() => updateAppointmentStatus(appointment, "complete")}
+                                                    >
+                                                        Completar
+                                                    </button>
+
+                                                    <button className="__button cancel">Cancelar</button>
+                                                </div>
+                                            </div>
                                         </div>
+                                    );
+                                })}
+                            </>
+                        ) : (
+                            <div className="admin__card no-current">
+                                <div className="__header">
+                                    <h2>No hay citas en curso</h2>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Next Appointment Big Card */}
+                        <div className="admin__sectionTitle">Próxima cita</div>
+
+                        {nextAppointment ? (
+                            <div className="admin__card next">
+                                <div className="__header">
+                                    <h2>Próxima Cita</h2>
+
+                                    {(() => {
+                                        const minutes = nextAppointment?.type ?? nextAppointment?.durationMinutes ?? 0;
+                                        const isPremium = minutes === 60;
+
+                                        return (
+                                            <div className={isPremium ? "__type premium" : "__type"}>
+                                                {isPremium ? "Servicio Premium" : "Servicio Estandar"}
+                                            </div>
+                                        );
+                                    })()}
+                                </div>
+
+                                <div className="__appointment">
+                                    <div className="__name">
+                                        <span>Nombre:</span>
+                                        <span><b>{nextAppointment?.name ?? "—"}</b></span>
                                     </div>
 
-                                    <div className="__appointment">
-                                        <div className="__name">
-                                            <span>Nombre:</span>
-                                            <span>
-                                                <b>{appointment?.name ?? "—"}</b>
-                                            </span>
-                                        </div>
-
-                                        <div className="__status">
-                                            {appointment?.status ? getStatusBadge(appointment.status) : null}
-                                        </div>
+                                    <div className="__datetime">
+                                        <div className="date">{nextAppointment?.date ?? "—"}</div>
+                                        <div className="time">{nextAppointment?.time ?? "—"}</div>
                                     </div>
+                                </div>
 
-                                    <div className="__buttons">
-                                        <div className="row">
-                                            {appointment?.phone ? (
-                                                <a
-                                                    href={`https://wa.me/${appointment.phone}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="link"
-                                                >
-                                                    <div className="__button phone">
-                                                        <Image
-                                                            src="/assets/icons/whastapp.svg"
-                                                            alt="WhatsApp"
-                                                            width={30}
-                                                            height={30}
-                                                        />
-                                                    </div>
-                                                </a>
-                                            ) : (
-                                                <div className="__button phone disabled" title="Sin teléfono">
+                                <div className="__buttons">
+                                    <div className="row">
+                                        {nextAppointment?.phone ? (
+                                            <a
+                                                href={`https://wa.me/${nextAppointment.phone}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="link"
+                                            >
+                                                <div className="__button phone">
                                                     <Image
                                                         src="/assets/icons/whastapp.svg"
                                                         alt="WhatsApp"
@@ -362,214 +458,130 @@ const page = () => {
                                                         height={30}
                                                     />
                                                 </div>
-                                            )}
-                                        </div>
+                                            </a>
+                                        ) : (
+                                            <div className="__button phone disabled" title="Sin teléfono">
+                                                <Image
+                                                    src="/assets/icons/whastapp.svg"
+                                                    alt="WhatsApp"
+                                                    width={30}
+                                                    height={30}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
 
-                                        <div className="row">
-                                            {appointment?.paymentStatus === "unpaid" ? (
-                                                <button
-                                                    className="__button unpaid"
-                                                    onClick={() => markAppointmentAsPaid(appointment)}
-                                                >
-                                                    Cobrar
-                                                </button>
-                                            ) : (
-                                                <button className="__button pay">Pagado</button>
-                                            )}
-
+                                    <div className="row">
+                                        {nextAppointment?.paymentStatus === "unpaid" ? (
                                             <button
-                                                className="__button primary"
-                                                onClick={() => updateAppointmentStatus(appointment, "complete")}
+                                                className="__button unpaid"
+                                                onClick={() => markAppointmentAsPaid(nextAppointment)}
                                             >
-                                                Completar
+                                                Cobrar
                                             </button>
-                                            <button className="__button cancel">Cancelar</button>
-                                        </div>
+                                        ) : (
+                                            <button className="__button pay">Pagado</button>
+                                        )}
+
+                                        <button
+                                            className="__button primary"
+                                            onClick={() => updateAppointmentStatus(nextAppointment, "start")}
+                                        >
+                                            Iniciar
+                                        </button>
+
+                                        <button
+                                            className="__button no-assis"
+                                            onClick={() => updateAppointmentStatus(nextAppointment, "no_assistance")}
+                                        >
+                                            No asistió
+                                        </button>
+
+                                        <button
+                                            className="__button cancel"
+                                            onClick={() => handleConfirmModal(nextAppointment)}
+                                        >
+                                            X
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </>
-                ) : (
-                    <div className="admin__card no-current">
-                        <div className="__header">
-                            <h2>No hay citas en curso</h2>
-                        </div>
-                    </div>
-                )}
-
-                {/* Next Appointment Big Card */}
-                {nextAppointment ? (
-                    <div className="admin__card next">
-                        <div className="__header">
-                            <h2>Próxima Cita</h2>
-
-                            {(() => {
-                                const minutes =
-                                    nextAppointment?.type ?? nextAppointment?.durationMinutes ?? 0;
-                                const isPremium = minutes === 60;
-
-                                return (
-                                    <div className={isPremium ? "__type premium" : "__type"}>
-                                        {isPremium ? "Servicio Premium" : "Servicio Estandar"}
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        <div className="__appointment">
-                            <div className="__name">
-                                <span>Nombre:</span>
-                                <span>
-                                    <b>{nextAppointment?.name ?? "—"}</b>
-                                </span>
                             </div>
-
-                            <div className="__datetime">
-                                <div className="date">{nextAppointment?.date ?? "—"}</div>
-                                <div className="time">{nextAppointment?.time ?? "—"}</div>
-                            </div>
-                        </div>
-
-                        <div className="__buttons">
-                            <div className="row">
-                                {nextAppointment?.phone ? (
-                                    <a
-                                        href={`https://wa.me/${nextAppointment.phone}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="link"
-                                    >
-                                        <div className="__button phone">
-                                            <Image
-                                                src="/assets/icons/whastapp.svg"
-                                                alt="WhatsApp"
-                                                width={30}
-                                                height={30}
-                                            />
-                                        </div>
-                                    </a>
-                                ) : (
-                                    <div className="__button phone disabled" title="Sin teléfono">
-                                        <Image
-                                            src="/assets/icons/whastapp.svg"
-                                            alt="WhatsApp"
-                                            width={30}
-                                            height={30}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="row">
-                                {nextAppointment?.paymentStatus === "unpaid" ? (
-                                    <button
-                                        className="__button unpaid"
-                                        onClick={() => markAppointmentAsPaid(nextAppointment)}
-                                    >
-                                        Cobrar
-                                    </button>
-                                ) : (
-                                    <button className="__button pay">Pagado</button>
-                                )}
-
-                                <button
-                                    className="__button primary"
-                                    onClick={() => updateAppointmentStatus(nextAppointment, "start")}
-                                >
-                                    Iniciar
-                                </button>
-                                <button
-                                    className="__button no-assis"
-                                    onClick={() => updateAppointmentStatus(nextAppointment, "no_assistance")}
-                                >
-                                    No asistió
-                                </button>
-                                <button
-                                    className="__button cancel"
-                                    onClick={() => handleConfirmModal(nextAppointment)}
-                                >
-                                    X
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="admin__card no-next">
-                        <div className="__header">
-                            <h2>No hay próxima cita</h2>
-                        </div>
-                    </div>
-
-                )}
-
-                {/* Today's Appointments */}
-                <div className="today-appointments">
-                    <h2>Citas de Hoy</h2>
-
-                    <ul className="appointment-list">
-                        {!Array.isArray(pendingAppointments) || pendingAppointments.length === 0 ? (
-                            <li className="appointment-empty">No hay citas para hoy</li>
                         ) : (
-                            pendingAppointments.map((appointment) => {
-                                const minutes =
-                                    appointment?.duration ?? appointment?.durationMinutes ?? 0;
-
-                                return (
-                                    <li
-                                        key={appointment?.id ?? appointment?._id ?? crypto.randomUUID()}
-                                        className="appointment-item"
-                                    >
-                                        <div className="appointment-main">
-                                            <div className="appointment-name">
-                                                {appointment?.name ?? "—"}
-                                            </div>
-
-                                            <div className="appointment-meta">
-                                                {appointment?.phone ? (
-                                                    <a
-                                                        href={`https://wa.me/${appointment.phone}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="appointment-phone"
-                                                    >
-                                                        {appointment.phone}
-                                                    </a>
-                                                ) : (
-                                                    <span className="appointment-phone muted">Sin teléfono</span>
-                                                )}
-
-                                                <span>•</span>
-                                                <span>{getServiceLabel(minutes)}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="appointment-side">
-                                            <span className="time-chip">
-                                                {appointment?.startAt ? formatTime(appointment.startAt) : "—"}
-                                            </span>
-
-                                            <span
-                                                className={`type-chip ${minutes === 60 ? "premium" : "standard"
-                                                    }`}
-                                            >
-                                                {minutes} min
-                                            </span>
-
-                                            <button
-                                                className="cancel-btn"
-                                                title="Cancelar cita"
-                                                onClick={() => handleConfirmModal(appointment)}
-                                                disabled={!appointment?.id}
-                                            >
-                                                ×
-                                            </button>
-                                        </div>
-                                    </li>
-                                );
-                            })
+                            <div className="admin__card no-next">
+                                <div className="__header">
+                                    <h2>No hay próxima cita</h2>
+                                </div>
+                            </div>
                         )}
-                    </ul>
+                    </div>
+
+                    {/* RIGHT COLUMN */}
+                    <div className="admin__col admin__col--right">
+                        <div className="admin__sectionTitle">Citas de Hoy</div>
+                        <div className="today-appointments">
+
+                            <ul className="appointment-list">
+                                {!Array.isArray(pendingAppointments) || pendingAppointments.length === 0 ? (
+                                    <li className="appointment-empty">No hay citas para hoy</li>
+                                ) : (
+                                    pendingAppointments.map((appointment) => {
+                                        const minutes = appointment?.duration ?? appointment?.durationMinutes ?? 0;
+
+                                        return (
+                                            <li
+                                                key={appointment?.id ?? appointment?._id ?? crypto.randomUUID()}
+                                                className="appointment-item"
+                                            >
+                                                <div className="appointment-main">
+                                                    <div className="appointment-name">
+                                                        {appointment?.name ?? "—"}
+                                                    </div>
+
+                                                    <div className="appointment-meta">
+                                                        {appointment?.phone ? (
+                                                            <a
+                                                                href={`https://wa.me/${appointment.phone}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="appointment-phone"
+                                                            >
+                                                                {appointment.phone}
+                                                            </a>
+                                                        ) : (
+                                                            <span className="appointment-phone muted">Sin teléfono</span>
+                                                        )}
+
+                                                        <span>•</span>
+                                                        <span>{getServiceLabel(minutes)}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="appointment-side">
+                                                    <span className="time-chip">
+                                                        {appointment?.startAt ? formatTime(appointment.startAt) : "—"}
+                                                    </span>
+
+                                                    <span className={`type-chip ${minutes === 60 ? "premium" : "standard"}`}>
+                                                        {minutes} min
+                                                    </span>
+
+                                                    <button
+                                                        className="cancel-btn"
+                                                        title="Cancelar cita"
+                                                        onClick={() => handleConfirmModal(appointment)}
+                                                        disabled={!appointment?.id}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            </li>
+                                        );
+                                    })
+                                )}
+                            </ul>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </>

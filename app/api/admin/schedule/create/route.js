@@ -79,7 +79,7 @@ export async function POST(req) {
     const endAt = new Date(startAt);
     endAt.setMinutes(endAt.getMinutes() + durationMinutes);
 
-    const excludedStatuses = ["cancelled", "no assistance"];
+    const excludedStatuses = ["cancelled", "no_assistance"];
 
     // ✅ Fix opcional: aseguramos startAt date type (evita 500 con data sucia)
     const conflict = await Appointment.findOne({

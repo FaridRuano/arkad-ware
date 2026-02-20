@@ -45,7 +45,7 @@ export async function GET(req) {
     await connectMongoDB();
 
     // Estados que NO quieres mostrar en la agenda del día (ajusta a tu UX)
-    const excludedStatuses = ["cancelled", "completed", "no assistance"];
+    const excludedStatuses = ["cancelled", "no_assistance"];
 
     const appointments = await Appointment.find({
       user: userId, // ✅ Vista del cliente. Si es agenda global/admin, QUITA esto.

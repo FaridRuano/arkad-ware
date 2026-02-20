@@ -83,26 +83,44 @@ export async function GET(req) {
 
     // ✅ Meta
     const meta = {
-      total: appointments.length,
+      total: 0,          // ✅ ahora será total operativo
       pending: 0,
       confirmed: 0,
       inProgress: 0,
       completed: 0,
+
+      // incidencias (no cuentan para total/billing)
       cancelled: 0,
       noAssistance: 0,
+
+      // billing operativo
       unpaid: 0,
       paid: 0,
     };
 
     for (const a of appointments) {
       const st = a?.status || "pending";
+
+      // ✅ incidencias: se cuentan pero NO entran al total ni al billing
+      if (st === "cancelled") {
+        meta.cancelled++;
+        continue;
+      }
+      if (st === "no_assistance") {
+        meta.noAssistance++;
+        continue;
+      }
+
+      // ✅ solo estados operativos suman al total
+      meta.total++;
+
+      // ✅ conteo de estados operativos (ajusta a tus nuevos slugs)
       if (st === "pending") meta.pending++;
       else if (st === "confirmed") meta.confirmed++;
-      else if (st === "in progress") meta.inProgress++;
+      else if (st === "in_progress") meta.inProgress++;
       else if (st === "completed") meta.completed++;
-      else if (st === "cancelled") meta.cancelled++;
-      else if (st === "no assistance") meta.noAssistance++;
 
+      // ✅ billing: solo para operativos
       const pay = a?.paymentStatus || "unpaid";
       if (pay === "paid") meta.paid++;
       else meta.unpaid++;

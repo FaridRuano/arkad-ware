@@ -113,7 +113,7 @@ const buildWaMessageByStatus = ({
     // Cabecera común (puedes ajustarla)
     const base =
         `Hola${client} 👋\n` +
-        `Tu cita de *${service}* está registrada.\n` +
+        `Tu cita en *ARKAD* está registrada.\n` +
         when +
         cost +
         link;

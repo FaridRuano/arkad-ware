@@ -536,7 +536,7 @@ export default function page() {
                               </button>
                             )}
 
-                            {canDelete(st) && (
+                            {/* {canDelete(st) && (
                               <button
                                 className="actionBtn actionBtn--delete"
                                 title="Eliminar cita"
@@ -545,7 +545,7 @@ export default function page() {
                               >
                                 🗑
                               </button>
-                            )}
+                            )} */}
                           </div>
                         </td>
 

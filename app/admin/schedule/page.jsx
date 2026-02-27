@@ -1072,7 +1072,6 @@ const Page = () => {
                                     >
                                       <span className="schedule__slotEmptyPlus">＋</span>
                                       <span className="schedule__slotEmptyText">Disponible</span>
-                                      <span className="schedule__slotEmptyHint">Elige barbero en el formulario</span>
                                     </button>
                                   )}
 

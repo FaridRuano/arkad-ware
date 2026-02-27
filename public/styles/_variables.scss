@@ -1,13 +1,16 @@
-/* === Color Palette === */
-$black: #080808;
+/* === Color Palette (Refined Olive & Gold) === */
+$black: #0b0c0a;
 $white: #ffffff;
 
-$background-color: #393f39; // fondo base
-$background-warp: #303530; // surface 1
-$highlight-color: #3c463e; // surface 2
-$primary-color: #cfb690; // acento
-$primary-dark: #3b352a; // acento oscuro
-$secondary-color: #6f8a73;
+/* Fondos (dark olive premium) */
+$background-color: #222420; // surface 0 / bg base
+$background-warp:  #282b23; // surface 1
+$highlight-color:  #33382e; // surface 2
+
+/* Acentos */
+$primary-color:   #c0a671; // dorado cálido real
+$primary-dark:    #8f7443; // dorado profundo (para contraste)
+$secondary-color: #5e715f; // verde oliva elegante
 
 /* === Funciones helper === */
 @function tint($color, $percent) {
@@ -23,8 +26,8 @@ $secondary-color: #6f8a73;
 }
 
 /* Texto en dark mode */
-$fg-strong: #e7e7e7;
-$fg-soft: #b3b3b3;
+$fg-strong: #f5f5f3;
+$fg-soft:   #b8bfb6;
 
 /* Derivados */
 $surface-0: $background-color;
@@ -32,18 +35,26 @@ $surface-1: $background-warp;
 $surface-2: $highlight-color;
 
 $border-color: alpha($white, .08);
-$muted-color: $fg-soft;
+$muted-color:  #8e9a90; // un muted más “olive” (mejor que gris puro)
 
-/* Variantes de primary */
-$primary-hover: rgba($primary-color, 0.5);
-$primary-active: rgba($primary-color, 0.9);
+/* Variantes de primary (mejor que rgba directo) */
+$primary-hover:  tint($primary-color, 10%);  // más luminoso
+$primary-active: shade($primary-color, 10%); // más profundo
 
-$focus-ring: alpha($primary-color, .6);
+$focus-ring: alpha($primary-color, .55);
 
 /* Variantes de secondary */
-$secondary-hover: tint($secondary-color, 10%);
-$secondary-active: shade($secondary-color, 8%);
-$focus-ring-secondary: alpha($secondary-color, .6);
+$secondary-hover: tint($secondary-color, 12%);
+$secondary-active: shade($secondary-color, 10%);
+$focus-ring-secondary: alpha($secondary-color, .55);
+
+/* Estados */
+$negative: #be3535;
+$positive: #22c55e;
+$warning:  #af4d25;
+
+/* Neutrales UI */
+$gray:  #6b7280;
 
 /* === Exportar como custom properties === */
 :root {
@@ -71,15 +82,11 @@ $focus-ring-secondary: alpha($secondary-color, .6);
   --secondary-active: #{$secondary-active};
   --focus-ring-secondary: #{$focus-ring-secondary};
 
-  --light : #{$fg-soft};
+  --light: #{$fg-soft};
 
-  --negative: #be3535;
+  --negative: #{$negative};
+  --positive: #{$positive};
+  --warning: #{$warning};
 
-  --positive: #22c55e;
-  /* verde éxito */
-  --warning: #af4d25;
-  /* ámbar */
-  --muted: #9ca3af;
-  /* gris suave */
-  --gray: #6b7280;
+  --gray: #{$gray};
 }

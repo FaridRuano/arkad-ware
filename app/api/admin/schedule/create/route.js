@@ -127,7 +127,7 @@ export async function POST(req) {
       );
     }
 
-    const price = Number(body?.price) > 0 ? Number(body.price) : priceForDuration(durationMinutes);
+    const price = 8;
 
     const created = await Appointment.create({
       user: user._id,

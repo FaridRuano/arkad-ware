@@ -327,6 +327,9 @@
                             color: var(--negative);
                         }
                     }
+                    &:last-child{
+                        text-align: end;
+                    }
 
                 }
 

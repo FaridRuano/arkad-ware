@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
 import User from "@models/User";
+import Barber from "@models/Barber";
 import { auth } from "@auth";
 
 function buildStartAt({ startAt, date, time }) {
@@ -31,12 +32,10 @@ export async function POST(req) {
       return NextResponse.json({ error: true, message: "Unauthorized" }, { status: 401 });
     }
 
-    // ✅ Fix: isAdmin() no definido → check directo
     if (role !== "admin") {
       return NextResponse.json({ error: true, message: "Forbidden" }, { status: 403 });
     }
 
-    // ✅ Fix: cast seguro a ObjectId
     const adminObjectId = mongoose.Types.ObjectId.isValid(adminId)
       ? new mongoose.Types.ObjectId(adminId)
       : null;
@@ -46,6 +45,7 @@ export async function POST(req) {
     const body = await req.json().catch(() => ({}));
 
     const userId = body?.userId;
+    const barberId = body?.barberId; // ✅ NUEVO (obligatorio)
     const durationMinutes = Number(body?.durationMinutes || 0);
 
     const startAtStr = buildStartAt({
@@ -54,8 +54,13 @@ export async function POST(req) {
       time: body?.time,
     });
 
+    // ✅ Validaciones
     if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return NextResponse.json({ error: "userId inválido" }, { status: 400 });
+    }
+
+    if (!barberId || !mongoose.Types.ObjectId.isValid(barberId)) {
+      return NextResponse.json({ error: "barberId inválido" }, { status: 400 });
     }
 
     if (!startAtStr) {
@@ -66,9 +71,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "durationMinutes debe ser 30 o 60" }, { status: 400 });
     }
 
+    // ✅ Cliente
     const user = await User.findById(userId).select("_id firstName lastName phone role");
     if (!user) {
       return NextResponse.json({ error: "Cliente no encontrado" }, { status: 404 });
+    }
+
+    // ✅ Barbero (debe existir y estar activo)
+    const barber = await Barber.findById(barberId).select("_id name isActive color");
+    if (!barber) {
+      return NextResponse.json({ error: "Barbero no encontrado" }, { status: 404 });
+    }
+    if (barber.isActive === false) {
+      return NextResponse.json({ error: "Este barbero está inactivo" }, { status: 400 });
     }
 
     const startAt = new Date(startAtStr);
@@ -81,8 +96,9 @@ export async function POST(req) {
 
     const excludedStatuses = ["cancelled", "no_assistance"];
 
-    // ✅ Fix opcional: aseguramos startAt date type (evita 500 con data sucia)
+    // ✅ Conflicto SOLO para el mismo barbero
     const conflict = await Appointment.findOne({
+      barberId: barber._id,
       status: { $nin: excludedStatuses },
       startAt: { $type: "date", $lt: endAt },
       $expr: {
@@ -92,18 +108,19 @@ export async function POST(req) {
         ],
       },
     })
-      .select("_id startAt durationMinutes status")
+      .select("_id startAt durationMinutes status barberId")
       .lean();
 
     if (conflict) {
       return NextResponse.json(
         {
-          error: "Ese horario ya está ocupado",
+          error: "Ese horario ya está ocupado para este barbero",
           conflict: {
             id: conflict?._id?.toString?.() ?? conflict?._id,
             startAt: conflict?.startAt,
             durationMinutes: conflict?.durationMinutes,
             status: conflict?.status,
+            barberId: conflict?.barberId?.toString?.() ?? conflict?.barberId,
           },
         },
         { status: 409 }
@@ -114,6 +131,7 @@ export async function POST(req) {
 
     const created = await Appointment.create({
       user: user._id,
+      barberId: barber._id, // ✅ GUARDAR BARBERO
       startAt,
       durationMinutes,
       price,
@@ -125,7 +143,7 @@ export async function POST(req) {
           from: "",
           to: "pending",
           changedAt: new Date(),
-          changedBy: adminObjectId, // ✅ admin real
+          changedBy: adminObjectId,
           reason: "created",
         },
       ],
@@ -136,9 +154,17 @@ export async function POST(req) {
       appointment: {
         ...created.toObject(),
         id: created?._id?.toString?.() ?? created?._id,
+
         userId: user._id?.toString?.() ?? user._id,
         name: `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "—",
         phone: user?.phone ?? "",
+
+        barberId: barber._id?.toString?.() ?? barber._id,
+        barber: {
+          id: barber._id?.toString?.() ?? barber._id,
+          name: barber?.name ?? "—",
+          color: barber?.color || "#000000",
+        },
       },
     });
   } catch (err) {

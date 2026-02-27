@@ -10,6 +10,15 @@ const AppointmentSchema = new mongoose.Schema(
       index: true,
     },
 
+    // ───────────── BARBERO (NUEVO) ─────────────
+    // Opcional por ahora para no romper citas existentes
+    barberId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Barber",
+      default: null,
+      index: true,
+    },
+
     // ───────────── FECHA & HORA ─────────────
     startAt: {
       type: Date,
@@ -90,13 +99,14 @@ AppointmentSchema.pre("save", function (next) {
         from: "",
         to: this.status || "pending",
         changedAt: new Date(),
-        changedBy: null,   // ✅ nunca el cliente aquí
+        changedBy: null, // ✅ nunca el cliente aquí
         reason: "created",
       },
     ];
   }
   next();
 });
+
 const Appointment =
   mongoose.models?.Appointment ||
   mongoose.model("Appointment", AppointmentSchema);

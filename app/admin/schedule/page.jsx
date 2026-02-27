@@ -162,6 +162,16 @@ const Page = () => {
 
   /* ========================================================= */
 
+  /* =======================Barbers=========================== */
+
+  const [barbers, setBarbers] = useState([])
+  const [barbersLoading, setBarbersLoading] = useState(false)
+  const [barbersError, setBarbersError] = useState('')
+
+  // "" => Todos
+  const [selectedBarberId, setSelectedBarberId] = useState("")
+
+  /* ========================================================= */
 
   /* =======================Appointmens=========================== */
   const [selectedAppointment, setSelectedAppointment] = useState(null) // para drawer
@@ -191,6 +201,7 @@ const Page = () => {
     try {
       const params = new URLSearchParams()
       params.set('date', date)
+      if (selectedBarberId) params.set('barberId', selectedBarberId)
 
       const res = await fetch(`/api/admin/schedule?${params.toString()}`, {
         method: 'GET',
@@ -220,7 +231,30 @@ const Page = () => {
     } finally {
       setLoading(false)
     }
-  }, [date])
+  }, [date, selectedBarberId])
+
+  const fetchBarbers = useCallback(async () => {
+    setBarbersLoading(true)
+    setBarbersError('')
+
+    try {
+      const res = await fetch(`/api/admin/schedule/barbers`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+      })
+
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Error cargando barberos')
+
+      setBarbers(data?.barbers || [])
+    } catch (err) {
+      setBarbers([])
+      setBarbersError(err?.message || 'Error cargando barberos')
+    } finally {
+      setBarbersLoading(false)
+    }
+  }, [])
 
   /* ========================================================= */
 
@@ -261,8 +295,14 @@ const Page = () => {
 
   const createAppointment = async (payload) => {
     // payload viene del modal:
-    // { userId, date, time, startAt, durationMinutes }
+    // { userId, barberId, date, time, startAt, durationMinutes }
     if (!payload?.userId) return
+
+    // ✅ ahora barberId es obligatorio (por tu backend)
+    if (!payload?.barberId) {
+      setCreateErr('Selecciona un barbero')
+      return
+    }
 
     setCreateSaving(true)
     setCreateErr('')
@@ -274,26 +314,26 @@ const Page = () => {
         cache: 'no-store',
         body: JSON.stringify({
           userId: payload.userId,
-          // puedes enviar startAt directo (recomendado)
-          startAt: payload.startAt, // 'YYYY-MM-DDTHH:MM:00-05:00'
+          barberId: payload.barberId, // ✅ NUEVO
+          startAt: payload.startAt,   // 'YYYY-MM-DDTHH:MM:00-05:00'
           durationMinutes: payload.durationMinutes,
+          // notes: payload.notes, // si luego lo agregas
         }),
       })
 
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || 'No se pudo crear la cita')
 
-      // ✅ refrescar agenda
-      await fetchSchedule()
+      // ✅ refrescar agenda (usa SOLO una, la que exista en tu componente)
+      await fetchAgenda()
 
-      // ✅ cerrar modal
+      // ✅ cerrar modal solo si fue ok
       closeCreateModal()
     } catch (e) {
+      // ✅ si el backend manda conflicto, puedes mostrar algo más específico
       setCreateErr(e?.message || 'Error creando cita')
     } finally {
-      fetchAgenda()
       setCreateSaving(false)
-      closeCreateModal()
     }
   }
   /* ========================================================= */
@@ -310,9 +350,13 @@ const Page = () => {
   }, [])
 
   useEffect(() => {
+    fetchBarbers()
+  }, [fetchBarbers])
+
+  useEffect(() => {
     if (!date) return
     fetchAgenda()
-  }, [date, fetchAgenda])
+  }, [date, fetchAgenda, selectedBarberId])
 
   /* ========================================================= */
 
@@ -418,41 +462,32 @@ const Page = () => {
     return slots
   }, [date, schedule])
 
-  const timelineModel = useMemo(() => {
+  const buildTimelineModel = (list = []) => {
     if (!date) return { slotMap: new Map(), hiddenSlots: new Set() }
 
     const step = schedule.stepMinutes
     const startM = schedule.startHour * 60
     const endM = schedule.endHour * 60
 
-    const slotMap = new Map()      // startMin -> block
-    const hiddenSlots = new Set()  // startMin of slots that are "covered" by a previous block
+    const slotMap = new Map()
+    const hiddenSlots = new Set()
 
-    for (const a of appointments || []) {
-      if (NON_BLOCKING_STATUSES.has(a?.status)) continue;
+    for (const a of list || []) {
+      if (NON_BLOCKING_STATUSES.has(a?.status)) continue
+
       const startMin = parseTimeToMinutes(a?.startAt, date)
       const duration = Number(a?.durationMinutes || 30)
 
-      // Solo agenda dentro del rango laboral
       if (startMin < startM || startMin >= endM) continue
 
-      // Alinear al step (por si viene algo raro)
       const snappedStart = startMin - (startMin % step)
-
-      // span mínimo 1
       const span = Math.max(1, Math.round(duration / step))
 
-      // No permitimos que se salga del final del día (recortamos)
       const maxSpan = Math.floor((endM - snappedStart) / step)
       const safeSpan = Math.min(span, Math.max(1, maxSpan))
 
-      // Si ya existe una cita que empieza exactamente ahí, puedes decidir:
-      // - ignorar la nueva
-      // - o guardarlas en array para "conflictos"
-      // Por ahora: la primera gana
       if (slotMap.has(snappedStart)) continue
 
-      // Marcamos slots cubiertos para saltarlos en render
       for (let i = 1; i < safeSpan; i++) {
         hiddenSlots.add(snappedStart + i * step)
       }
@@ -468,13 +503,44 @@ const Page = () => {
         paymentStatus: a?.paymentStatus ?? 'unpaid',
         serviceType: serviceLabelFromDuration(duration),
         price: a?.price ?? 0,
-        raw: a, // guardamos el objeto original por si luego abres modal
+        raw: a,
       })
     }
 
     return { slotMap, hiddenSlots }
+  }
+
+  const timelineModel = useMemo(() => {
+    return buildTimelineModel(appointments)
   }, [appointments, date, schedule])
 
+  const isAllBarbers = selectedBarberId === ""
+
+  const apptsByBarber = useMemo(() => {
+    const map = new Map()
+    for (const b of barbers) map.set(b.id, [])
+
+    for (const a of appointments || []) {
+      const bid = a?.barberId
+      if (!bid) continue
+      if (!map.has(bid)) map.set(bid, [])
+      map.get(bid).push(a)
+    }
+
+    return map
+  }, [appointments, barbers])
+
+  const timelineModelsByBarber = useMemo(() => {
+    if (!isAllBarbers) return null
+
+    const models = new Map()
+    for (const b of barbers) {
+      const list = apptsByBarber.get(b.id) || []
+      models.set(b.id, buildTimelineModel(list))
+    }
+
+    return models
+  }, [isAllBarbers, barbers, apptsByBarber, date, schedule])
 
   const buildOverlayAppointment = (block) => {
     const raw = block?.raw || {};
@@ -614,6 +680,9 @@ const Page = () => {
         onClose={closeCreateModal}
         onCreate={createAppointment}
         allowedDurations={allowedDurations}
+        // Barberos
+        barbers={barbers}
+        selectedBarberId={selectedBarberId}
       />
 
       <AppointmentOverlay
@@ -763,6 +832,43 @@ const Page = () => {
                 </button>
               )
             })}
+          </div>
+        </section>
+
+        {/* HEADER: BARBERS */}
+        <section className="schedule__barberFilter" aria-label="Filtro por barbero">
+          <div className="schedBarbers">
+            <button
+              type="button"
+              className={`schedBarbers__btn ${selectedBarberId === "" ? "is-active" : ""}`}
+              onClick={() => setSelectedBarberId("")}
+              disabled={barbersLoading}
+            >
+              Todos
+            </button>
+
+            {barbers.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={`schedBarbers__btn ${selectedBarberId === b.id ? "is-active" : ""}`}
+                onClick={() => setSelectedBarberId(b.id)}
+                disabled={barbersLoading}
+                title={b.name}
+              >
+                <span
+                  className="schedBarbers__dot"
+                  style={{ background: b.color || "var(--gray)" }}
+                  aria-hidden="true"
+                />
+                <span className="schedBarbers__name">{b.name}</span>
+              </button>
+            ))}
+
+            {barbersLoading && <span className="schedBarbers__hint">Cargando barberos…</span>}
+            {!barbersLoading && !!barbersError && (
+              <span className="schedBarbers__hint is-error">{barbersError}</span>
+            )}
           </div>
         </section>
 
@@ -919,47 +1025,145 @@ const Page = () => {
                       {/* Columna contenido */}
                       <div
                         className={`schedule__slotCell
-                            ${isPast ? "schedule__slotCell--past" : ""}
-                            ${isCurrent ? "schedule__slotCell--current" : ""}
-                          `}
+                          ${isPast ? "schedule__slotCell--past" : ""}
+                          ${isCurrent ? "schedule__slotCell--current" : ""}
+                        `}
                         role="gridcell"
                         style={{ "--pastFade": pastFade }}
                       >
-                        {!block ? (
-                          <button
-                            className="schedule__slotEmpty"
-                            type="button"
-                            onClick={() => openCreateAtSlot(slot)}
-                          >
-                            <span className="schedule__slotEmptyPlus">＋</span>
-                            <span className="schedule__slotEmptyText">Disponible</span>
-                          </button>
-                        ) : (
-                          <div
-                            className={`schedule__apptCard s-${block.status || 'pending'}`}
-                            style={{
-                              minHeight: `calc(${block.span} * 58px)`,
-                              "--pastFade": pastFade, // también para cards
-                            }}
-                            onClick={() => handleAppointmentClick(block)}
-                            onDoubleClick={() => handleAppointmentDoubleClick(block)}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <div className="schedule__apptTop">
-                              <span className="schedule__apptName">{block.name}</span>
-                              <span className="schedule__apptService">{block.serviceType}</span>
-                            </div>
+                        {/* ✅ MODO TODOS: columnas por barbero */}
+                        {isAllBarbers ? (
+                          <div className="schedule__slotCellAll">
+                            {(() => {
+                              // 1) Construimos lista de items (cards) de este slot
+                              const items = (barbers || [])
+                                .map((b) => {
+                                  const tm = timelineModelsByBarber?.get(b.id)
+                                  if (!tm) return null
 
-                            <div className="schedule__apptBottom">
-                              <span className="schedule__apptStatus">
-                                {getStatusLabel(block.status)}
-                              </span>
-                              <span className={`schedule__apptPay ${block.paymentStatus === 'paid' ? 'is-paid' : 'is-unpaid'}`}>
-                                {block.paymentStatus === 'paid' ? 'Pagado' : 'Por cobrar'}
-                              </span>
-                            </div>
+                                  // si el slot está cubierto por una cita anterior (60min) para ESTE barbero, no renderizamos nada
+                                  if (tm.hiddenSlots.has(startMin)) return null
+
+                                  const block = tm.slotMap.get(startMin)
+                                  if (!block) return null
+
+                                  return {
+                                    barber: b,
+                                    block,
+                                  }
+                                })
+                                .filter(Boolean)
+
+                              // 2) Si al menos 1 barbero está libre en este slot -> mostrar UN botón
+                              const hasAnyAvailable = (barbers || []).some((b) => {
+                                const tm = timelineModelsByBarber?.get(b.id)
+                                if (!tm) return false
+                                if (tm.hiddenSlots.has(startMin)) return false
+                                return !tm.slotMap.get(startMin)
+                              })
+
+                              return (
+                                <>
+                                  {hasAnyAvailable && (
+                                    <button
+                                      className="schedule__slotEmpty schedule__slotEmpty--allStack"
+                                      type="button"
+                                      onClick={() => openCreateAtSlot(slot)} // ✅ sin barberId -> el modal elige
+                                    >
+                                      <span className="schedule__slotEmptyPlus">＋</span>
+                                      <span className="schedule__slotEmptyText">Disponible</span>
+                                      <span className="schedule__slotEmptyHint">Elige barbero en el formulario</span>
+                                    </button>
+                                  )}
+
+                                  {items.length > 0 ? (
+                                    <div className="schedule__stack">
+                                      {items.map(({ barber, block }) => (
+                                        <div
+                                          key={`${barber.id}-${block.id}`}
+                                          className={`schedule__apptCard schedule__apptCard--stack s-${block.status || "pending"}`}
+                                          style={{
+                                            minHeight: `calc(${block.span} * 58px)`,
+                                            "--pastFade": pastFade,
+                                            borderLeft: `4px solid ${barber.color || "var(--gray)"}`,
+                                          }}
+                                          onClick={() => handleAppointmentClick(block)}
+                                          onDoubleClick={() => handleAppointmentDoubleClick(block)}
+                                          role="button"
+                                          tabIndex={0}
+                                          title={barber.name}
+                                        >
+                                          <div className="schedule__apptTop">
+                                            <span className="schedule__apptName">{block.name}</span>
+                                            <span className="schedule__apptService">{block.serviceType}</span>
+                                          </div>
+
+                                          <div className="schedule__apptBottom">
+                                            <span className="schedule__apptStatus">{getStatusLabel(block.status)}</span>
+
+                                            <span className={`schedule__apptPay ${block.paymentStatus === "paid" ? "is-paid" : "is-unpaid"}`}>
+                                              {block.paymentStatus === "paid" ? "Pagado" : "Por cobrar"}
+                                            </span>
+                                          </div>
+
+                                          <div className="schedule__apptMeta">
+                                            <span
+                                              className="schedule__barberPill"
+                                              style={{ "--barberColor": barber.color || "var(--gray)" }}
+                                            >
+                                              <span className="schedule__barberDot" aria-hidden="true" />
+                                              {barber.name}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    // si no hay citas en este slot y tampoco hay cupo -> nada
+                                    null
+                                  )}
+                                </>
+                              )
+                            })()}
                           </div>
+                        ) : (
+                          /* ✅ MODO 1 BARBERO: tu lógica actual intacta */
+                          !block ? (
+                            <button
+                              className="schedule__slotEmpty"
+                              type="button"
+                              onClick={() => openCreateAtSlot(slot)}
+                            >
+                              <span className="schedule__slotEmptyPlus">＋</span>
+                              <span className="schedule__slotEmptyText">Disponible</span>
+                            </button>
+                          ) : (
+                            <div
+                              className={`schedule__apptCard s-${block.status || "pending"}`}
+                              style={{
+                                minHeight: `calc(${block.span} * 58px)`,
+                                "--pastFade": pastFade,
+                              }}
+                              onClick={() => handleAppointmentClick(block)}
+                              onDoubleClick={() => handleAppointmentDoubleClick(block)}
+                              role="button"
+                              tabIndex={0}
+                            >
+                              <div className="schedule__apptTop">
+                                <span className="schedule__apptName">{block.name}</span>
+                                <span className="schedule__apptService">{block.serviceType}</span>
+                              </div>
+
+                              <div className="schedule__apptBottom">
+                                <span className="schedule__apptStatus">
+                                  {getStatusLabel(block.status)}
+                                </span>
+                                <span className={`schedule__apptPay ${block.paymentStatus === "paid" ? "is-paid" : "is-unpaid"}`}>
+                                  {block.paymentStatus === "paid" ? "Pagado" : "Por cobrar"}
+                                </span>
+                              </div>
+                            </div>
+                          )
                         )}
                       </div>
                     </div>

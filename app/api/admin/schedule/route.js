@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
+import mongoose from "mongoose";
 
 export async function GET(req) {
   try {
     await connectMongoDB();
 
     const { searchParams } = new URL(req.url);
+
     const date = (searchParams.get("date") || "").trim(); // YYYY-MM-DD
+    const barberId = (searchParams.get("barberId") || "").trim(); // optional
 
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return NextResponse.json(
@@ -16,17 +19,31 @@ export async function GET(req) {
       );
     }
 
+    // ✅ Validación barberId si viene
+    let barberObjectId = null;
+    if (barberId) {
+      if (!mongoose.Types.ObjectId.isValid(barberId)) {
+        return NextResponse.json(
+          { error: "Parámetro 'barberId' inválido" },
+          { status: 400 }
+        );
+      }
+      barberObjectId = new mongoose.Types.ObjectId(barberId);
+    }
+
     // Rango del día en -05:00 (Ecuador)
     const start = new Date(`${date}T00:00:00-05:00`);
     const end = new Date(`${date}T00:00:00-05:00`);
     end.setDate(end.getDate() + 1);
 
+    // ✅ Match base con barberId opcional
+    const match = {
+      startAt: { $gte: start, $lt: end },
+      ...(barberObjectId ? { barberId: barberObjectId } : {}),
+    };
+
     const pipeline = [
-      {
-        $match: {
-          startAt: { $gte: start, $lt: end },
-        },
-      },
+      { $match: match },
 
       // join con users
       {
@@ -39,6 +56,23 @@ export async function GET(req) {
       },
       { $unwind: "$user" },
 
+      // ✅ join con barbers (opcional, pero útil)
+      {
+        $lookup: {
+          from: "barbers",
+          localField: "barberId",
+          foreignField: "_id",
+          as: "barber",
+        },
+      },
+      // preserveNullAndEmptyArrays: true para citas antiguas sin barberId
+      {
+        $unwind: {
+          path: "$barber",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
       // ordenar por hora
       { $sort: { startAt: 1 } },
 
@@ -46,12 +80,22 @@ export async function GET(req) {
       {
         $project: {
           _id: 1,
+
           user: {
             _id: "$user._id",
             firstName: "$user.firstName",
             lastName: "$user.lastName",
             phone: "$user.phone",
           },
+
+          // ✅ barber info ligera
+          barber: {
+            _id: "$barber._id",
+            name: "$barber.name",
+            color: "$barber.color",
+          },
+
+          barberId: 1,
           startAt: 1,
           durationMinutes: 1,
           price: 1,
@@ -75,25 +119,32 @@ export async function GET(req) {
       return {
         ...a,
         id: a?._id?.toString?.() ?? a?._id,
+
         userId: a?.user?._id?.toString?.() ?? a?.user?._id,
         name: fullName || "—",
         phone: a?.user?.phone ?? "",
+
+        // ✅ normalizar barberId y barber
+        barberId: a?.barberId?.toString?.() ?? a?.barberId ?? null,
+        barber: a?.barber?._id
+          ? {
+              id: a?.barber?._id?.toString?.() ?? a?.barber?._id,
+              name: a?.barber?.name ?? "—",
+              color: a?.barber?.color || "#000000",
+            }
+          : null,
       };
     });
 
-    // ✅ Meta
+    // ✅ Meta (igual que tu lógica)
     const meta = {
-      total: 0,          // ✅ ahora será total operativo
+      total: 0,
       pending: 0,
       confirmed: 0,
       inProgress: 0,
       completed: 0,
-
-      // incidencias (no cuentan para total/billing)
       cancelled: 0,
       noAssistance: 0,
-
-      // billing operativo
       unpaid: 0,
       paid: 0,
     };
@@ -101,7 +152,6 @@ export async function GET(req) {
     for (const a of appointments) {
       const st = a?.status || "pending";
 
-      // ✅ incidencias: se cuentan pero NO entran al total ni al billing
       if (st === "cancelled") {
         meta.cancelled++;
         continue;
@@ -111,16 +161,13 @@ export async function GET(req) {
         continue;
       }
 
-      // ✅ solo estados operativos suman al total
       meta.total++;
 
-      // ✅ conteo de estados operativos (ajusta a tus nuevos slugs)
       if (st === "pending") meta.pending++;
       else if (st === "confirmed") meta.confirmed++;
       else if (st === "in_progress") meta.inProgress++;
       else if (st === "completed") meta.completed++;
 
-      // ✅ billing: solo para operativos
       const pay = a?.paymentStatus || "unpaid";
       if (pay === "paid") meta.paid++;
       else meta.unpaid++;
@@ -128,6 +175,7 @@ export async function GET(req) {
 
     return NextResponse.json({
       date,
+      barberId: barberId || null,
       startAtRange: { start, end },
       appointments,
       meta,

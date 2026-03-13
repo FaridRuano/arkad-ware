@@ -231,3 +231,18 @@ a.link {
     animation: spin 1s linear infinite;
     margin: 0 auto;
 }
+
+/* =========================
+   Globals
+========================= */
+
+.page {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+
+  @media (max-width: 980px) {
+    gap: 20px;
+  }
+}

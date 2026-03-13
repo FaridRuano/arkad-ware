@@ -2,69 +2,158 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  BarChart3,
+  Settings,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 
-const AdminSideBar = () => {
-
-  const router = useRouter()
-
+const AdminSideBar = ({
+  collapsed,
+  setCollapsed,
+  isMobile,
+  isMobileOpen,
+  setIsMobileOpen,
+}) => {
+  const router = useRouter();
   const pathname = usePathname();
 
-  const isActive = (href) => pathname === href;
+  const menuItems = [
+    { label: 'Inicio', href: '/admin', icon: LayoutDashboard },
+    { label: 'Agenda', href: '/admin/schedule', icon: CalendarDays },
+    { label: 'Clientes', href: '/admin/clients', icon: Users },
+    { label: 'Reportes', href: '/admin/data', icon: BarChart3 },
+    { label: 'Configuración', href: '/admin/settings', icon: Settings },
+  ];
 
-  // 🔐 LOGOUT
+  const isActive = (href) => {
+    if (href === '/admin') return pathname === '/admin';
+    return pathname === href || pathname.startsWith(href + '/');
+  };
+
   const handleLogout = async () => {
     try {
-      const res = await fetch("/api/auth/logout", {
-        method: "POST",
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
       });
 
       if (!res.ok) {
-        console.error("No se pudo cerrar sesión");
+        console.error('No se pudo cerrar sesión');
         return;
       }
 
-      router.push("/"); // vuelve al login
+      router.push('/');
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error('Error al cerrar sesión:', error);
     }
   };
 
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  const handleToggleSidebar = () => {
+    if (isMobile) {
+      setIsMobileOpen(false);
+      return;
+    }
+
+    setCollapsed((prev) => !prev);
+  };
+
   return (
-    <div className="admin-sidebar">
-      <h2>Admin Panel</h2>
-      <nav>
-        <ul>
-          <li>
-            <Link href="/admin" className={isActive('/admin') ? 'active' : ''}>Dashboard</Link>
-          </li>
-          <li>
-            <Link href="/admin/schedule" className={isActive('/admin/schedule') ? 'active' : ''}>Agenda</Link>
-          </li>
-          <li>
-            <Link href="/admin/appointments" className={isActive('/admin/appointments') ? 'active' : ''}>Citas</Link>
-          </li>
-          <li>
-            <Link href="/admin/clients" className={isActive('/admin/clients') ? 'active' : ''}>Clientes</Link>
-          </li>
-          <li>
-            <Link href="/admin/barbers" className={isActive('/admin/barbers') ? 'active' : ''}>Barberos</Link>
-          </li>
-          <li>
-            <Link href="/admin/data" className={isActive('/admin/data') ? 'active' : ''}>Datos</Link>
-          </li>
-        </ul>
-      </nav>
-      {/* 🔥 Logout Section */}
-      <div className="admin-sidebar__logout">
+    <>
+      {isMobile && !isMobileOpen && (
         <button
           type="button"
-          className="admin-sidebar__logoutBtn"
-          onClick={handleLogout}
+          className="admin-mobile-toggle"
+          onClick={() => setIsMobileOpen(true)}
+          aria-label="Abrir menú"
         >
-          Cerrar sesión
+          <PanelLeftOpen size={20} />
         </button>
-      </div>
-    </div>
+      )}
+
+      {isMobile && isMobileOpen && (
+        <div
+          className="adminSidebarBackdrop"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      <aside
+        className={`admin-sidebar ${collapsed ? 'collapsed' : ''} ${isMobileOpen ? 'is-open' : ''}`}
+      >
+        <div className="admin-sidebar__top">
+          <div className="admin-sidebar__header">
+            {!collapsed && <h2>Arkad</h2>}
+
+            <button
+              type="button"
+              className="admin-sidebar__collapseBtn"
+              onClick={handleToggleSidebar}
+              aria-label={
+                isMobile
+                  ? 'Cerrar menú'
+                  : collapsed
+                    ? 'Expandir sidebar'
+                    : 'Colapsar sidebar'
+              }
+            >
+              {isMobile ? (
+                <PanelLeftClose size={18} />
+              ) : collapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
+            </button>
+          </div>
+
+          <nav>
+            <ul>
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`admin-sidebar__link ${active ? 'active' : ''}`}
+                      onClick={handleLinkClick}
+                      title={collapsed && !isMobile ? item.label : ''}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
+
+        <div className="admin-sidebar__logout">
+          <button
+            type="button"
+            className="admin-sidebar__logoutBtn"
+            onClick={handleLogout}
+            title={collapsed && !isMobile ? 'Cerrar sesión' : ''}
+          >
+            <LogOut size={18} />
+            {!collapsed && <span>Cerrar sesión</span>}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 };
 

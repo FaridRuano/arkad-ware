@@ -1,7 +1,6 @@
 .clients__page {
-    display: grid;
-    gap: 16px;
-    padding: 18px;
+    display: flex;
+    flex-direction: column;
 
     // Tarjetas / secciones
     .clients__filters,

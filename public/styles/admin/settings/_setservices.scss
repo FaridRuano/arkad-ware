@@ -1,0 +1,487 @@
+/* =========================
+   SERVICES PAGE
+   ========================= */
+.services-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+
+    &__header {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    &__headerContent {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        padding: 22px 24px;
+        border-radius: 24px;
+        background: color-mix(in oklab, var(--surface-1) 88%, black 12%);
+        border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+        box-shadow: var(--shadow-1);
+    }
+
+    &__titleWrap {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &__title {
+        margin: 0;
+        font-size: clamp(1.4rem, 2vw, 2rem);
+        line-height: 1;
+        font-weight: 800;
+        color: var(--fg);
+        letter-spacing: -0.03em;
+    }
+
+    &__subtitle {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--fg-soft);
+    }
+
+    &__newBtn {
+        min-width: 132px;
+        min-height: 44px;
+        flex-shrink: 0;
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &__state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        min-height: 260px;
+        padding: 28px;
+        text-align: center;
+        border-radius: 24px;
+        background: color-mix(in oklab, var(--surface-1) 90%, black 10%);
+        border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+        box-shadow: var(--shadow-1);
+    }
+
+    &__stateTitle {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--fg);
+    }
+
+    &__stateText {
+        max-width: 520px;
+        font-size: 0.94rem;
+        line-height: 1.5;
+        color: var(--fg-soft);
+    }
+}
+
+/* =========================
+   SERVICE ROW CARD
+   ========================= */
+.service-row-card {
+    height: fit-content;
+    transition:
+        transform 0.18s ease,
+        box-shadow 0.22s ease,
+        border-color 0.22s ease,
+        opacity 0.22s ease,
+        filter 0.22s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 34px color-mix(in oklab, black 20%, transparent 80%);
+        border-color: color-mix(in oklab, var(--primary) 16%, transparent 84%);
+    }
+
+    &.is-inactive {
+        opacity: 0.78;
+        filter: saturate(0.62);
+
+        .service-row-card__name,
+        .service-row-card__metaValue,
+        .service-row-card__description {
+            color: color-mix(in oklab, var(--fg) 76%, transparent 24%);
+        }
+    }
+
+    &__main {
+        border-radius: 24px;
+        background: color-mix(in oklab, var(--surface-1) 92%, black 8%);
+        display: flex;
+        flex-direction: row;
+        min-height: fit-content;
+    }
+
+    &__accent {
+        width: 20px;
+        min-height: 100%;
+        border-radius: 24px 0 0 24px;
+
+    }
+
+    &__content {
+        width: 100%;
+        box-shadow: var(--shadow-1);
+        border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 18px 20px;
+        border-radius: 0 24px 24px 0;
+    }
+
+    &__top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+    }
+
+    &__identity {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    &__titleRow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    &__status {
+        display: inline-flex;
+        align-items: center;
+        min-height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        font-size: 0.73rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+
+        &.is-active {
+            color: #d9ffe8;
+            background: rgba(19, 112, 63, 0.45);
+        }
+
+        &.is-inactive {
+            color: #ffe2c6;
+            background: rgba(120, 76, 25, 0.45);
+        }
+    }
+
+    &__name {
+        margin: 0;
+        font-size: 1.08rem;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+    }
+
+    &__description {
+        margin: 0;
+        font-size: 0.88rem;
+        color: var(--fg-soft);
+        line-height: 1.45;
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    &__actionBtn {
+        width: 36px;
+        height: 36px;
+        display: grid;
+        place-items: center;
+        border: none;
+        cursor: pointer;
+        border-radius: 12px;
+        color: var(--fg);
+        background: color-mix(in oklab, var(--surface-2) 80%, transparent 20%);
+        transition:
+            transform 0.16s ease,
+            background-color 0.2s ease,
+            color 0.2s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+        }
+
+        &--edit:hover {
+            color: var(--primary);
+            background: color-mix(in oklab, var(--primary) 14%, transparent 86%);
+        }
+
+        &--deactivate:hover {
+            color: #ff7a7a;
+            background: color-mix(in oklab, #ff4d4f 14%, transparent 86%);
+        }
+
+        &--activate:hover {
+            color: #72f2a1;
+            background: color-mix(in oklab, #33cc77 14%, transparent 86%);
+        }
+    }
+
+    &__meta {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    &__metaItem {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        padding: 13px 14px;
+        border-radius: 16px;
+        background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+    }
+
+    &__metaIcon {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        border-radius: 10px;
+        color: var(--primary);
+        background: color-mix(in oklab, var(--primary) 12%, transparent 88%);
+    }
+
+    &__metaText {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+    }
+
+    &__metaLabel {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--fg-soft);
+    }
+
+    &__metaValue {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.92rem;
+        line-height: 1.35;
+        color: var(--fg);
+        word-break: break-word;
+    }
+
+    &__colorDot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    &__bottom {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding-top: 2px;
+    }
+
+    &__bottomHeader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    &__assignedTitle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: var(--fg);
+    }
+
+    &__assignedCount {
+        min-width: 28px;
+        height: 28px;
+        display: inline-grid;
+        place-items: center;
+        padding: 0 8px;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--fg);
+        background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    }
+
+    &__barbers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    &__barberChip {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+        border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+        color: var(--fg);
+        transition:
+            transform 0.16s ease,
+            border-color 0.2s ease,
+            opacity 0.2s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+            border-color: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+        }
+
+        &.is-inactive {
+            opacity: 0.62;
+            filter: saturate(0.6);
+        }
+    }
+
+    &__barberDot {
+        width: 11px;
+        height: 11px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    &__barberName {
+        font-size: 0.87rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    &__emptyBarbers {
+        padding: 12px 14px;
+        border-radius: 14px;
+        background: color-mix(in oklab, var(--surface-2) 66%, transparent 34%);
+        color: var(--fg-soft);
+        font-size: 0.88rem;
+    }
+}
+
+@media (max-width: 920px) {
+    .service-row-card {
+        &__meta {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+@media (max-width: 768px) {
+    .services-page {
+        gap: 18px;
+
+        &__headerContent {
+            padding: 18px;
+            border-radius: 20px;
+            align-items: stretch;
+        }
+
+        &__subtitle {
+            font-size: 0.9rem;
+        }
+
+        &__newBtn {
+            width: 100%;
+        }
+
+        &__state {
+            min-height: 220px;
+            padding: 22px 18px;
+            border-radius: 20px;
+        }
+    }
+
+    .service-row-card {
+        border-radius: 20px;
+
+        &__main {
+            grid-template-columns: 6px 1fr;
+        }
+
+        &__accent {
+            border-radius: 20px 0 0 20px;
+        }
+
+        &__content {
+            padding: 16px;
+            gap: 16px;
+        }
+
+        &__top {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        &__actions {
+            justify-content: flex-end;
+        }
+    }
+}
+
+@media (max-width: 520px) {
+    .service-row-card {
+        &__titleRow {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        &__bottomHeader {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        &__barbers {
+            gap: 8px;
+        }
+
+        &__barberChip {
+            width: 100%;
+            justify-content: flex-start;
+            border-radius: 14px;
+            min-height: 40px;
+        }
+    }
+}

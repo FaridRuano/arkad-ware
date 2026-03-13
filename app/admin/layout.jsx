@@ -1,23 +1,17 @@
 import { auth } from "@auth";
-import { redirect } from "@node_modules/next/navigation";
-import AdminSideBar from "@public/components/admin/AdminSideBar";
+import { redirect } from "next/navigation";
+import AdminShell from "@public/components/admin/AdminShell";
 
 export default async function ClientLayout({ children }) {
-    const session = await auth();
+  const session = await auth();
 
-    if (!session?.user) {
-        redirect("/");
-    }
+  if (!session?.user) {
+    redirect("/");
+  }
 
-    if (session.user.role !== "admin") {
-        redirect("/client");
-    }
-    return (
-        <div className="admin">
-            <AdminSideBar />
-            <div className="admin-content">
-                {children}
-            </div>
-        </div>
-    );
+  if (session.user.role !== "admin") {
+    redirect("/client");
+  }
+
+  return <AdminShell>{children}</AdminShell>;
 }

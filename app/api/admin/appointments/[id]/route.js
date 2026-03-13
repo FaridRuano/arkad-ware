@@ -6,7 +6,8 @@ export async function PATCH(req, { params }) {
     try {
         await connectMongoDB();
 
-        const { id } = params;
+        const { id } = await params;
+
         const body = await req.json();
 
         // Whitelist de campos editables

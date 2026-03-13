@@ -8,7 +8,8 @@ export async function PATCH(req, { params }) {
   try {
     await connectMongoDB();
 
-    const id = params?.id;
+    const { id } = await params;
+
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }

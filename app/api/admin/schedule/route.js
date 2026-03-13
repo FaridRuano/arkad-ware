@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
-import mongoose from "mongoose";
+
+function isValidDateString(value = "") {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
 
 export async function GET(req) {
   try {
@@ -12,15 +16,15 @@ export async function GET(req) {
     const date = (searchParams.get("date") || "").trim(); // YYYY-MM-DD
     const barberId = (searchParams.get("barberId") || "").trim(); // optional
 
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    if (!date || !isValidDateString(date)) {
       return NextResponse.json(
         { error: "Parámetro 'date' inválido. Usa YYYY-MM-DD" },
         { status: 400 }
       );
     }
 
-    // ✅ Validación barberId si viene
     let barberObjectId = null;
+
     if (barberId) {
       if (!mongoose.Types.ObjectId.isValid(barberId)) {
         return NextResponse.json(
@@ -28,15 +32,15 @@ export async function GET(req) {
           { status: 400 }
         );
       }
+
       barberObjectId = new mongoose.Types.ObjectId(barberId);
     }
 
-    // Rango del día en -05:00 (Ecuador)
+    // Ecuador UTC-5
     const start = new Date(`${date}T00:00:00-05:00`);
     const end = new Date(`${date}T00:00:00-05:00`);
     end.setDate(end.getDate() + 1);
 
-    // ✅ Match base con barberId opcional
     const match = {
       startAt: { $gte: start, $lt: end },
       ...(barberObjectId ? { barberId: barberObjectId } : {}),
@@ -45,18 +49,23 @@ export async function GET(req) {
     const pipeline = [
       { $match: match },
 
-      // join con users
+      // Cliente
       {
         $lookup: {
           from: "users",
-          localField: "user",
+          localField: "clientId",
           foreignField: "_id",
-          as: "user",
+          as: "client",
         },
       },
-      { $unwind: "$user" },
+      {
+        $unwind: {
+          path: "$client",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
 
-      // ✅ join con barbers (opcional, pero útil)
+      // Barbero
       {
         $lookup: {
           from: "barbers",
@@ -65,7 +74,6 @@ export async function GET(req) {
           as: "barber",
         },
       },
-      // preserveNullAndEmptyArrays: true para citas antiguas sin barberId
       {
         $unwind: {
           path: "$barber",
@@ -73,38 +81,73 @@ export async function GET(req) {
         },
       },
 
-      // ordenar por hora
+      // Creador
+      {
+        $lookup: {
+          from: "users",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "createdByUser",
+        },
+      },
+      {
+        $unwind: {
+          path: "$createdByUser",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+
       { $sort: { startAt: 1 } },
 
-      // proyectar solo lo necesario
       {
         $project: {
           _id: 1,
 
-          user: {
-            _id: "$user._id",
-            firstName: "$user.firstName",
-            lastName: "$user.lastName",
-            phone: "$user.phone",
+          clientId: 1,
+          barberId: 1,
+          serviceId: 1,
+
+          serviceName: 1,
+          startAt: 1,
+          endAt: 1,
+          durationMinutes: 1,
+          price: 1,
+
+          status: 1,
+          paymentStatus: 1,
+          source: 1,
+
+          notes: 1,
+          statusHistory: 1,
+
+          cancelledAt: 1,
+          completedAt: 1,
+          paidAt: 1,
+
+          createdAt: 1,
+          updatedAt: 1,
+
+          client: {
+            _id: "$client._id",
+            firstName: "$client.firstName",
+            lastName: "$client.lastName",
+            phone: "$client.phone",
+            email: "$client.email",
           },
 
-          // ✅ barber info ligera
           barber: {
             _id: "$barber._id",
             name: "$barber.name",
             color: "$barber.color",
           },
 
-          barberId: 1,
-          startAt: 1,
-          durationMinutes: 1,
-          price: 1,
-          status: 1,
-          paymentStatus: 1,
-          notes: 1,
-          statusHistory: 1,
-          createdAt: 1,
-          updatedAt: 1,
+          createdByUser: {
+            _id: "$createdByUser._id",
+            firstName: "$createdByUser.firstName",
+            lastName: "$createdByUser.lastName",
+            email: "$createdByUser.email",
+            role: "$createdByUser.role",
+          },
         },
       },
     ];
@@ -112,20 +155,32 @@ export async function GET(req) {
     const docs = await Appointment.aggregate(pipeline);
 
     const appointments = (docs || []).map((a) => {
-      const firstName = a?.user?.firstName || "";
-      const lastName = a?.user?.lastName || "";
-      const fullName = `${firstName} ${lastName}`.trim();
+      const clientFirstName = a?.client?.firstName || "";
+      const clientLastName = a?.client?.lastName || "";
+      const clientFullName = `${clientFirstName} ${clientLastName}`.trim();
+
+      const creatorFirstName = a?.createdByUser?.firstName || "";
+      const creatorLastName = a?.createdByUser?.lastName || "";
+      const creatorFullName = `${creatorFirstName} ${creatorLastName}`.trim();
 
       return {
-        ...a,
         id: a?._id?.toString?.() ?? a?._id,
 
-        userId: a?.user?._id?.toString?.() ?? a?.user?._id,
-        name: fullName || "—",
-        phone: a?.user?.phone ?? "",
-
-        // ✅ normalizar barberId y barber
+        clientId: a?.clientId?.toString?.() ?? a?.clientId ?? null,
         barberId: a?.barberId?.toString?.() ?? a?.barberId ?? null,
+        serviceId: a?.serviceId?.toString?.() ?? a?.serviceId ?? null,
+
+        client: a?.client?._id
+          ? {
+              id: a?.client?._id?.toString?.() ?? a?.client?._id,
+              firstName: a?.client?.firstName ?? "",
+              lastName: a?.client?.lastName ?? "",
+              name: clientFullName || "—",
+              phone: a?.client?.phone ?? "",
+              email: a?.client?.email ?? "",
+            }
+          : null,
+
         barber: a?.barber?._id
           ? {
               id: a?.barber?._id?.toString?.() ?? a?.barber?._id,
@@ -133,10 +188,41 @@ export async function GET(req) {
               color: a?.barber?.color || "#000000",
             }
           : null,
+
+        createdBy: a?.createdByUser?._id
+          ? {
+              id:
+                a?.createdByUser?._id?.toString?.() ?? a?.createdByUser?._id,
+              firstName: a?.createdByUser?.firstName ?? "",
+              lastName: a?.createdByUser?.lastName ?? "",
+              name: creatorFullName || "—",
+              email: a?.createdByUser?.email ?? "",
+              role: a?.createdByUser?.role ?? "",
+            }
+          : null,
+
+        serviceName: a?.serviceName ?? "",
+        startAt: a?.startAt ?? null,
+        endAt: a?.endAt ?? null,
+        durationMinutes: a?.durationMinutes ?? 0,
+        price: a?.price ?? 0,
+
+        status: a?.status ?? "pending",
+        paymentStatus: a?.paymentStatus ?? "unpaid",
+        source: a?.source ?? "admin-panel",
+
+        notes: a?.notes ?? "",
+        statusHistory: Array.isArray(a?.statusHistory) ? a.statusHistory : [],
+
+        cancelledAt: a?.cancelledAt ?? null,
+        completedAt: a?.completedAt ?? null,
+        paidAt: a?.paidAt ?? null,
+
+        createdAt: a?.createdAt ?? null,
+        updatedAt: a?.updatedAt ?? null,
       };
     });
 
-    // ✅ Meta (igual que tu lógica)
     const meta = {
       total: 0,
       pending: 0,
@@ -156,6 +242,7 @@ export async function GET(req) {
         meta.cancelled++;
         continue;
       }
+
       if (st === "no_assistance") {
         meta.noAssistance++;
         continue;
@@ -181,6 +268,8 @@ export async function GET(req) {
       meta,
     });
   } catch (err) {
+    console.error("GET /admin/schedule error:", err);
+
     return NextResponse.json(
       { error: err?.message || "Error cargando agenda" },
       { status: 500 }

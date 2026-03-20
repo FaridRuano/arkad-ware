@@ -24,7 +24,6 @@ const AdminSideBar = ({
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
   const menuItems = [
     { label: 'Inicio', href: '/admin', icon: LayoutDashboard },

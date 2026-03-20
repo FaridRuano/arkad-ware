@@ -168,7 +168,7 @@ const page = () => {
         onSave={handleSaveClient}
       />
 
-      <div className="admin__dashboard clients__page">
+      <div className="clients__page page">
         {/* 1) Filtros */}
         <section className="clients__filters">
           <header className="clients__filtersHeader">

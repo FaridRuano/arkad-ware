@@ -291,7 +291,7 @@ const page = () => {
         <>
             <ModalConfirm mainText={confirmModalText} active={confirmModal} setActive={handleConfirmModal} response={responseConfirmModal} />
 
-            <div className="admin__dashboard">
+            <div className="admin__dashboard page">
 
                 {/* HEADER */}
                 <div className="admin__header">

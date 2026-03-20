@@ -167,13 +167,15 @@ export async function DELETE(req, { params }) {
   try {
     await connectMongoDB();
 
-    const id = params?.id;
+    const { id } = await params;
+
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
     const { searchParams } = new URL(req.url);
     const hard = searchParams.get("hard") === "true";
+    const action = searchParams.get("action"); // activate | deactivate
 
     const barber = await Barber.findById(id).select("_id name isActive");
     if (!barber) {
@@ -181,23 +183,32 @@ export async function DELETE(req, { params }) {
     }
 
     if (hard) {
-      // ⚠️ Solo si estás 100% seguro y no hay citas asociadas
       await Barber.deleteOne({ _id: id });
-      return NextResponse.json({ ok: true, deleted: true });
+      return NextResponse.json({
+        ok: true,
+        deleted: true,
+        action: "deleted",
+      });
     }
 
-    // ✅ Soft delete (recomendado): desactivar
-    if (barber.isActive === false) {
-      return NextResponse.json({ ok: true, deactivated: true }); // ya estaba desactivado
+    if (action === "activate") {
+      barber.isActive = true;
+    } else if (action === "deactivate") {
+      barber.isActive = false;
+    } else {
+      barber.isActive = !barber.isActive;
     }
 
-    barber.isActive = false;
     await barber.save();
 
-    return NextResponse.json({ ok: true, deactivated: true });
+    return NextResponse.json({
+      ok: true,
+      isActive: barber.isActive,
+      action: barber.isActive ? "activated" : "deactivated",
+    });
   } catch (err) {
     return NextResponse.json(
-      { error: err?.message || "Error eliminando barbero" },
+      { error: err?.message || "Error actualizando estado del barbero" },
       { status: 500 }
     );
   }

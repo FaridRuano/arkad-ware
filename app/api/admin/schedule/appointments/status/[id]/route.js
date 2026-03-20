@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
+import mongoose from "mongoose";
 import Appointment from "@models/Appointment";
 import connectMongoDB from "@libs/mongodb";
+import { auth } from "@auth";
 
-// Ajusta a tus estados nuevos (sin espacios)
 const STATUS = {
   PENDING: "pending",
   CONFIRMED: "confirmed",
@@ -12,7 +13,6 @@ const STATUS = {
   NO_ASSISTANCE: "no_assistance",
 };
 
-// Reglas de transición (backend manda)
 const TRANSITIONS = {
   [STATUS.PENDING]: [STATUS.CONFIRMED, STATUS.NO_ASSISTANCE, STATUS.CANCELLED],
   [STATUS.CONFIRMED]: [STATUS.IN_PROGRESS, STATUS.NO_ASSISTANCE, STATUS.CANCELLED],
@@ -22,45 +22,98 @@ const TRANSITIONS = {
   [STATUS.CANCELLED]: [],
 };
 
-const isAllowedTransition = (from, to) => {
+function isAllowedTransition(from, to) {
   const allowed = TRANSITIONS[from] || [];
   return allowed.includes(to);
-};
+}
 
 export async function PATCH(req, { params }) {
   try {
+    const session = await auth();
+
+    const userId = session?.user?.id;
+    const role = session?.user?.role;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    if (role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json(
+        { error: "Usuario de sesión inválido" },
+        { status: 400 }
+      );
+    }
+
     await connectMongoDB();
 
-    const { id } = params;
-    const body = await req.json();
+    const { id } = await params;
 
-    const to = body?.to; // nuevo estado
-    const reason = body?.reason || "manual";
-    const changedBy = body?.changedBy || null; // ideal: sacarlo de sesión admin
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { error: "ID de cita inválido" },
+        { status: 400 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+
+    const to = String(body?.to || "").trim();
+    const reason = String(body?.reason || "manual").trim();
 
     if (!to) {
-      return NextResponse.json({ error: "Campo 'to' es requerido" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Campo 'to' es requerido" },
+        { status: 400 }
+      );
     }
 
     const allowedStatuses = new Set(Object.values(STATUS));
+
     if (!allowedStatuses.has(to)) {
-      return NextResponse.json({ error: "Estado inválido" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Estado inválido" },
+        { status: 400 }
+      );
     }
 
-    // Traemos el doc actual para saber el "from"
-    const current = await Appointment.findById(id).lean();
+    const current = await Appointment.findById(id)
+      .select(
+        "_id status statusHistory completedAt cancelledAt paymentStatus paidAt"
+      )
+      .lean();
+
     if (!current) {
-      return NextResponse.json({ error: "Cita no encontrada" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Cita no encontrada" },
+        { status: 404 }
+      );
     }
 
-    const from = current.status || "";
+    const from = current?.status || "";
 
-    // Si no cambia, no hacemos nada (pero devolvemos ok)
     if (from === to) {
-      return NextResponse.json({ ok: true, appointment: current });
+      return NextResponse.json({
+        ok: true,
+        appointment: {
+          id: current?._id?.toString?.() ?? current?._id,
+          status: current?.status ?? null,
+          completedAt: current?.completedAt ?? null,
+          cancelledAt: current?.cancelledAt ?? null,
+        },
+      });
     }
 
-    // Validación de transición (según reglas de negocio)
     if (from && !isAllowedTransition(from, to)) {
       return NextResponse.json(
         { error: `Transición no permitida: ${from} → ${to}` },
@@ -68,25 +121,64 @@ export async function PATCH(req, { params }) {
       );
     }
 
+    const changedBy = new mongoose.Types.ObjectId(userId);
+    const now = new Date();
+
+    const setFields = {
+      status: to,
+    };
+
+    // Normalizar timestamps de estado
+    if (to === STATUS.COMPLETED) {
+      setFields.completedAt = now;
+      setFields.cancelledAt = null;
+    } else if (to === STATUS.CANCELLED) {
+      setFields.cancelledAt = now;
+      setFields.completedAt = null;
+    } else {
+      // Para estados intermedios limpiamos timestamps finales
+      setFields.completedAt = null;
+      setFields.cancelledAt = null;
+    }
+
     const historyEntry = {
       from,
       to,
-      changedAt: new Date(),
+      changedAt: now,
       changedBy,
-      reason,
+      reason: reason || "manual",
     };
 
     const updated = await Appointment.findByIdAndUpdate(
       id,
       {
-        $set: { status: to },
+        $set: setFields,
         $push: { statusHistory: historyEntry },
       },
-      { new: true }
+      {
+        new: true,
+        runValidators: true,
+      }
     ).lean();
 
-    return NextResponse.json({ ok: true, appointment: updated });
+    return NextResponse.json({
+      ok: true,
+      appointment: {
+        id: updated?._id?.toString?.() ?? updated?._id,
+        status: updated?.status ?? null,
+        paymentStatus: updated?.paymentStatus ?? "unpaid",
+        completedAt: updated?.completedAt ?? null,
+        cancelledAt: updated?.cancelledAt ?? null,
+        paidAt: updated?.paidAt ?? null,
+        statusHistory: Array.isArray(updated?.statusHistory)
+          ? updated.statusHistory
+          : [],
+        updatedAt: updated?.updatedAt ?? null,
+      },
+    });
   } catch (err) {
+    console.error("PATCH /admin/schedule/appointments/status/[id] error:", err);
+
     return NextResponse.json(
       { error: err?.message || "Error actualizando estado" },
       { status: 500 }

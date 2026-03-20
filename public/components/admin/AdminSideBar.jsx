@@ -2,137 +2,157 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import {
+  LayoutDashboard,
+  CalendarDays,
+  Users,
+  BarChart3,
+  Settings,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react';
 
-const MOBILE_BREAKPOINT = 980;
-
-const AdminSideBar = () => {
+const AdminSideBar = ({
+  collapsed,
+  setCollapsed,
+  isMobile,
+  isMobileOpen,
+  setIsMobileOpen,
+}) => {
   const router = useRouter();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const isActive = (href) => pathname === href;
+  const menuItems = [
+    { label: 'Inicio', href: '/admin', icon: LayoutDashboard },
+    { label: 'Agenda', href: '/admin/schedule', icon: CalendarDays },
+    { label: 'Clientes', href: '/admin/clients', icon: Users },
+    { label: 'Reportes', href: '/admin/data', icon: BarChart3 },
+    { label: 'Configuración', href: '/admin/settings', icon: Settings },
+  ];
 
-  // Detecta mobile/desktop según ancho
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  // Cuando cambias de ruta, cierra el sidebar en móvil
-  useEffect(() => {
-    if (isMobile) setIsOpen(false);
-  }, [pathname, isMobile]);
-
-  // Cierra con Escape (solo si está abierto)
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-    if (isOpen) window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen]);
-
-  const closeIfMobile = () => {
-    if (isMobile) setIsOpen(false);
+  const isActive = (href) => {
+    if (href === '/admin') return pathname === '/admin';
+    return pathname === href || pathname.startsWith(href + '/');
   };
 
-  // 🔐 LOGOUT
   const handleLogout = async () => {
     try {
-      const res = await fetch("/api/auth/logout", { method: "POST" });
+      const res = await fetch('/api/auth/logout', {
+        method: 'POST',
+      });
+
       if (!res.ok) {
-        console.error("No se pudo cerrar sesión");
+        console.error('No se pudo cerrar sesión');
         return;
       }
-      setIsOpen(false);
-      router.push("/");
+
+      router.push('/');
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      console.error('Error al cerrar sesión:', error);
     }
+  };
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  const handleToggleSidebar = () => {
+    if (isMobile) {
+      setIsMobileOpen(false);
+      return;
+    }
+
+    setCollapsed((prev) => !prev);
   };
 
   return (
     <>
-      {/* Botón hamburguesa (solo móvil) */}
-      {isMobile && (
+      {isMobile && !isMobileOpen && (
         <button
           type="button"
+          className="admin-mobile-toggle"
+          onClick={() => setIsMobileOpen(true)}
           aria-label="Abrir menú"
-          aria-controls="admin-sidebar"
-          aria-expanded={isOpen}
-          className="admin-sidebar__toggle"
-          onClick={() => setIsOpen(true)}
         >
-          ☰
+          <PanelLeftOpen size={20} />
         </button>
       )}
 
-      {/* Backdrop: el "espacio libre" clickeable para cerrar */}
-      {isMobile && isOpen && (
+      {isMobile && isMobileOpen && (
         <div
           className="adminSidebarBackdrop"
-          role="button"
-          aria-label="Cerrar menú"
-          tabIndex={-1}
-          onClick={() => setIsOpen(false)}
+          onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       <aside
-        id="admin-sidebar"
-        className={`admin-sidebar ${isMobile && isOpen ? 'is-open' : ''}`}
+        className={`admin-sidebar ${collapsed ? 'collapsed' : ''} ${isMobileOpen ? 'is-open' : ''}`}
       >
-        <div className="admin-sidebar__header">
-          <h2>Admin Panel</h2>
-          {/* ❌ Quitamos el botón X */}
-        </div>
+        <div className="admin-sidebar__top">
+          <div className="admin-sidebar__header">
+            {!collapsed && <h2>Arkad</h2>}
 
-        <nav>
-          <ul>
-            <li>
-              <Link href="/admin" className={isActive('/admin') ? 'active' : ''} onClick={closeIfMobile}>
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/schedule" className={isActive('/admin/schedule') ? 'active' : ''} onClick={closeIfMobile}>
-                Agenda
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/appointments" className={isActive('/admin/appointments') ? 'active' : ''} onClick={closeIfMobile}>
-                Citas
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/clients" className={isActive('/admin/clients') ? 'active' : ''} onClick={closeIfMobile}>
-                Clientes
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/barbers" className={isActive('/admin/barbers') ? 'active' : ''} onClick={closeIfMobile}>
-                Barberos
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/data" className={isActive('/admin/data') ? 'active' : ''} onClick={closeIfMobile}>
-                Datos
-              </Link>
-            </li>
-          </ul>
-        </nav>
+            <button
+              type="button"
+              className="admin-sidebar__collapseBtn"
+              onClick={handleToggleSidebar}
+              aria-label={
+                isMobile
+                  ? 'Cerrar menú'
+                  : collapsed
+                    ? 'Expandir sidebar'
+                    : 'Colapsar sidebar'
+              }
+            >
+              {isMobile ? (
+                <PanelLeftClose size={18} />
+              ) : collapsed ? (
+                <PanelLeftOpen size={18} />
+              ) : (
+                <PanelLeftClose size={18} />
+              )}
+            </button>
+          </div>
+
+          <nav>
+            <ul>
+              {menuItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={`admin-sidebar__link ${active ? 'active' : ''}`}
+                      onClick={handleLinkClick}
+                      title={collapsed && !isMobile ? item.label : ''}
+                    >
+                      <Icon size={18} />
+                      {!collapsed && <span>{item.label}</span>}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
 
         <div className="admin-sidebar__logout">
           <button
             type="button"
             className="admin-sidebar__logoutBtn"
             onClick={handleLogout}
+            title={collapsed && !isMobile ? 'Cerrar sesión' : ''}
           >
-            Cerrar sesión
+            <LogOut size={18} />
+            {!collapsed && <span>Cerrar sesión</span>}
           </button>
         </div>
       </aside>

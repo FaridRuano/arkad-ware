@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import BarberModal from "@public/components/admin/BarberModal";
+import BarberModal from "@public/components/admin/settings/BarberModal";
 import ModalConfirm from "@public/components/shared/ModalConfirm";
 
 const page = () => {

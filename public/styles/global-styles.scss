@@ -12,6 +12,8 @@
 @use './admin/schedule/appmodal';
 @use './admin/schedule/schedule';
 @use './admin/schedule/scheduleheader';
+@use './admin/schedule/scheduledatenavigator';
+@use './admin/schedule/schedulecalendar';
 @use './admin/settings/setbarbers';
 @use './admin/settings/setschedule';
 @use './admin/settings/setservices';
@@ -34,7 +36,8 @@ html {
 
 /* ===== Página de inicio ===== */
 .home {
-  width: 600px;
+  margin: auto;
+  width: 100%;
 
   /* Centra suavemente la tarjeta en pantallas altas */
   main {

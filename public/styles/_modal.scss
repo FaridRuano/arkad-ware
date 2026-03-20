@@ -31,7 +31,6 @@
 .modalCard {
     width: min(860px, 100%);
     border-radius: 22px;
-    overflow: hidden;
 
     background: linear-gradient(180deg,
             color-mix(in oklab, var(--surface-1) 92%, #fff 8%),

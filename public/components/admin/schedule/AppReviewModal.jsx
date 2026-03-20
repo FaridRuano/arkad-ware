@@ -143,6 +143,10 @@ export default function AppReviewModal({
     onUpdateStatus,
     onTogglePaid,
     onCancel,
+
+    availableBarbers = [],
+    assigningBarber = false,
+    onAssignBarber,
 }) {
     const panelRef = React.useRef(null);
 
@@ -150,6 +154,9 @@ export default function AppReviewModal({
     const [cancelReason, setCancelReason] = React.useState('');
     const [cancelNote, setCancelNote] = React.useState('');
     const [cancelErr, setCancelErr] = React.useState('');
+
+    const [barberPickId, setBarberPickId] = React.useState('');
+    const [assignErr, setAssignErr] = React.useState('');
 
     React.useEffect(() => {
         if (!open) return;
@@ -168,7 +175,9 @@ export default function AppReviewModal({
         setCancelReason('');
         setCancelNote('');
         setCancelErr('');
-    }, [open, appointment?.id, appointment?._id]);
+        setAssignErr('');
+        setBarberPickId(appointment?.barber?.id || appointment?.barberId || '');
+    }, [open, appointment?.id, appointment?._id, appointment?.barber?.id, appointment?.barberId]);
 
     const onBackdropMouseDown = (e) => {
         if (panelRef.current && !panelRef.current.contains(e.target)) {
@@ -188,7 +197,7 @@ export default function AppReviewModal({
 
     const phone = appointment?.client?.phone || appointment?.phone || '';
     const email = appointment?.client?.email || '';
-    const barberName = appointment?.barber?.name || '—';
+    const barberName = appointment?.barber?.name || 'Sin asignar';
     const serviceName =
         appointment?.serviceName ||
         appointment?.service?.name ||
@@ -210,6 +219,7 @@ export default function AppReviewModal({
     const cancelledAt = appointment?.cancelledAt || null;
     const paidAt = appointment?.paidAt || null;
     const currentCancelReason = appointment?.cancelReason || '';
+    const assignmentStatus = appointment?.assignmentStatus || (appointment?.barberId ? 'assigned' : 'unassigned');
 
     const isPaid = paymentStatus === 'paid';
     const allowed = TRANSITIONS[status] || [];
@@ -220,12 +230,16 @@ export default function AppReviewModal({
         status,
         clientName,
         serviceName,
-        barberName,
+        barberName: appointment?.barber?.name || '',
         startAt,
         price,
         shareLink,
     });
     const waHref = buildWhatsAppLink(phone, waMessage);
+
+    const assignableBarbers = Array.isArray(availableBarbers) ? availableBarbers : [];
+
+    const selectedAssignBarber = assignableBarbers.find((b) => b.id === barberPickId) || null;
 
     const setStatus = (newStatus) => {
         if (!newStatus || newStatus === status) return;
@@ -255,6 +269,33 @@ export default function AppReviewModal({
         });
     };
 
+    const submitAssignBarber = () => {
+        setAssignErr('');
+
+        if (!barberPickId) {
+            setAssignErr('Selecciona un barbero');
+            return;
+        }
+
+        const picked = assignableBarbers.find((b) => b.id === barberPickId);
+
+        if (!picked) {
+            setAssignErr('Barbero no válido');
+            return;
+        }
+
+        if (picked.enabled === false) {
+            setAssignErr(picked.reason || 'Este barbero no está disponible');
+            return;
+        }
+
+        onAssignBarber?.(id, {
+            barberId: barberPickId,
+            appointment,
+            barber: picked,
+        });
+    };
+
     return (
         <div
             className="apptOverlay"
@@ -277,6 +318,13 @@ export default function AppReviewModal({
                                     }`}
                             >
                                 {isPaid ? 'Pagado' : 'Por cobrar'}
+                            </span>
+
+                            <span
+                                className={`apptOverlay__pill apptOverlay__pill--assign ${assignmentStatus === 'assigned' ? 'is-assigned' : 'is-unassigned'
+                                    }`}
+                            >
+                                {assignmentStatus === 'assigned' ? 'Con barbero' : 'Sin asignar'}
                             </span>
                         </div>
                     </div>
@@ -303,17 +351,7 @@ export default function AppReviewModal({
                             <div className="apptOverlay__value">{barberName}</div>
                         </div>
 
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Teléfono</div>
-                            <div className="apptOverlay__value">{phone || '—'}</div>
-                        </div>
-
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Correo</div>
-                            <div className="apptOverlay__value">{email || '—'}</div>
-                        </div>
-
-                        <div className="apptOverlay__field">
+                        {/* <div className="apptOverlay__field">
                             <div className="apptOverlay__label">Inicio</div>
                             <div className="apptOverlay__value">{formatDateTime(startAt)}</div>
                         </div>
@@ -321,7 +359,7 @@ export default function AppReviewModal({
                         <div className="apptOverlay__field">
                             <div className="apptOverlay__label">Fin</div>
                             <div className="apptOverlay__value">{formatDateTime(endAt)}</div>
-                        </div>
+                        </div> */}
 
                         <div className="apptOverlay__field">
                             <div className="apptOverlay__label">Duración</div>
@@ -335,27 +373,35 @@ export default function AppReviewModal({
                             <div className="apptOverlay__value">{formatMoney(price)}</div>
                         </div>
 
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Pagado el</div>
-                            <div className="apptOverlay__value">{formatDateTime(paidAt)}</div>
-                        </div>
-
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Completado el</div>
-                            <div className="apptOverlay__value">{formatDateTime(completedAt)}</div>
-                        </div>
-
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Cancelado el</div>
-                            <div className="apptOverlay__value">{formatDateTime(cancelledAt)}</div>
-                        </div>
-
-                        <div className="apptOverlay__field">
-                            <div className="apptOverlay__label">Motivo cancelación</div>
-                            <div className="apptOverlay__value">
-                                {CANCEL_REASON_LABELS[currentCancelReason] || currentCancelReason || '—'}
+                        {paidAt ? (
+                            <div className="apptOverlay__field">
+                                <div className="apptOverlay__label">Pagado el</div>
+                                <div className="apptOverlay__value">{formatDateTime(paidAt)}</div>
                             </div>
-                        </div>
+                        ) : null}
+
+                        {completedAt ? (
+                            <div className="apptOverlay__field">
+                                <div className="apptOverlay__label">Completado el</div>
+                                <div className="apptOverlay__value">{formatDateTime(completedAt)}</div>
+                            </div>
+                        ) : null}
+
+                        {cancelledAt ? (
+                            <div className="apptOverlay__field">
+                                <div className="apptOverlay__label">Cancelado el</div>
+                                <div className="apptOverlay__value">{formatDateTime(cancelledAt)}</div>
+                            </div>
+                        ) : null}
+
+                        {currentCancelReason ? (
+                            <div className="apptOverlay__field">
+                                <div className="apptOverlay__label">Motivo cancelación</div>
+                                <div className="apptOverlay__value">
+                                    {CANCEL_REASON_LABELS[currentCancelReason] || currentCancelReason}
+                                </div>
+                            </div>
+                        ) : null}
 
                         <div className="apptOverlay__field apptOverlay__field--full">
                             <div className="apptOverlay__label">Notas</div>
@@ -365,7 +411,68 @@ export default function AppReviewModal({
                         </div>
                     </div>
 
-                    {!!statusHistory.length && (
+                    <div className="apptOverlay__assignBox">
+                        <div className="apptOverlay__sectionTitle">
+                            {assignmentStatus === 'assigned' ? 'Reasignar barbero' : 'Asignar barbero'}
+                        </div>
+
+                        {assignErr ? (
+                            <div className="apptOverlay__cancelError" style={{ marginBottom: 10 }}>
+                                {assignErr}
+                            </div>
+                        ) : null}
+
+                        <div className="apptOverlay__assignGrid">
+                            <div className="field">
+                                <label className="field__label">Barbero disponible</label>
+                                <select
+                                    className="field__select"
+                                    value={barberPickId}
+                                    onChange={(e) => setBarberPickId(e.target.value)}
+                                    disabled={assigningBarber}
+                                >
+                                    <option value="">Seleccionar barbero…</option>
+
+                                    {assignableBarbers.map((barber) => (
+                                        <option
+                                            key={barber.id}
+                                            value={barber.id}
+                                            disabled={barber.enabled === false}
+                                        >
+                                            {barber.name}
+                                            {!barber.compatible ? ' · No realiza este servicio' : ''}
+                                            {barber.compatible && !barber.available ? ' · Ocupado' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                <div className="field__hint">
+                                    Solo se muestran opciones válidas para este servicio y horario.
+                                </div>
+                            </div>
+
+                            <div className="apptOverlay__assignActions">
+                                <button
+                                    type="button"
+                                    className="btn btn--primary"
+                                    onClick={submitAssignBarber}
+                                    disabled={
+                                        assigningBarber ||
+                                        !barberPickId ||
+                                        selectedAssignBarber?.enabled === false
+                                    }
+                                >
+                                    {assigningBarber
+                                        ? 'Guardando…'
+                                        : assignmentStatus === 'assigned'
+                                            ? 'Reasignar barbero'
+                                            : 'Asignar barbero'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* {!!statusHistory.length && (
                         <div className="apptOverlay__history">
                             <div className="apptOverlay__sectionTitle">Historial</div>
 
@@ -393,7 +500,7 @@ export default function AppReviewModal({
                                     ))}
                             </div>
                         </div>
-                    )}
+                    )} */}
 
                     <div className="apptOverlay__actions">
                         <div className="apptOverlay__actionsRow">

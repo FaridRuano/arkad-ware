@@ -1,5 +1,29 @@
 import mongoose from "mongoose";
 
+const APPOINTMENT_STATUS = [
+  "pending",
+  "confirmed",
+  "in_progress",
+  "completed",
+  "cancelled",
+  "no_assistance",
+];
+
+const PAYMENT_STATUS = ["unpaid", "paid"];
+
+const ASSIGNMENT_STATUS = ["assigned", "unassigned"];
+
+const CANCEL_REASONS = [
+  "",
+  "client_cancelled",
+  "client_rescheduled",
+  "barber_unavailable",
+  "schedule_error",
+  "other",
+];
+
+const APPOINTMENT_SOURCE = ["admin-panel", "client-page"];
+
 const AppointmentSchema = new mongoose.Schema(
   {
     // ───────────── RELACIONES ─────────────
@@ -13,7 +37,8 @@ const AppointmentSchema = new mongoose.Schema(
     barberId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Barber",
-      required: true,
+      required: false,
+      default: null,
       index: true,
     },
 
@@ -28,6 +53,13 @@ const AppointmentSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+
+    assignmentStatus: {
+      type: String,
+      enum: ASSIGNMENT_STATUS,
+      default: "unassigned",
+      index: true,
     },
 
     // ───────────── FECHA & HORA ─────────────
@@ -60,21 +92,14 @@ const AppointmentSchema = new mongoose.Schema(
     // ───────────── ESTADOS ─────────────
     status: {
       type: String,
-      enum: [
-        "pending",
-        "confirmed",
-        "in_progress",
-        "completed",
-        "cancelled",
-        "no_assistance",
-      ],
+      enum: APPOINTMENT_STATUS,
       default: "pending",
       index: true,
     },
 
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "paid"],
+      enum: PAYMENT_STATUS,
       default: "unpaid",
       index: true,
     },
@@ -87,14 +112,7 @@ const AppointmentSchema = new mongoose.Schema(
 
     cancelReason: {
       type: String,
-      enum: [
-        "",
-        "client_cancelled",
-        "client_rescheduled",
-        "barber_unavailable",
-        "schedule_error",
-        "other",
-      ],
+      enum: CANCEL_REASONS,
       default: "",
     },
 
@@ -108,8 +126,12 @@ const AppointmentSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ───────────── ORIGEN ─────────────
+    barberAssignedAt: {
+      type: Date,
+      default: null,
+    },
 
+    // ───────────── ORIGEN ─────────────
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -119,7 +141,7 @@ const AppointmentSchema = new mongoose.Schema(
 
     source: {
       type: String,
-      enum: ["admin-panel", "client-page"],
+      enum: APPOINTMENT_SOURCE,
       default: "admin-panel",
     },
 
@@ -152,12 +174,40 @@ const AppointmentSchema = new mongoose.Schema(
 );
 
 AppointmentSchema.pre("validate", function (next) {
-  if (this.startAt && this.durationMinutes) {
+  try {
+    if (!this.durationMinutes || this.durationMinutes < 5) {
+      return next(new Error("La duración de la cita debe ser de al menos 5 minutos"));
+    }
+
+    if (!this.startAt || Number.isNaN(new Date(this.startAt).getTime())) {
+      return next(new Error("La fecha de inicio de la cita no es válida"));
+    }
+
+    // Recalcular endAt en base a startAt + durationMinutes
     this.endAt = new Date(
       new Date(this.startAt).getTime() + this.durationMinutes * 60 * 1000
     );
+
+    if (!this.endAt || this.endAt <= this.startAt) {
+      return next(new Error("La hora de fin de la cita no es válida"));
+    }
+
+    // Sincronizar estado de asignación
+    if (this.barberId) {
+      this.assignmentStatus = "assigned";
+
+      if (!this.barberAssignedAt) {
+        this.barberAssignedAt = new Date();
+      }
+    } else {
+      this.assignmentStatus = "unassigned";
+      this.barberAssignedAt = null;
+    }
+
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 AppointmentSchema.pre("save", function (next) {
@@ -172,13 +222,16 @@ AppointmentSchema.pre("save", function (next) {
       },
     ];
   }
+
   next();
 });
 
+// Índices útiles
 AppointmentSchema.index({ barberId: 1, startAt: 1 });
 AppointmentSchema.index({ barberId: 1, endAt: 1 });
 AppointmentSchema.index({ clientId: 1, startAt: 1 });
 AppointmentSchema.index({ status: 1, startAt: 1 });
+AppointmentSchema.index({ assignmentStatus: 1, startAt: 1 });
 
 const Appointment =
   mongoose.models?.Appointment ||

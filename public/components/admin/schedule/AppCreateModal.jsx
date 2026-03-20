@@ -1,5 +1,28 @@
-'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+function formatMoney(value) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return '0';
+  return n.toFixed(2).replace(/\.00$/, '');
+}
+
+function getClientId(client) {
+  return client?.id ?? client?._id ?? '';
+}
+
+function getClientName(client) {
+  return (
+    client?.name ||
+    `${client?.firstName ?? ''} ${client?.lastName ?? ''}`.trim() ||
+    '—'
+  );
+}
+
+function getClientPhone(client) {
+  return client?.phone || '';
+}
 
 export default function AppCreateModal({
   open,
@@ -9,145 +32,178 @@ export default function AppCreateModal({
   onClose,
   onCreate,
 
-  services = [], // [{id,name,durationMinutes,price,color}]
-  selectedBarberId = '', // si viene desde la columna del calendario
+  services = [],
+  barbers = [],
+  selectedBarberId = '',
 }) {
-  const justPickedRef = useRef(false)
-  const inputRef = useRef(null)
-  const abortRef = useRef(null)
-  const formAbortRef = useRef(null)
+  const justPickedRef = useRef(false);
+  const inputRef = useRef(null);
+  const abortRef = useRef(null);
+  const formAbortRef = useRef(null);
 
-  const [q, setQ] = useState('')
-  const [results, setResults] = useState([])
-  const [searching, setSearching] = useState(false)
+  const [q, setQ] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
 
-  const [selectedClient, setSelectedClient] = useState(null)
-  const [serviceId, setServiceId] = useState('')
-  const [barberPickId, setBarberPickId] = useState('')
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [serviceId, setServiceId] = useState('');
+  const [barberPickId, setBarberPickId] = useState('');
 
   const [formState, setFormState] = useState({
     loading: false,
     data: null,
-  })
+  });
 
-  const [err, setErr] = useState('')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [err, setErr] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const startAtISO = useMemo(() => {
-    if (!dateISO || !timeHM) return ''
-    return `${dateISO}T${timeHM}:00-05:00`
-  }, [dateISO, timeHM])
+    if (!dateISO || !timeHM) return '';
+    return `${dateISO}T${timeHM}:00-05:00`;
+  }, [dateISO, timeHM]);
+
+  const availableServices = useMemo(() => {
+    if (!Array.isArray(services)) return [];
+
+    return services.filter((service) => service?.id && service?.name);
+  }, [services]);
 
   const selectedService = useMemo(() => {
-    return services.find((s) => s.id === serviceId) || null
-  }, [services, serviceId])
+    return availableServices.find((s) => s.id === serviceId) || null;
+  }, [availableServices, serviceId]);
 
-  const isLockedBarber = !!selectedBarberId
+  const isLockedBarber = !!selectedBarberId;
 
   const finalBarberId = useMemo(() => {
-    return selectedBarberId || barberPickId || ''
-  }, [selectedBarberId, barberPickId])
+    return selectedBarberId || barberPickId || '';
+  }, [selectedBarberId, barberPickId]);
 
   const availableBarbers = useMemo(() => {
-    return Array.isArray(formState?.data?.barbers) ? formState.data.barbers : []
-  }, [formState])
+    return Array.isArray(formState?.data?.barbers) ? formState.data.barbers : [];
+  }, [formState]);
 
   const selectedBarberMeta = useMemo(() => {
-    if (!finalBarberId) return null
-    return availableBarbers.find((b) => b.id === finalBarberId) || null
-  }, [availableBarbers, finalBarberId])
+    if (!finalBarberId) return null;
 
-  // Reset al abrir
+    const fromAvailable = availableBarbers.find((b) => b.id === finalBarberId);
+    if (fromAvailable) return fromAvailable;
+
+    const fromGlobal = Array.isArray(barbers)
+      ? barbers.find((b) => b.id === finalBarberId)
+      : null;
+
+    return fromGlobal || null;
+  }, [availableBarbers, barbers, finalBarberId]);
+
+  const canValidateForm = useMemo(() => {
+    if (!open) return false;
+    if (!startAtISO) return false;
+    if (!serviceId) return false;
+    return true;
+  }, [open, startAtISO, serviceId]);
+
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
-    setQ('')
-    setResults([])
-    setSearching(false)
-    setSelectedClient(null)
-    setServiceId('')
-    setBarberPickId('')
-    setErr('')
-    setDropdownOpen(false)
+    setQ('');
+    setResults([]);
+    setSearching(false);
+    setSelectedClient(null);
+    setServiceId('');
+    setBarberPickId('');
+    setErr('');
+    setDropdownOpen(false);
     setFormState({
       loading: false,
       data: null,
-    })
+    });
 
-    setTimeout(() => inputRef.current?.focus?.(), 50)
-  }, [open])
+    const t = setTimeout(() => {
+      inputRef.current?.focus?.();
+    }, 50);
 
-  // ESC close
+    return () => clearTimeout(t);
+  }, [open]);
+
   useEffect(() => {
-    if (!open) return
+    if (!open) return;
 
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.()
-    }
+      if (e.key === 'Escape') onClose?.();
+    };
 
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
-  // Auto clear err
   useEffect(() => {
-    if (!err) return
-    const t = setTimeout(() => setErr(''), 5000)
-    return () => clearTimeout(t)
-  }, [err])
+    if (!err) return;
+    const t = setTimeout(() => setErr(''), 5000);
+    return () => clearTimeout(t);
+  }, [err]);
 
-  // Buscar clientes
   useEffect(() => {
-    if (!open) return
-    if (justPickedRef.current) return
+    return () => {
+      if (abortRef.current) abortRef.current.abort();
+      if (formAbortRef.current) formAbortRef.current.abort();
+    };
+  }, []);
 
-    const term = (q || '').trim()
+  useEffect(() => {
+    if (!open) return;
+    if (justPickedRef.current) return;
+
+    const term = (q || '').trim();
 
     if (!term) {
-      setResults([])
-      setSearching(false)
-      return
+      setResults([]);
+      setSearching(false);
+      return;
     }
 
     const t = setTimeout(async () => {
       try {
-        setSearching(true)
+        setSearching(true);
 
-        if (abortRef.current) abortRef.current.abort()
-        abortRef.current = new AbortController()
+        if (abortRef.current) abortRef.current.abort();
+        abortRef.current = new AbortController();
 
-        const params = new URLSearchParams()
-        params.set('q', term)
-        params.set('page', '1')
+        const params = new URLSearchParams();
+        params.set('q', term);
+        params.set('page', '1');
 
         const res = await fetch(`/api/admin/clients?${params.toString()}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-store',
           signal: abortRef.current.signal,
-        })
+        });
 
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data?.error || 'Error buscando clientes')
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data?.error || 'Error buscando clientes');
 
-        const list = data?.clients || data?.users || data?.results || []
-        setResults(Array.isArray(list) ? list : [])
-        setDropdownOpen(true)
+        const list = data?.clients || data?.users || data?.results || [];
+        setResults(Array.isArray(list) ? list : []);
+        setDropdownOpen(true);
       } catch (e) {
-        if (e?.name === 'AbortError') return
-        setResults([])
+        if (e?.name === 'AbortError') return;
+        setResults([]);
       } finally {
-        setSearching(false)
+        setSearching(false);
       }
-    }, 280)
+    }, 280);
 
-    return () => clearTimeout(t)
-  }, [q, open])
+    return () => clearTimeout(t);
+  }, [q, open]);
 
-  // Consultar API /form
   useEffect(() => {
-    if (!open) return
-    if (!startAtISO) return
+    if (!canValidateForm) {
+      setFormState({
+        loading: false,
+        data: null,
+      });
+      return;
+    }
 
     const payload = {
       date: dateISO,
@@ -155,17 +211,17 @@ export default function AppCreateModal({
       startAt: startAtISO,
       ...(serviceId ? { serviceId } : {}),
       ...(finalBarberId ? { barberId: finalBarberId } : {}),
-    }
+    };
 
     const run = async () => {
       try {
         setFormState((prev) => ({
           ...prev,
           loading: true,
-        }))
+        }));
 
-        if (formAbortRef.current) formAbortRef.current.abort()
-        formAbortRef.current = new AbortController()
+        if (formAbortRef.current) formAbortRef.current.abort();
+        formAbortRef.current = new AbortController();
 
         const res = await fetch('/api/admin/schedule/form', {
           method: 'POST',
@@ -173,96 +229,119 @@ export default function AppCreateModal({
           cache: 'no-store',
           body: JSON.stringify(payload),
           signal: formAbortRef.current.signal,
-        })
+        });
 
-        const data = await res.json().catch(() => ({}))
+        const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          throw new Error(data?.error || data?.errors?.[0] || 'Error validando formulario')
+          throw new Error(
+            data?.error || data?.errors?.[0] || 'Error validando formulario'
+          );
         }
 
         setFormState({
           loading: false,
           data,
-        })
+        });
 
-        // Si el barbero elegido dejó de ser válido, lo limpiamos
         if (!selectedBarberId && barberPickId) {
           const currentBarber = Array.isArray(data?.barbers)
             ? data.barbers.find((b) => b.id === barberPickId)
-            : null
+            : null;
 
           if (!currentBarber?.enabled) {
-            setBarberPickId('')
+            setBarberPickId('');
           }
         }
       } catch (e) {
-        if (e?.name === 'AbortError') return
+        if (e?.name === 'AbortError') return;
 
         setFormState({
           loading: false,
           data: null,
-        })
+        });
+      }
+    };
+
+    run();
+  }, [
+    canValidateForm,
+    dateISO,
+    timeHM,
+    startAtISO,
+    serviceId,
+    finalBarberId,
+    selectedBarberId,
+    barberPickId,
+  ]);
+
+  const pickClient = (client) => {
+    const id = getClientId(client);
+    const name = getClientName(client);
+    const phone = getClientPhone(client);
+
+    justPickedRef.current = true;
+
+    setSelectedClient({ ...client, id, name, phone });
+    setDropdownOpen(false);
+    setQ('');
+
+    setTimeout(() => {
+      justPickedRef.current = false;
+    }, 0);
+  };
+
+  const validate = () => {
+    if (!dateISO || !timeHM) return 'Falta fecha u hora';
+    if (!selectedClient?.id) return 'Selecciona un cliente';
+    if (!serviceId) return 'Selecciona un servicio';
+
+    const validation = formState?.data?.validation;
+
+    if (validation && validation?.startAtValid === false) {
+      return 'La fecha u hora no son válidas';
+    }
+
+    if (validation && validation?.serviceValid === false) {
+      return 'El servicio seleccionado no es válido';
+    }
+
+    if (finalBarberId) {
+      if (validation && validation?.barberValid === false) {
+        return 'El barbero seleccionado no está disponible';
+      }
+
+      if (selectedBarberMeta && selectedBarberMeta?.enabled === false) {
+        return selectedBarberMeta?.reason || 'Barbero no disponible';
       }
     }
 
-    run()
-  }, [open, dateISO, timeHM, startAtISO, serviceId, finalBarberId, selectedBarberId, barberPickId])
-
-  const pickClient = (c) => {
-    const id = c?.id ?? c?._id
-    const name = c?.name ?? `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim()
-    const phone = c?.phone ?? ''
-
-    justPickedRef.current = true
-
-    setSelectedClient({ ...c, id, name, phone })
-    setDropdownOpen(false)
-    setQ('')
-
-    setTimeout(() => {
-      justPickedRef.current = false
-    }, 0)
-  }
-
-  const validate = () => {
-    if (!dateISO || !timeHM) return 'Falta fecha u hora'
-    if (!selectedClient?.id) return 'Selecciona un cliente'
-    if (!serviceId) return 'Selecciona un servicio'
-    if (!finalBarberId) return 'Selecciona un barbero'
-
-    const validation = formState?.data?.validation
-    if (!validation?.startAtValid) return 'La fecha u hora no son válidas'
-    if (!validation?.serviceValid) return 'El servicio seleccionado no es válido'
-    if (!validation?.barberValid) return 'El barbero seleccionado no está disponible'
-    if (!selectedBarberMeta?.enabled) return selectedBarberMeta?.reason || 'Barbero no disponible'
-
-    return ''
-  }
+    return '';
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    setErr('')
+    e.preventDefault();
+    setErr('');
 
-    const msg = validate()
+    const msg = validate();
     if (msg) {
-      setErr(msg)
-      return
+      setErr(msg);
+      return;
     }
 
     const payload = {
       clientId: selectedClient.id,
-      barberId: finalBarberId,
+      barberId: finalBarberId || '',
       serviceId,
       date: dateISO,
       time: timeHM,
       startAt: startAtISO,
-    }
+    };
 
-    onCreate?.(payload)
-  }
+    onCreate?.(payload);
+  };
 
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div
@@ -270,7 +349,7 @@ export default function AppCreateModal({
       role="dialog"
       aria-modal="true"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.()
+        if (e.target === e.currentTarget) onClose?.();
       }}
     >
       <div className="modalCard" style={{ maxWidth: 620 }}>
@@ -331,16 +410,19 @@ export default function AppCreateModal({
               disabled={saving}
             >
               <option value="">Seleccionar servicio…</option>
-              {(services || []).map((service) => (
+
+              {availableServices.map((service) => (
                 <option key={service.id} value={service.id}>
-                  {service.name} · {service.durationMinutes} min · ${service.price}
+                  {service.name} · {service.durationMinutes} min · $
+                  {formatMoney(service.price)}
                 </option>
               ))}
             </select>
 
             {selectedService && (
               <div className="field__hint">
-                Duración: {selectedService.durationMinutes} min · Precio: ${selectedService.price}
+                Duración: {selectedService.durationMinutes} min · Precio: $
+                {formatMoney(selectedService.price)}
               </div>
             )}
           </div>
@@ -353,6 +435,7 @@ export default function AppCreateModal({
                 value={selectedBarberMeta?.name || '—'}
                 readOnly
               />
+
               {!!selectedBarberMeta?.reason && !selectedBarberMeta?.enabled && (
                 <div className="field__hint" style={{ color: '#d9534f' }}>
                   {selectedBarberMeta.reason}
@@ -369,20 +452,26 @@ export default function AppCreateModal({
                 disabled={saving || !serviceId}
               >
                 <option value="">
-                  {!serviceId ? 'Primero selecciona un servicio…' : 'Seleccionar barbero…'}
+                  {!serviceId
+                    ? 'Primero selecciona un servicio…'
+                    : 'Sin asignar por ahora'}
                 </option>
 
-                {availableBarbers.map((b) => (
-                  <option key={b.id} value={b.id} disabled={!b.enabled}>
-                    {b.name}
-                    {!b.compatible ? ' · No realiza este servicio' : ''}
-                    {b.compatible && !b.available ? ' · Ocupado' : ''}
+                {availableBarbers.map((barber) => (
+                  <option
+                    key={barber.id}
+                    value={barber.id}
+                    disabled={!barber.enabled}
+                  >
+                    {barber.name}
+                    {!barber.compatible ? ' · No realiza este servicio' : ''}
+                    {barber.compatible && !barber.available ? ' · Ocupado' : ''}
                   </option>
                 ))}
               </select>
 
               <div className="field__hint">
-                Se muestran según servicio y disponibilidad del horario.
+                Puedes dejar la cita sin barbero y asignarlo más tarde.
               </div>
             </div>
           )}
@@ -405,11 +494,12 @@ export default function AppCreateModal({
                   type="button"
                   className="__button secondary modalClient__changeBtn"
                   onClick={() => {
-                    setSelectedClient(null)
-                    setQ('')
-                    setResults([])
-                    setDropdownOpen(true)
-                    setTimeout(() => inputRef.current?.focus?.(), 50)
+                    setSelectedClient(null);
+                    setQ('');
+                    setResults([]);
+                    setDropdownOpen(true);
+
+                    setTimeout(() => inputRef.current?.focus?.(), 50);
                   }}
                   disabled={saving}
                 >
@@ -425,8 +515,8 @@ export default function AppCreateModal({
                     placeholder="Busca por nombre o teléfono…"
                     value={q}
                     onChange={(e) => {
-                      setQ(e.target.value)
-                      setDropdownOpen(true)
+                      setQ(e.target.value);
+                      setDropdownOpen(true);
                     }}
                     onFocus={() => setDropdownOpen(true)}
                     disabled={saving}
@@ -451,12 +541,10 @@ export default function AppCreateModal({
 
                       {!searching && results.length > 0 && (
                         <div className="modalClient__dropdownList">
-                          {results.slice(0, 10).map((c) => {
-                            const id = c?.id ?? c?._id
-                            const name =
-                              c?.name ??
-                              `${c?.firstName ?? ''} ${c?.lastName ?? ''}`.trim()
-                            const phone = c?.phone ?? ''
+                          {results.slice(0, 10).map((client) => {
+                            const id = getClientId(client);
+                            const name = getClientName(client);
+                            const phone = getClientPhone(client);
 
                             return (
                               <button
@@ -464,8 +552,8 @@ export default function AppCreateModal({
                                 type="button"
                                 className="modalClient__option"
                                 onClick={() => {
-                                  pickClient(c)
-                                  setDropdownOpen(false)
+                                  pickClient(client);
+                                  setDropdownOpen(false);
                                 }}
                               >
                                 <span className="modalClient__optionName">
@@ -475,7 +563,7 @@ export default function AppCreateModal({
                                   {phone}
                                 </span>
                               </button>
-                            )
+                            );
                           })}
                         </div>
                       )}
@@ -490,22 +578,34 @@ export default function AppCreateModal({
             )}
           </div>
 
-          {selectedService && (
+          {/* {selectedService && (
             <div className="modalSummaryBox" style={{ marginTop: 14 }}>
-              <div><strong>Servicio:</strong> {selectedService.name}</div>
-              <div><strong>Duración:</strong> {selectedService.durationMinutes} min</div>
-              <div><strong>Precio:</strong> ${selectedService.price}</div>
+              <div>
+                <strong>Servicio:</strong> {selectedService.name}
+              </div>
+              <div>
+                <strong>Duración:</strong> {selectedService.durationMinutes} min
+              </div>
+              <div>
+                <strong>Precio:</strong> ${formatMoney(selectedService.price)}
+              </div>
+              <div>
+                <strong>Barbero:</strong>{' '}
+                {finalBarberId
+                  ? selectedBarberMeta?.name || 'Asignado'
+                  : 'Sin asignar por ahora'}
+              </div>
               <div>
                 <strong>Finaliza:</strong>{' '}
                 {formState?.data?.endAt
                   ? new Date(formState.data.endAt).toLocaleTimeString('es-EC', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })
                   : '—'}
               </div>
             </div>
-          )}
+          )} */}
 
           <footer className="modalFooter">
             <button
@@ -523,15 +623,20 @@ export default function AppCreateModal({
               disabled={
                 saving ||
                 formState.loading ||
-                !formState?.data?.validation?.canSubmit ||
-                !selectedClient?.id
+                !selectedClient?.id ||
+                !serviceId ||
+                formState?.data?.validation?.canSubmit === false
               }
             >
-              {saving ? 'Guardando…' : formState.loading ? 'Validando…' : 'Crear cita'}
+              {saving
+                ? 'Guardando…'
+                : formState.loading
+                  ? 'Validando…'
+                  : 'Crear cita'}
             </button>
           </footer>
         </form>
       </div>
     </div>
-  )
+  );
 }

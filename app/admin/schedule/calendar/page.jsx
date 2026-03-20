@@ -1,7 +1,12 @@
 'use client';
 
 import ScheduleBarberSelector from '@public/components/admin/schedule/ScheduleBarberSelector';
+import ScheduleCalendar from '@public/components/admin/schedule/ScheduleCalendar';
+import ScheduleDateNavigator from '@public/components/admin/schedule/ScheduleDateNavigator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import AppCreateModal from '@public/components/admin/schedule/AppCreateModal';
+import AppReviewModal from '@public/components/admin/schedule/AppReviewModal';
 
 function getTodayISO() {
     const now = new Date();
@@ -11,12 +16,35 @@ function getTodayISO() {
     return `${year}-${month}-${day}`;
 }
 
+function isValidISODate(value = '') {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getSafeTimeHMFromISO(iso = '') {
+    const d = iso ? new Date(iso) : null;
+    if (!d || Number.isNaN(d.getTime())) return '';
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+}
+
 export default function SchedulePage() {
+    // =========================
+    // URLS
+    // =========================
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const initialDateFromURL = searchParams.get('date') || '';
+    const initialBarberIdFromURL = searchParams.get('barberId') || '';
+
     // =========================
     // Filters / view state
     // =========================
-    const [dateISO, setDateISO] = useState(getTodayISO());
-    const [selectedBarberId, setSelectedBarberId] = useState('');
+    const [dateISO, setDateISO] = useState(
+        isValidISODate(initialDateFromURL) ? initialDateFromURL : getTodayISO()
+    );
+    const [selectedBarberId, setSelectedBarberId] = useState(initialBarberIdFromURL);
 
     // =========================
     // Data state
@@ -25,6 +53,13 @@ export default function SchedulePage() {
     const [meta, setMeta] = useState(null);
     const [barbers, setBarbers] = useState([]);
     const [services, setServices] = useState([]);
+    const [schedule, setSchedule] = useState(null);
+
+    // =========================
+    // Review modal extra state
+    // =========================
+    const [reviewBarbers, setReviewBarbers] = useState([]);
+    const [assigningBarber, setAssigningBarber] = useState(false);
 
     // =========================
     // Loading state
@@ -32,6 +67,7 @@ export default function SchedulePage() {
     const [loadingSchedule, setLoadingSchedule] = useState(true);
     const [loadingBarbers, setLoadingBarbers] = useState(true);
     const [loadingServices, setLoadingServices] = useState(true);
+    const [loadingReviewBarbers, setLoadingReviewBarbers] = useState(false);
 
     // =========================
     // Error state
@@ -39,6 +75,7 @@ export default function SchedulePage() {
     const [scheduleError, setScheduleError] = useState('');
     const [barbersError, setBarbersError] = useState('');
     const [servicesError, setServicesError] = useState('');
+    const [reviewBarbersError, setReviewBarbersError] = useState('');
 
     // =========================
     // Action state
@@ -100,9 +137,11 @@ export default function SchedulePage() {
 
             setAppointments(Array.isArray(data?.appointments) ? data.appointments : []);
             setMeta(data?.meta || null);
+            setSchedule(data?.schedule || null);
         } catch (error) {
             setAppointments([]);
             setMeta(null);
+            setSchedule(null);
             setScheduleError(error?.message || 'Error cargando agenda');
         } finally {
             setLoadingSchedule(false);
@@ -166,6 +205,54 @@ export default function SchedulePage() {
     }, []);
 
     // =========================
+    // Fetch: review barbers
+    // =========================
+    const fetchReviewBarbers = useCallback(async (appointment) => {
+        if (!appointment?.startAt || !appointment?.serviceId) {
+            setReviewBarbers([]);
+            setReviewBarbersError('');
+            return;
+        }
+
+        try {
+            setLoadingReviewBarbers(true);
+            setReviewBarbersError('');
+
+            const payload = {
+                startAt: appointment.startAt,
+                serviceId: appointment.serviceId,
+                barberId: appointment?.barberId || appointment?.barber?.id || '',
+            };
+
+            const res = await fetch('/api/admin/schedule/form', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                cache: 'no-store',
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(
+                    data?.error ||
+                    data?.errors?.[0] ||
+                    'Error cargando barberos disponibles'
+                );
+            }
+
+            setReviewBarbers(Array.isArray(data?.barbers) ? data.barbers : []);
+        } catch (error) {
+            setReviewBarbers([]);
+            setReviewBarbersError(
+                error?.message || 'Error cargando barberos disponibles'
+            );
+        } finally {
+            setLoadingReviewBarbers(false);
+        }
+    }, []);
+
+    // =========================
     // Global refresh
     // =========================
     const refreshSchedule = useCallback(async () => {
@@ -181,6 +268,53 @@ export default function SchedulePage() {
     }, [fetchSchedule, fetchBarbers, fetchServices]);
 
     // =========================
+    // Sync: URL -> state
+    // =========================
+    useEffect(() => {
+        const urlDate = searchParams.get('date') || '';
+        const urlBarberId = searchParams.get('barberId') || '';
+
+        const safeDate = isValidISODate(urlDate) ? urlDate : getTodayISO();
+
+        if (safeDate !== dateISO) {
+            setDateISO(safeDate);
+        }
+
+        if (urlBarberId !== selectedBarberId) {
+            setSelectedBarberId(urlBarberId);
+        }
+    }, [searchParams]);
+
+    // =========================
+    // Sync: state -> URL
+    // =========================
+    useEffect(() => {
+        const params = new URLSearchParams(searchParams.toString());
+
+        if (dateISO && isValidISODate(dateISO)) {
+            params.set('date', dateISO);
+        } else {
+            params.delete('date');
+        }
+
+        if (selectedBarberId) {
+            params.set('barberId', selectedBarberId);
+        } else {
+            params.delete('barberId');
+        }
+
+        const nextQuery = params.toString();
+        const nextURL = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+        const currentURL = searchParams.toString()
+            ? `${pathname}?${searchParams.toString()}`
+            : pathname;
+
+        if (nextURL !== currentURL) {
+            router.replace(nextURL, { scroll: false });
+        }
+    }, [dateISO, selectedBarberId, pathname, router, searchParams]);
+
+    // =========================
     // Initial load / reactions
     // =========================
     useEffect(() => {
@@ -191,6 +325,16 @@ export default function SchedulePage() {
     useEffect(() => {
         fetchSchedule();
     }, [fetchSchedule]);
+
+    useEffect(() => {
+        if (!detailModalOpen || !activeAppointment) {
+            setReviewBarbers([]);
+            setReviewBarbersError('');
+            return;
+        }
+
+        fetchReviewBarbers(activeAppointment);
+    }, [detailModalOpen, activeAppointment, fetchReviewBarbers]);
 
     // =========================
     // Modal handlers
@@ -215,12 +359,16 @@ export default function SchedulePage() {
 
     const openDetailModal = useCallback((appointment) => {
         setActiveAppointment(appointment || null);
+        setReviewBarbers([]);
+        setReviewBarbersError('');
         setDetailModalOpen(true);
     }, []);
 
     const closeDetailModal = useCallback(() => {
         setDetailModalOpen(false);
         setActiveAppointment(null);
+        setReviewBarbers([]);
+        setReviewBarbersError('');
     }, []);
 
     // =========================
@@ -271,6 +419,16 @@ export default function SchedulePage() {
             }
 
             await refreshSchedule();
+
+            setActiveAppointment((prev) => {
+                if (!prev) return prev;
+                if ((prev?.id || prev?._id) !== id) return prev;
+
+                return {
+                    ...prev,
+                    ...data?.appointment,
+                };
+            });
         } catch (error) {
             console.error('handleUpdateStatus:', error);
         } finally {
@@ -295,6 +453,16 @@ export default function SchedulePage() {
             }
 
             await refreshSchedule();
+
+            setActiveAppointment((prev) => {
+                if (!prev) return prev;
+                if ((prev?.id || prev?._id) !== id) return prev;
+
+                return {
+                    ...prev,
+                    ...data?.appointment,
+                };
+            });
         } catch (error) {
             console.error('handleTogglePaid:', error);
         } finally {
@@ -331,79 +499,70 @@ export default function SchedulePage() {
         }
     }, [closeDetailModal, refreshSchedule]);
 
+    const handleAssignBarber = useCallback(async (appointmentId, payload = {}) => {
+        try {
+            setAssigningBarber(true);
+
+            const barberId = String(payload?.barberId || '').trim();
+
+            if (!appointmentId || !barberId) {
+                throw new Error('Falta appointmentId o barberId');
+            }
+
+            const res = await fetch(`/api/admin/schedule/appointments/assign-barber/${appointmentId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ barberId }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data?.error || 'Error asignando barbero');
+            }
+
+            const updatedAppointment = data?.appointment || null;
+
+            if (updatedAppointment) {
+                setActiveAppointment(updatedAppointment);
+            }
+
+            await Promise.all([
+                refreshSchedule(),
+                fetchReviewBarbers(updatedAppointment || activeAppointment),
+            ]);
+        } catch (error) {
+            console.error('handleAssignBarber:', error);
+        } finally {
+            setAssigningBarber(false);
+        }
+    }, [refreshSchedule, fetchReviewBarbers, activeAppointment]);
+
     return (
         <div className="page schedule-page">
-            <div className="page-content">
-                {/* Estado general temporal */}
-                <div style={{ display: 'grid', gap: 12 }}>
-                    <div>
-                        <strong>Fecha:</strong> {dateISO}
-                    </div>
+            <AppCreateModal
+                open={createModalOpen}
+                saving={savingAppointment}
+                dateISO={slotDraft.dateISO}
+                timeHM={slotDraft.timeHM}
+                services={services}
+                barbers={barbers}
+                selectedBarberId={slotDraft.barberId}
+                onClose={closeCreateModal}
+                onCreate={handleCreateAppointment}
+            />
 
-                    <div>
-                        <strong>Barbero seleccionado:</strong>{' '}
-                        {activeBarber?.name || 'Todos'}
-                    </div>
-
-                    <div>
-                        <strong>Loading inicial:</strong> {isInitialLoading ? 'Sí' : 'No'}
-                    </div>
-
-                    <div>
-                        <strong>Cargando agenda:</strong> {loadingSchedule ? 'Sí' : 'No'}
-                    </div>
-
-                    <div>
-                        <strong>Cargando barberos:</strong> {loadingBarbers ? 'Sí' : 'No'}
-                    </div>
-
-                    <div>
-                        <strong>Cargando servicios:</strong> {loadingServices ? 'Sí' : 'No'}
-                    </div>
-
-                    <div>
-                        <strong>Citas:</strong> {appointments.length}
-                    </div>
-
-                    <div>
-                        <strong>Barberos:</strong> {barbers.length}
-                    </div>
-
-                    <div>
-                        <strong>Servicios:</strong> {services.length}
-                    </div>
-
-                    {!!scheduleError && (
-                        <div style={{ color: 'var(--negative)' }}>
-                            <strong>Error agenda:</strong> {scheduleError}
-                        </div>
-                    )}
-
-                    {!!barbersError && (
-                        <div style={{ color: 'var(--negative)' }}>
-                            <strong>Error barberos:</strong> {barbersError}
-                        </div>
-                    )}
-
-                    {!!servicesError && (
-                        <div style={{ color: 'var(--negative)' }}>
-                            <strong>Error servicios:</strong> {servicesError}
-                        </div>
-                    )}
-                </div>
-
-                {/* Placeholder temporal */}
-                <div style={{ marginTop: 24, padding: 24, border: '1px solid var(--border)', borderRadius: 16 }}>
-                    Página vacía por ahora. Lista para montar toolbar, stats, grid y modales.
-                </div>
-            </div>
-
-            <div className="page-header">
-                <div>
-                    <h1>Agenda</h1>
-                    <p>Administra la agenda general o revisa la disponibilidad por barbero.</p>
-                </div>
-            </div>
+            <AppReviewModal
+                open={detailModalOpen}
+                appointment={activeAppointment}
+                onClose={closeDetailModal}
+                onUpdateStatus={handleUpdateStatus}
+                onTogglePaid={handleTogglePaid}
+                onCancel={handleCancelAppointment}
+                availableBarbers={reviewBarbers}
+                assigningBarber={assigningBarber || loadingReviewBarbers}
+                onAssignBarber={handleAssignBarber}
+            />
 
             <ScheduleBarberSelector
                 barbers={barbers}
@@ -411,11 +570,31 @@ export default function SchedulePage() {
                 onChange={setSelectedBarberId}
             />
 
-            <div className="page-content">
-                Página vacía por ahora...
-            </div>
+            <ScheduleDateNavigator
+                dateISO={dateISO}
+                onChangeDate={setDateISO}
+            />
+
+            {(scheduleError || barbersError || servicesError || reviewBarbersError) ? (
+                <div className="schedule-page__errors" style={{ marginBottom: 12 }}>
+                    {scheduleError ? <div style={{ color: 'var(--negative)' }}>{scheduleError}</div> : null}
+                    {barbersError ? <div style={{ color: 'var(--negative)' }}>{barbersError}</div> : null}
+                    {servicesError ? <div style={{ color: 'var(--negative)' }}>{servicesError}</div> : null}
+                    {detailModalOpen && reviewBarbersError ? (
+                        <div style={{ color: 'var(--negative)' }}>{reviewBarbersError}</div>
+                    ) : null}
+                </div>
+            ) : null}
+
+            <ScheduleCalendar
+                dateISO={dateISO}
+                appointments={appointments}
+                schedule={schedule}
+                selectedBarberId={selectedBarberId}
+                onCreateAtSlot={openCreateModal}
+                onOpenAppointment={openDetailModal}
+                loading={loadingSchedule}
+            />
         </div>
-
-
     );
 }

@@ -68,7 +68,7 @@ export async function POST(req) {
     const validation = {
       startAtValid: false,
       serviceValid: !hasServiceId,
-      barberValid: !hasBarberId,
+      barberValid: !hasBarberId, // si no hay barbero, sigue siendo válido
       canSubmit: false,
     };
 
@@ -132,6 +132,7 @@ export async function POST(req) {
         validation.serviceValid = false;
       } else {
         validation.serviceValid = true;
+
         selectedService = {
           id: toId(service._id),
           name: service.name ?? "—",
@@ -143,10 +144,7 @@ export async function POST(req) {
             : [],
         };
 
-        if (
-          validation.startAtValid &&
-          selectedService.durationMinutes > 0
-        ) {
+        if (validation.startAtValid && selectedService.durationMinutes > 0) {
           parsedEndAt = new Date(
             parsedStartAt.getTime() + selectedService.durationMinutes * 60 * 1000
           );
@@ -226,7 +224,7 @@ export async function POST(req) {
       };
     });
 
-    // 8) Validar barbero seleccionado
+    // 8) Validar barbero seleccionado solo si viene uno
     if (hasBarberId) {
       const barber = barbers.find((b) => b.id === rawBarberId);
 
@@ -251,14 +249,19 @@ export async function POST(req) {
           reason: barber.reason,
         };
       }
+    } else {
+      validation.barberValid = true;
+      selectedBarber = null;
     }
 
     if (!hasServiceId) {
-      warnings.push("Selecciona un servicio para calcular duración y disponibilidad real");
+      warnings.push(
+        "Selecciona un servicio para calcular duración y disponibilidad real"
+      );
     }
 
     if (!hasBarberId) {
-      warnings.push("Selecciona un barbero para completar la cita");
+      warnings.push("La cita puede crearse sin barbero y asignarse después");
     }
 
     validation.canSubmit =
@@ -278,12 +281,12 @@ export async function POST(req) {
 
         service: selectedService
           ? {
-              id: selectedService.id,
-              name: selectedService.name,
-              durationMinutes: selectedService.durationMinutes,
-              price: selectedService.price,
-              color: selectedService.color,
-            }
+            id: selectedService.id,
+            name: selectedService.name,
+            durationMinutes: selectedService.durationMinutes,
+            price: selectedService.price,
+            color: selectedService.color,
+          }
           : null,
 
         selectedBarber,

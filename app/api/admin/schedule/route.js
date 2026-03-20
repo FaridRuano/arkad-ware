@@ -2,9 +2,182 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
+import BarberSchedule from "@models/BarberSchedule";
+import BusinessSettings from "@models/BusinessSettings";
 
 function isValidDateString(value = "") {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function normalizeTime(value = "") {
+  const str = String(value || "").trim();
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(str) ? str : "";
+}
+
+function getDayNumberFromDateString(dateString) {
+  const date = new Date(`${dateString}T12:00:00-05:00`);
+  return date.getDay(); // 0 domingo ... 6 sábado
+}
+
+function getDayKeyFromDayNumber(dayNumber) {
+  if (dayNumber === 0) return "sunday";
+  if (dayNumber === 6) return "saturday";
+  return "weekdays";
+}
+
+function buildClosedHours(source = "none") {
+  return {
+    source,
+    enabled: false,
+    isClosed: true,
+    start: "",
+    end: "",
+    breakStart: "",
+    breakEnd: "",
+  };
+}
+
+function buildOpenHours({
+  source = "unknown",
+  start = "",
+  end = "",
+  breakStart = "",
+  breakEnd = "",
+}) {
+  const safeStart = normalizeTime(start);
+  const safeEnd = normalizeTime(end);
+  const safeBreakStart = normalizeTime(breakStart);
+  const safeBreakEnd = normalizeTime(breakEnd);
+
+  if (!safeStart || !safeEnd || safeStart >= safeEnd) {
+    return buildClosedHours(source);
+  }
+
+  const hasValidBreak =
+    safeBreakStart &&
+    safeBreakEnd &&
+    safeBreakStart < safeBreakEnd &&
+    safeBreakStart > safeStart &&
+    safeBreakEnd < safeEnd;
+
+  return {
+    source,
+    enabled: true,
+    isClosed: false,
+    start: safeStart,
+    end: safeEnd,
+    breakStart: hasValidBreak ? safeBreakStart : "",
+    breakEnd: hasValidBreak ? safeBreakEnd : "",
+  };
+}
+
+function getBusinessHoursForDay(businessSettings, dayNumber) {
+  const dayKey = getDayKeyFromDayNumber(dayNumber);
+  const range = businessSettings?.generalSchedule?.[dayKey];
+
+  if (!range?.enabled || !range?.start || !range?.end) {
+    return buildClosedHours("business");
+  }
+
+  return buildOpenHours({
+    source: "business",
+    start: range.start,
+    end: range.end,
+  });
+}
+
+function getBarberHoursForDay(barberSchedule, dayNumber) {
+  if (!barberSchedule?.isActive) {
+    return buildClosedHours("barber");
+  }
+
+  const dayConfig = Array.isArray(barberSchedule?.weekSchedule)
+    ? barberSchedule.weekSchedule.find((item) => item?.day === dayNumber)
+    : null;
+
+  if (!dayConfig?.enabled || !dayConfig?.start || !dayConfig?.end) {
+    return buildClosedHours("barber");
+  }
+
+  return buildOpenHours({
+    source: "barber",
+    start: dayConfig.start,
+    end: dayConfig.end,
+    breakStart: dayConfig.breakStart,
+    breakEnd: dayConfig.breakEnd,
+  });
+}
+
+async function getScheduleContext({ date, barberObjectId }) {
+  const dayNumber = getDayNumberFromDateString(date);
+
+  const businessSettings =
+    (await BusinessSettings.findOne({ isActive: true })
+      .sort({ createdAt: -1 })
+      .lean()) || null;
+
+  const businessHours = getBusinessHoursForDay(businessSettings, dayNumber);
+
+  let barberSchedule = null;
+  let barberHours = buildClosedHours("barber");
+
+  if (barberObjectId) {
+    barberSchedule = await BarberSchedule.findOne({
+      barber: barberObjectId,
+      isActive: true,
+    }).lean();
+
+    barberHours = getBarberHoursForDay(barberSchedule, dayNumber);
+  }
+
+  let effectiveHours = businessHours;
+
+  if (barberObjectId) {
+    const useFallback = barberSchedule?.useBusinessHoursAsFallback !== false;
+
+    if (barberHours.enabled && !barberHours.isClosed) {
+      effectiveHours = barberHours;
+    } else if (useFallback) {
+      effectiveHours = businessHours;
+    } else {
+      effectiveHours = buildClosedHours("effective");
+    }
+  }
+
+  return {
+    businessSettings: businessSettings
+      ? {
+        id: businessSettings?._id?.toString?.() ?? businessSettings?._id ?? null,
+        businessName: businessSettings?.businessName ?? "",
+        timezone: businessSettings?.timezone || "America/Guayaquil",
+        slotIntervalMinutes: businessSettings?.slotIntervalMinutes || 30,
+        bookingMinNoticeMinutes: businessSettings?.bookingMinNoticeMinutes ?? 60,
+        bookingMaxDaysAhead: businessSettings?.bookingMaxDaysAhead ?? 30,
+      }
+      : {
+        id: null,
+        businessName: "",
+        timezone: "America/Guayaquil",
+        slotIntervalMinutes: 30,
+        bookingMinNoticeMinutes: 60,
+        bookingMaxDaysAhead: 30,
+      },
+
+    dayNumber,
+    businessHours,
+    barberHours,
+    effectiveHours,
+    barberSchedule: barberSchedule
+      ? {
+        id: barberSchedule?._id?.toString?.() ?? barberSchedule?._id ?? null,
+        barber: barberSchedule?.barber?.toString?.() ?? barberSchedule?.barber ?? null,
+        useBusinessHoursAsFallback:
+          barberSchedule?.useBusinessHoursAsFallback !== false,
+        notes: barberSchedule?.notes ?? "",
+        isActive: barberSchedule?.isActive !== false,
+      }
+      : null,
+  };
 }
 
 export async function GET(req) {
@@ -172,33 +345,33 @@ export async function GET(req) {
 
         client: a?.client?._id
           ? {
-              id: a?.client?._id?.toString?.() ?? a?.client?._id,
-              firstName: a?.client?.firstName ?? "",
-              lastName: a?.client?.lastName ?? "",
-              name: clientFullName || "—",
-              phone: a?.client?.phone ?? "",
-              email: a?.client?.email ?? "",
-            }
+            id: a?.client?._id?.toString?.() ?? a?.client?._id,
+            firstName: a?.client?.firstName ?? "",
+            lastName: a?.client?.lastName ?? "",
+            name: clientFullName || "—",
+            phone: a?.client?.phone ?? "",
+            email: a?.client?.email ?? "",
+          }
           : null,
 
         barber: a?.barber?._id
           ? {
-              id: a?.barber?._id?.toString?.() ?? a?.barber?._id,
-              name: a?.barber?.name ?? "—",
-              color: a?.barber?.color || "#000000",
-            }
+            id: a?.barber?._id?.toString?.() ?? a?.barber?._id,
+            name: a?.barber?.name ?? "—",
+            color: a?.barber?.color || "#000000",
+          }
           : null,
 
         createdBy: a?.createdByUser?._id
           ? {
-              id:
-                a?.createdByUser?._id?.toString?.() ?? a?.createdByUser?._id,
-              firstName: a?.createdByUser?.firstName ?? "",
-              lastName: a?.createdByUser?.lastName ?? "",
-              name: creatorFullName || "—",
-              email: a?.createdByUser?.email ?? "",
-              role: a?.createdByUser?.role ?? "",
-            }
+            id:
+              a?.createdByUser?._id?.toString?.() ?? a?.createdByUser?._id,
+            firstName: a?.createdByUser?.firstName ?? "",
+            lastName: a?.createdByUser?.lastName ?? "",
+            name: creatorFullName || "—",
+            email: a?.createdByUser?.email ?? "",
+            role: a?.createdByUser?.role ?? "",
+          }
           : null,
 
         serviceName: a?.serviceName ?? "",
@@ -223,7 +396,7 @@ export async function GET(req) {
       };
     });
 
-    const meta = {
+    const stats = {
       total: 0,
       pending: 0,
       confirmed: 0,
@@ -239,33 +412,55 @@ export async function GET(req) {
       const st = a?.status || "pending";
 
       if (st === "cancelled") {
-        meta.cancelled++;
+        stats.cancelled++;
         continue;
       }
 
       if (st === "no_assistance") {
-        meta.noAssistance++;
+        stats.noAssistance++;
         continue;
       }
 
-      meta.total++;
+      stats.total++;
 
-      if (st === "pending") meta.pending++;
-      else if (st === "confirmed") meta.confirmed++;
-      else if (st === "in_progress") meta.inProgress++;
-      else if (st === "completed") meta.completed++;
+      if (st === "pending") stats.pending++;
+      else if (st === "confirmed") stats.confirmed++;
+      else if (st === "in_progress") stats.inProgress++;
+      else if (st === "completed") stats.completed++;
 
       const pay = a?.paymentStatus || "unpaid";
-      if (pay === "paid") meta.paid++;
-      else meta.unpaid++;
+      if (pay === "paid") stats.paid++;
+      else stats.unpaid++;
     }
+
+    const scheduleContext = await getScheduleContext({
+      date,
+      barberObjectId,
+    });
 
     return NextResponse.json({
       date,
       barberId: barberId || null,
       startAtRange: { start, end },
       appointments,
-      meta,
+      meta: {
+        ...stats,
+        dayNumber: scheduleContext.dayNumber,
+      },
+      schedule: {
+        timezone: scheduleContext.businessSettings.timezone,
+        slotIntervalMinutes: scheduleContext.businessSettings.slotIntervalMinutes,
+        bookingMinNoticeMinutes:
+          scheduleContext.businessSettings.bookingMinNoticeMinutes,
+        bookingMaxDaysAhead:
+          scheduleContext.businessSettings.bookingMaxDaysAhead,
+
+        businessHours: scheduleContext.businessHours,
+        barberHours: scheduleContext.barberHours,
+        effectiveHours: scheduleContext.effectiveHours,
+
+        barberSchedule: scheduleContext.barberSchedule,
+      },
     });
   } catch (err) {
     console.error("GET /admin/schedule error:", err);

@@ -57,7 +57,7 @@ export async function PATCH(req, { params }) {
 
     await connectMongoDB();
 
-    const { id } = params;
+    const { id } = await params;
 
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(

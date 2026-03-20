@@ -1,7 +1,4 @@
 import mongoose from "mongoose"
-const dns = require("dns")
-
-dns.setServers(["1.1.1.1", "8.8.8.8"])
 
 const MONGODB_URI = process.env.MONGODB_URI
 

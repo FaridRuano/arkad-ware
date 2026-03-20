@@ -134,12 +134,30 @@
     padding: 16px 20px 6px;
 }
 
+.modalHintBox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 8px 14px;
+    border-radius: 16px;
+
+    color: color-mix(in oklab, var(--fg) 88%, var(--negative) 12%);
+    background: color-mix(in oklab, var(--primary-dark) 12%, transparent 88%);
+    border: 1px solid color-mix(in oklab, var(--border) 24%, transparent 76%);
+
+    margin-bottom: 12px;
+
+    animation: modalErrorIn 160ms ease-out both;
+    font-size: 12px;
+}
+
 .modalError {
     display: flex;
     align-items: flex-start;
     gap: 10px;
 
-    padding: 12px 14px;
+    padding: 8px 14px;
     border-radius: 16px;
 
     color: color-mix(in oklab, var(--fg) 88%, var(--negative) 12%);
@@ -149,6 +167,7 @@
     margin-bottom: 12px;
 
     animation: modalErrorIn 160ms ease-out both;
+    font-size: 12px;
 }
 
 @keyframes modalErrorIn {

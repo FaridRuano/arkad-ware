@@ -102,7 +102,7 @@ export async function POST(req) {
 
     const actorObjectId = new mongoose.Types.ObjectId(userId);
 
-    const appointment = await Appointment.create({
+    /* const appointment = await Appointment.create({
       user: actorObjectId, // cliente crea su propia cita
       startAt,
       durationMinutes,
@@ -132,6 +132,16 @@ export async function POST(req) {
         },
       },
       { status: 201 }
+    ); */
+
+
+    return NextResponse.json(
+      {
+        error: false, appointment: {
+          id: "00000000000000",
+        },
+      },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Create appointment error:", error);

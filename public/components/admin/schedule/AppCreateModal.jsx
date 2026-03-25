@@ -343,6 +343,35 @@ export default function AppCreateModal({
 
   if (!open) return null;
 
+  const handleClose = () => {
+    // limpiar form principal
+    setFormState({
+      loading: false,
+      data: null,
+    });
+
+    // limpiar búsqueda cliente
+    setQ('');
+    setResults([]);
+    setSearching(false);
+
+    // limpiar selección
+    setSelectedClient(null);
+    setServiceId('');
+    setBarberPickId('');
+
+    // limpiar errores / warnings
+    setErr('');
+    setDropdownOpen(false);
+
+    // abortar requests activos
+    if (abortRef.current) abortRef.current.abort();
+    if (formAbortRef.current) formAbortRef.current.abort();
+
+    // cerrar modal
+    onClose?.();
+  };
+
   return (
     <div
       className="modalOverlay"
@@ -358,7 +387,7 @@ export default function AppCreateModal({
 
           <button
             className="modalClose"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={saving}
             aria-label="Cerrar"
             type="button"
@@ -377,7 +406,7 @@ export default function AppCreateModal({
           )}
 
           {!!formState?.data?.warnings?.length && (
-            <div className="modalHintBox" style={{ marginBottom: 12 }}>
+            <div className="modalHintBox">
               {formState.data.warnings[0]}
             </div>
           )}
@@ -419,12 +448,12 @@ export default function AppCreateModal({
               ))}
             </select>
 
-            {selectedService && (
+            {/* {selectedService && (
               <div className="field__hint">
                 Duración: {selectedService.durationMinutes} min · Precio: $
                 {formatMoney(selectedService.price)}
               </div>
-            )}
+            )} */}
           </div>
 
           {isLockedBarber ? (
@@ -464,15 +493,14 @@ export default function AppCreateModal({
                     disabled={!barber.enabled}
                   >
                     {barber.name}
-                    {!barber.compatible ? ' · No realiza este servicio' : ''}
-                    {barber.compatible && !barber.available ? ' · Ocupado' : ''}
+                    {!barber.enabled && barber.reason ? ` · ${barber.reason}` : ''}
                   </option>
                 ))}
               </select>
 
-              <div className="field__hint">
+              {/* <div className="field__hint">
                 Puedes dejar la cita sin barbero y asignarlo más tarde.
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -611,7 +639,7 @@ export default function AppCreateModal({
             <button
               className="__button secondary"
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={saving}
             >
               Cancelar

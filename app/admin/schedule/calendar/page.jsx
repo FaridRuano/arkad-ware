@@ -354,7 +354,9 @@ export default function SchedulePage() {
             dateISO: '',
             timeHM: '',
             barberId: '',
+            serviceId: '',
         });
+        setSelectedBarberId(initialBarberIdFromURL)
     }, []);
 
     const openDetailModal = useCallback((appointment) => {

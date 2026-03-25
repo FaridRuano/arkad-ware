@@ -4,6 +4,8 @@ import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
 import Barber from "@models/Barber";
 import Service from "@models/Service";
+import BarberSchedule from "@models/BarberSchedule";
+import BusinessSettings from "@models/BusinessSettings";
 import { auth } from "@auth";
 
 function buildStartAt({ startAt, date, time }) {
@@ -25,6 +27,108 @@ function buildStartAt({ startAt, date, time }) {
 
 function toId(value) {
   return value?.toString?.() ?? value ?? null;
+}
+
+function parseTimeToMinutes(value = "") {
+  const str = String(value || "").trim();
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(str)) return null;
+
+  const [hh, mm] = str.split(":").map(Number);
+  return hh * 60 + mm;
+}
+
+function getMinutesFromDate(date) {
+  if (!date || Number.isNaN(new Date(date).getTime())) return null;
+  const d = new Date(date);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function getDayNumberFromDate(date) {
+  if (!date || Number.isNaN(new Date(date).getTime())) return null;
+  return new Date(date).getDay(); // 0 domingo ... 6 sábado
+}
+
+function getBusinessRangeForDay(businessSettings, dayNumber) {
+  if (!businessSettings?.generalSchedule || dayNumber == null) return null;
+
+  let range = null;
+
+  if (dayNumber === 0) range = businessSettings.generalSchedule?.sunday || null;
+  else if (dayNumber === 6) range = businessSettings.generalSchedule?.saturday || null;
+  else range = businessSettings.generalSchedule?.weekdays || null;
+
+  if (!range?.enabled || !range?.start || !range?.end) return null;
+
+  const start = parseTimeToMinutes(range.start);
+  const end = parseTimeToMinutes(range.end);
+
+  if (start == null || end == null || start >= end) return null;
+
+  return {
+    source: "business",
+    start,
+    end,
+    breakStart: null,
+    breakEnd: null,
+  };
+}
+
+function getBarberRangeForDay(barberSchedule, dayNumber) {
+  if (!barberSchedule?.isActive || !Array.isArray(barberSchedule?.weekSchedule)) {
+    return null;
+  }
+
+  const dayConfig = barberSchedule.weekSchedule.find((item) => item?.day === dayNumber);
+
+  if (!dayConfig?.enabled || !dayConfig?.start || !dayConfig?.end) {
+    return null;
+  }
+
+  const start = parseTimeToMinutes(dayConfig.start);
+  const end = parseTimeToMinutes(dayConfig.end);
+  const breakStart = parseTimeToMinutes(dayConfig.breakStart);
+  const breakEnd = parseTimeToMinutes(dayConfig.breakEnd);
+
+  if (start == null || end == null || start >= end) return null;
+
+  return {
+    source: "barber",
+    start,
+    end,
+    breakStart:
+      breakStart != null &&
+      breakEnd != null &&
+      breakStart < breakEnd &&
+      breakStart > start &&
+      breakEnd < end
+        ? breakStart
+        : null,
+    breakEnd:
+      breakStart != null &&
+      breakEnd != null &&
+      breakStart < breakEnd &&
+      breakStart > start &&
+      breakEnd < end
+        ? breakEnd
+        : null,
+  };
+}
+
+function resolveEffectiveRange({ barberSchedule, businessSettings, dayNumber }) {
+  const barberRange = getBarberRangeForDay(barberSchedule, dayNumber);
+  const businessRange = getBusinessRangeForDay(businessSettings, dayNumber);
+
+  if (barberRange) return barberRange;
+
+  const useFallback = barberSchedule?.useBusinessHoursAsFallback !== false;
+  if (useFallback && businessRange) return businessRange;
+
+  return null;
+}
+
+function isInsideBreak(startMinutes, endMinutes, breakStart, breakEnd) {
+  if (breakStart == null || breakEnd == null) return false;
+  return startMinutes < breakEnd && endMinutes > breakStart;
 }
 
 export async function POST(req) {
@@ -68,7 +172,7 @@ export async function POST(req) {
     const validation = {
       startAtValid: false,
       serviceValid: !hasServiceId,
-      barberValid: !hasBarberId, // si no hay barbero, sigue siendo válido
+      barberValid: !hasBarberId,
       canSubmit: false,
     };
 
@@ -158,7 +262,24 @@ export async function POST(req) {
       .select("_id name color isActive")
       .lean();
 
-    // 6) Si hay startAt + service => consultar conflictos
+    // 6) Horarios
+    const [businessSettings, barberSchedules] = await Promise.all([
+      BusinessSettings.findOne({ isActive: true })
+        .sort({ createdAt: -1 })
+        .lean(),
+      BarberSchedule.find({
+        barber: { $in: activeBarbers.map((b) => b._id) },
+        isActive: true,
+      })
+        .select("_id barber weekSchedule useBusinessHoursAsFallback isActive")
+        .lean(),
+    ]);
+
+    const barberScheduleMap = new Map(
+      barberSchedules.map((item) => [toId(item.barber), item])
+    );
+
+    // 7) Si hay startAt + service => consultar conflictos
     let conflictsMap = new Map();
 
     if (
@@ -193,7 +314,7 @@ export async function POST(req) {
       );
     }
 
-    // 7) Construir lista de barberos con compatibilidad + disponibilidad
+    // 8) Construir lista de barberos con compatibilidad + disponibilidad + horario real
     const barbers = activeBarbers.map((barber) => {
       const barberId = toId(barber._id);
 
@@ -202,12 +323,62 @@ export async function POST(req) {
         : true;
 
       const conflict = conflictsMap.get(barberId) || null;
-      const available = compatible && !conflict;
+
+      const dayNumber = validation.startAtValid ? getDayNumberFromDate(parsedStartAt) : null;
+      const appointmentStartMinutes = validation.startAtValid
+        ? getMinutesFromDate(parsedStartAt)
+        : null;
+      const appointmentEndMinutes =
+        validation.startAtValid && parsedEndAt
+          ? getMinutesFromDate(parsedEndAt)
+          : null;
+
+      const barberSchedule = barberScheduleMap.get(barberId) || null;
+      const effectiveRange =
+        dayNumber != null
+          ? resolveEffectiveRange({
+              barberSchedule,
+              businessSettings,
+              dayNumber,
+            })
+          : null;
+
+      const worksThisDay = !!effectiveRange;
+      const insideWorkingHours =
+        worksThisDay &&
+        appointmentStartMinutes != null &&
+        appointmentEndMinutes != null &&
+        appointmentStartMinutes >= effectiveRange.start &&
+        appointmentEndMinutes <= effectiveRange.end;
+
+      const insideBreak =
+        worksThisDay &&
+        appointmentStartMinutes != null &&
+        appointmentEndMinutes != null &&
+        isInsideBreak(
+          appointmentStartMinutes,
+          appointmentEndMinutes,
+          effectiveRange?.breakStart ?? null,
+          effectiveRange?.breakEnd ?? null
+        );
+
+      const available =
+        compatible &&
+        !conflict &&
+        worksThisDay &&
+        insideWorkingHours &&
+        !insideBreak;
 
       let reason = "";
 
       if (!compatible) {
         reason = "No realiza este servicio";
+      } else if (!worksThisDay) {
+        reason = "No trabaja este día";
+      } else if (!insideWorkingHours) {
+        reason = "Fuera del horario laboral";
+      } else if (insideBreak) {
+        reason = "Horario dentro del descanso";
       } else if (conflict) {
         reason = "Horario ocupado";
       }
@@ -216,15 +387,26 @@ export async function POST(req) {
         id: barberId,
         name: barber.name ?? "—",
         color: barber.color || "#000000",
+
         compatible,
         available,
-        enabled: compatible && available,
+        enabled: available,
         reason,
         conflict,
+
+        schedule: effectiveRange
+          ? {
+              source: effectiveRange.source,
+              start: effectiveRange.start,
+              end: effectiveRange.end,
+              breakStart: effectiveRange.breakStart,
+              breakEnd: effectiveRange.breakEnd,
+            }
+          : null,
       };
     });
 
-    // 8) Validar barbero seleccionado solo si viene uno
+    // 9) Validar barbero seleccionado solo si viene uno
     if (hasBarberId) {
       const barber = barbers.find((b) => b.id === rawBarberId);
 
@@ -234,8 +416,8 @@ export async function POST(req) {
       } else if (!barber.compatible) {
         errors.push("Este barbero no tiene asignado el servicio seleccionado");
         validation.barberValid = false;
-      } else if (!barber.available) {
-        errors.push("Este barbero ya tiene ocupado ese horario");
+      } else if (!barber.enabled) {
+        errors.push(barber.reason || "Este barbero no está disponible en ese horario");
         validation.barberValid = false;
       } else {
         validation.barberValid = true;
@@ -281,18 +463,16 @@ export async function POST(req) {
 
         service: selectedService
           ? {
-            id: selectedService.id,
-            name: selectedService.name,
-            durationMinutes: selectedService.durationMinutes,
-            price: selectedService.price,
-            color: selectedService.color,
-          }
+              id: selectedService.id,
+              name: selectedService.name,
+              durationMinutes: selectedService.durationMinutes,
+              price: selectedService.price,
+              color: selectedService.color,
+            }
           : null,
 
         selectedBarber,
-
         barbers,
-
         validation,
       },
       { status: 200 }

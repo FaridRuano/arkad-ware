@@ -1,92 +1,39 @@
-/* === Color Palette (Refined Olive & Gold) === */
-$black: #0b0c0a;
-$white: #ffffff;
-
-/* Fondos (dark olive premium) */
-$background-color: #222420; // surface 0 / bg base
-$background-warp:  #282b23; // surface 1
-$highlight-color:  #33382e; // surface 2
-
-/* Acentos */
-$primary-color:   #c0a671; // dorado cálido real
-$primary-dark:    #8f7443; // dorado profundo (para contraste)
-$secondary-color: #5e715f; // verde oliva elegante
-
-/* === Funciones helper === */
-@function tint($color, $percent) {
-  @return mix($white, $color, $percent);
-}
-
-@function shade($color, $percent) {
-  @return mix($black, $color, $percent);
-}
-
-@function alpha($color, $a) {
-  @return rgba($color, $a);
-}
-
-/* Texto en dark mode */
-$fg-strong: #f5f5f3;
-$fg-soft:   #b8bfb6;
-
-/* Derivados */
-$surface-0: $background-color;
-$surface-1: $background-warp;
-$surface-2: $highlight-color;
-
-$border-color: alpha($white, .08);
-$muted-color:  #8e9a90; // un muted más “olive” (mejor que gris puro)
-
-/* Variantes de primary (mejor que rgba directo) */
-$primary-hover:  tint($primary-color, 10%);  // más luminoso
-$primary-active: shade($primary-color, 10%); // más profundo
-
-$focus-ring: alpha($primary-color, .55);
-
-/* Variantes de secondary */
-$secondary-hover: tint($secondary-color, 12%);
-$secondary-active: shade($secondary-color, 10%);
-$focus-ring-secondary: alpha($secondary-color, .55);
-
-/* Estados */
-$negative: #be3535;
-$positive: #22c55e;
-$warning:  #af4d25;
-
-/* Neutrales UI */
-$gray:  #6b7280;
-
-/* === Exportar como custom properties === */
 :root {
-  --white: #{$white};
-  --black: #{$black};
+  --white: #ffffff;
+  --black: #0b0c0a;
 
-  --bg: #{$surface-0};
-  --surface-1: #{$surface-1};
-  --surface-2: #{$surface-2};
+  /* Base dark */
+  --bg: #222420;
+  --surface-0: rgba(255, 255, 255, 0.03);
+  --surface-1: #282b23;
+  --surface-2: #33382e;
 
-  --fg: #{$fg-strong};
-  --muted: #{$muted-color};
+  --fg: #f5f5f3;
+  --fg-soft: rgba(245, 241, 234, 0.76);
+  --muted: #8e9a90;
+  --light: #b8bfb6;
 
-  --border: #{$border-color};
-  --shadow-1: 0 8px 18px #{alpha($black, .35)};
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hard: rgba(207, 182, 144, 0.14);
+  --shadow-1: 0 8px 18px rgba(11, 12, 10, 0.35);
 
-  --primary: #{$primary-color};
-  --primary-dark: #{$primary-dark};
-  --primary-hover: #{$primary-hover};
-  --primary-active: #{$primary-active};
-  --focus-ring: #{$focus-ring};
+  --primary: #b8a684;
+  --primary-dark: #8f7443;
+  --primary-hover: #ccb486;
+  --primary-active: #a1895f;
+  --focus-ring: rgba(192, 166, 113, 0.55);
+  --primary-light-gradient: rgba(192, 166, 113, 0.08);  
 
-  --secondary: #{$secondary-color};
-  --secondary-hover: #{$secondary-hover};
-  --secondary-active: #{$secondary-active};
-  --focus-ring-secondary: #{$focus-ring-secondary};
+  --secondary: #5e715f;
+  --secondary-hover: #738675;
+  --secondary-active: #4f6050;
+  --focus-ring-secondary: rgba(94, 113, 95, 0.55);
 
-  --light: #{$fg-soft};
+  --negative: #be3535;
+  --positive: #22c55e;
+  --warning: #af4d25;
 
-  --negative: #{$negative};
-  --positive: #{$positive};
-  --warning: #{$warning};
+  --gray: #6b7280;
 
-  --gray: #{$gray};
+  --shadow-0: rgba(0, 0, 0, 0.18);
 }

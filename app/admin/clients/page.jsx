@@ -323,7 +323,7 @@ const page = () => {
                               onClick={() => {
                                 openEditClient(c)
                               }}
-                              disabled={loading}
+                              disabled={loading || saving}
                             >
                               ✎
                             </button>
@@ -336,7 +336,7 @@ const page = () => {
                                 setConfirmModalText(`¿Confirma que desea eliminar al cliente "${name}"? Esta acción no se puede deshacer.`)
                                 handleConfirmModal(c, 'delete')
                               }}
-                              disabled={loading}
+                              disabled={loading || saving}
                             >
                               🗑
                             </button>

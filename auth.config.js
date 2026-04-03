@@ -1,12 +1,11 @@
 export const authConfig = {
+  providers: [],
   session: {
     strategy: "jwt",
   },
-
   pages: {
     signIn: "/",
   },
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

@@ -4,36 +4,76 @@
 
   /* Base dark */
   --bg: #222420;
+  --bg-deep: #191b18;
+  --bg-deeper: #11120f;
+  --bg-darkest: #0b0c0a;
+
   --surface-0: rgba(255, 255, 255, 0.03);
   --surface-1: #282b23;
   --surface-2: #33382e;
+  --surface-glass: rgba(255, 255, 255, 0.04);
+  --surface-glass-strong: rgba(255, 255, 255, 0.05);
+  --surface-glass-soft: rgba(255, 255, 255, 0.03);
+  --surface-input-focus: rgba(255, 255, 255, 0.06);
+  --surface-card-top: rgba(255, 255, 255, 0.075);
+  --surface-card-bottom: rgba(255, 255, 255, 0.03);
 
   --fg: #f5f5f3;
   --fg-soft: rgba(245, 241, 234, 0.76);
+  --fg-placeholder: rgba(245, 241, 234, 0.42);
   --muted: #8e9a90;
   --light: #b8bfb6;
 
   --border: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.22);
   --border-hard: rgba(207, 182, 144, 0.14);
+  --border-badge: rgba(207, 182, 144, 0.16);
+  --border-error: rgba(190, 53, 53, 0.25);
+
+  --shadow-0: rgba(0, 0, 0, 0.18);
   --shadow-1: 0 8px 18px rgba(11, 12, 10, 0.35);
+  --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.36);
+  --shadow-social: 0 20px 40px rgba(0, 0, 0, 0.2);
 
   --primary: #b8a684;
   --primary-dark: #8f7443;
   --primary-hover: #ccb486;
   --primary-active: #a1895f;
+  --primary-rgb: 184, 166, 132;
   --focus-ring: rgba(192, 166, 113, 0.55);
-  --primary-light-gradient: rgba(192, 166, 113, 0.08);  
+  --primary-light-gradient: rgba(192, 166, 113, 0.08);
+  --primary-glow-soft: rgba(184, 166, 132, 0.08);
+  --primary-glow: rgba(184, 166, 132, 0.12);
+  --primary-glow-strong: rgba(184, 166, 132, 0.14);
+  --primary-glow-line: rgba(184, 166, 132, 0.28);
 
   --secondary: #5e715f;
   --secondary-hover: #738675;
   --secondary-active: #4f6050;
+  --secondary-rgb: 94, 113, 95;
   --focus-ring-secondary: rgba(94, 113, 95, 0.55);
+  --secondary-glow: rgba(94, 113, 95, 0.12);
+  --secondary-glow-soft: rgba(94, 113, 95, 0.14);
 
   --negative: #be3535;
-  --positive: #22c55e;
-  --warning: #af4d25;
+  --negative-soft: rgba(190, 53, 53, 0.12);
+  --negative-text: #ffd5d5;
 
+  --positive: #22c55e;
+  --positive-soft: rgba(34, 197, 94, 0.12);
+  --warning: #af4d25;
   --gray: #6b7280;
 
-  --shadow-0: rgba(0, 0, 0, 0.18);
+  --button-text-dark: #13130f;
+
+  --link-color: var(--primary-hover);
+  --link-color-hover: var(--white);
+
+  --grid-line: rgba(255, 255, 255, 0.022);
+  --top-radial-glow: rgba(184, 166, 132, 0.08);
+  --top-radial-glow-mobile: rgba(184, 166, 132, 0.11);
+
+  --logo-shadow-soft: rgba(184, 166, 132, 0.08);
+  --logo-shadow-strong: rgba(0, 0, 0, 0.28);
 }

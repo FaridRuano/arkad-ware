@@ -6,6 +6,7 @@ import {
   Save,
 } from 'lucide-react'
 import ModalConfirm from '@public/components/shared/ModalConfirm'
+import { set } from 'mongoose'
 
 const DAY_LABELS = {
   0: 'Domingo',
@@ -158,6 +159,11 @@ const SchedulePage = () => {
   const [confirmModal, setConfirmModal] = useState(false)
   const [confirmModalText, setConfirmModalText] = useState('')
   const [confirmAction, setConfirmAction] = useState(null)
+  const [isConfirming, setIsConfirming] = useState(false)
+
+  const [alertModal, setAlertModal] = useState(false)
+  const [alertText, setAlertText] = useState('')
+  const [alertTitle, setAlertTitle] = useState('')
 
   const handleConfirmModal = () => {
     setConfirmModal((prev) => !prev)
@@ -271,6 +277,10 @@ const SchedulePage = () => {
   }
 
   const saveBusiness = async () => {
+
+    if (isConfirming) return
+
+    setIsConfirming(true)
     setBusinessSaving(true)
 
     try {
@@ -325,11 +335,15 @@ const SchedulePage = () => {
       setBusinessForm(normalized)
       setInitialBusinessForm(normalized)
     } catch (err) {
-      alert(err?.message || 'Error guardando configuración general')
+      setAlertTitle('No se pudo guardar')
+      setAlertText(err?.message || 'Error guardando configuración general')
+      setAlertModal(true)
     } finally {
       setBusinessSaving(false)
       setConfirmModal(false)
       setConfirmAction(null)
+      setIsConfirming(false)
+
     }
   }
 
@@ -411,14 +425,20 @@ const SchedulePage = () => {
   }
 
   const saveBarberSchedule = async (schedule) => {
+
+    if (isConfirming) return
+
+
     const barberId = schedule?.barber?.id || schedule?.barber?._id
     const scheduleId = schedule?.id || schedule?._id
 
     if (!barberId) {
-      alert('No se encontró el barbero asociado')
+      setAlertTitle('Aviso')
+      setAlertText('No se encontró el barbero asociado')
+      setAlertModal(true)
       return
     }
-
+    setIsConfirming(true)
     setScheduleSavingId(barberId)
 
     try {
@@ -437,6 +457,7 @@ const SchedulePage = () => {
         isActive: Boolean(schedule.isActive),
       }
 
+
       const res = await fetch(
         scheduleId
           ? `/api/admin/settings/schedule/barbers/${scheduleId}`
@@ -453,11 +474,14 @@ const SchedulePage = () => {
 
       await fetchBarberSchedules()
     } catch (err) {
-      alert(err?.message || 'Error guardando horario del barbero')
+      setAlertTitle('No se pudo guardar')
+      setAlertText(err?.message || 'Error guardando horario del barbero')
+      setAlertModal(true)
     } finally {
       setScheduleSavingId(null)
       setConfirmModal(false)
       setConfirmAction(null)
+      setIsConfirming(false)
     }
   }
 
@@ -494,7 +518,9 @@ const SchedulePage = () => {
   const requestSaveBusiness = () => {
     const validationError = validateBusiness()
     if (validationError) {
-      alert(validationError)
+      setAlertTitle('Error de validación')
+      setAlertText(validationError)
+      setAlertModal(true)
       return
     }
 
@@ -508,7 +534,9 @@ const SchedulePage = () => {
   const requestSaveBarberSchedule = (schedule) => {
     const validationError = validateBarberSchedule(schedule)
     if (validationError) {
-      alert(validationError)
+      setAlertTitle('Error de validación')
+      setAlertText(validationError)
+      setAlertModal(true)
       return
     }
 
@@ -560,8 +588,17 @@ const SchedulePage = () => {
         mainText={confirmModalText}
         active={confirmModal}
         setActive={handleConfirmModal}
+        status={isConfirming}
         response={() => confirmAction?.()}
         type="confirm"
+      />
+
+      <ModalConfirm
+        active={alertModal}
+        setActive={setAlertModal}
+        mainText={alertText}
+        title={alertTitle}
+        type="alert"
       />
 
       <div className="schedule-page page">

@@ -45,6 +45,7 @@ const ServicesPage = () => {
   /* ===================== Confirm Modal ================== */
   const [confirmModal, setConfirmModal] = useState(false)
   const [confirmModalText, setConfirmModalText] = useState('')
+  const [isConfirming, setIsConfirming] = useState(false)
   const [selectedService, setSelectedService] = useState(null)
 
   const handleConfirmModal = () => {
@@ -52,6 +53,9 @@ const ServicesPage = () => {
   }
 
   const responseConfirmModal = async () => {
+
+    if (isConfirming) return
+    setIsConfirming(true)
     if (!selectedService?.id && !selectedService?._id) return
 
     const id = selectedService.id ?? selectedService._id
@@ -79,6 +83,7 @@ const ServicesPage = () => {
       setLoading(false)
       setConfirmModal(false)
       setSelectedService(null)
+      setIsConfirming(false)
     }
   }
   /* ====================================================== */
@@ -194,6 +199,7 @@ const ServicesPage = () => {
         active={confirmModal}
         setActive={handleConfirmModal}
         response={responseConfirmModal}
+        status={isConfirming}
         type="confirm"
       />
 
@@ -317,11 +323,10 @@ const ServicesPage = () => {
                             )}
 
                             <button
-                              className={`service-row-card__actionBtn ${
-                                isActive
+                              className={`service-row-card__actionBtn ${isActive
                                   ? 'service-row-card__actionBtn--deactivate'
                                   : 'service-row-card__actionBtn--activate'
-                              }`}
+                                }`}
                               title={isActive ? 'Desactivar servicio' : 'Activar servicio'}
                               onClick={() => {
                                 setSelectedService(service)

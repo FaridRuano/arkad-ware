@@ -1,0 +1,195 @@
+.servicesGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.serviceCard {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 250px;
+    padding: 1.25rem;
+    border: 1px solid var(--border-hard);
+    border-radius: 22px;
+    background: var(--surface-0);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 14px 34px var(--shadow-0);
+    &.loaded{
+        animation: fadeInUp 1000ms cubic-bezier(0.22, 0.8, 0.2, 1) forwards
+    }
+}
+
+
+.serviceCardTop {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.serviceCardAccent {
+    width: 12px;
+    min-width: 12px;
+    height: 56px;
+    border-radius: 999px;
+    background: var(--primary);
+}
+
+.serviceCardTitle {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    color: var(--fg);
+}
+
+.serviceCardDuration {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--primary-hover);
+}
+
+.serviceCardDescription {
+    margin: 0;
+    color: var(--fg-soft);
+    line-height: 1.65;
+}
+
+.serviceCardFooter {
+    margin-top: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.serviceCardPrice {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--fg);
+}
+
+.serviceCardSkeleton {
+    .serviceCardSkeletonItem {
+        border-radius: 999px;
+        background: linear-gradient(90deg,
+                var(--surface-glass-soft),
+                rgba(255, 255, 255, 0.11),
+                var(--surface-glass-soft));
+        background-size: 200% 100%;
+        animation: shimmer 1.4s infinite linear;
+    }
+}
+
+.serviceCardSkeletonTitle {
+    width: 58%;
+    height: 18px;
+    margin-bottom: 0.8rem;
+}
+
+.serviceCardSkeletonText {
+    width: 100%;
+    height: 12px;
+    margin-bottom: 0.55rem;
+}
+
+.short {
+    width: 72%;
+}
+
+.serviceCardSkeletonPrice {
+    width: 70px;
+    height: 18px;
+}
+
+.serviceCardSkeletonButton {
+    width: 110px;
+    height: 40px;
+}
+
+.servicesState {
+    padding: 2rem;
+    border-radius: 18px;
+    background: var(--surface-0);
+    color: var(--fg-soft);
+
+    p {
+        margin: 0;
+    }
+}
+
+.servicesStateError {
+    border: 1px solid var(--border-error);
+}
+
+.btnSecondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 1.15rem;
+    border-radius: 999px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.25s ease;
+    font-weight: 600;
+    border: 1px solid rgba(var(--primary-rgb), 0.32);
+    background: transparent;
+    color: var(--fg);
+
+    &:hover {
+        background: rgba(var(--primary-rgb), 0.1);
+        border-color: rgba(var(--primary-rgb), 0.5);
+        transform: translateY(-1px);
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(25px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@media (max-width: 980px) {
+    .servicesGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .serviceCard {
+        min-height: auto;
+    }
+
+    .serviceCardFooter {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btnSecondary {
+        width: 100%;
+    }
+}

@@ -45,6 +45,8 @@
 
     /* Para el “shine” */
     position: relative;
+
+    overflow: hidden;
 }
 
 @keyframes modalCardIn {
@@ -72,6 +74,60 @@
             color-mix(in oklab, var(--primary) 18%, transparent 82%),
             transparent 55%);
     opacity: .9;
+}
+
+
+.modalCardAlert {
+    border-color: rgba(var(--primary-rgb), 0.28);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(var(--primary-rgb), 0.08);
+
+    background: linear-gradient(180deg,
+            color-mix(in oklab, var(--negative-soft) 92%, #fff 8%),
+            var(--negative-soft));
+
+    .modalClose {
+        background: color-mix(in oklab, var(--negative-soft) 78%, transparent 22%);
+
+    }
+}
+
+.modalCardSuccess {
+    border-color: rgba(var(--primary-rgb), 0.28);
+    box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.32),
+        0 0 0 1px rgba(var(--primary-rgb), 0.08);
+
+    background: linear-gradient(180deg,
+            color-mix(in oklab, var(--positive-soft) 92%, #fff 8%),
+            var(--positive-soft));
+
+    .modalClose {
+        background: color-mix(in oklab, var(--positive-soft) 78%, transparent 22%);
+
+    }
+}
+
+.modalTitleAlert {
+    color: var(--primary-hover);
+}
+
+.modalBodyAlert {
+    position: relative;
+
+    &::before {
+        content: "";
+        display: block;
+        width: 52px;
+        height: 3px;
+        border-radius: 999px;
+        margin-bottom: 1rem;
+        background: linear-gradient(90deg,
+                var(--primary-dark) 0%,
+                var(--primary) 55%,
+                var(--primary-hover) 100%);
+    }
 }
 
 /* Header */
@@ -217,7 +273,7 @@
     flex-direction: column;
     gap: 6px;
 
-    &.dis{
+    &.dis {
         opacity: .4;
         pointer-events: none;
     }
@@ -326,6 +382,12 @@ textarea.field__input:focus {
     box-shadow: 0 14px 34px color-mix(in oklab, var(--primary) 22%, transparent 78%);
 }
 
+.modalFooter .__button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* Accesibilidad */
 @media (prefers-reduced-motion: reduce) {
 
@@ -363,136 +425,143 @@ textarea.field__input:focus {
    ========================= */
 
 .modalClient {
-  position: relative;
-  margin-bottom: 12px;
+    position: relative;
+    margin-bottom: 12px;
 }
 
 .modalClient__searchWrap {
-  position: relative;
+    position: relative;
 }
 
 .modalClient__dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
-  z-index: 30;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    z-index: 30;
 
-  border-radius: 16px;
-  overflow: hidden;
+    border-radius: 16px;
+    overflow: hidden;
 
-  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
-  background: color-mix(in oklab, var(--surface-2) 86%, transparent 14%);
-  box-shadow: 0 18px 40px rgba(0,0,0,.25);
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 86%, transparent 14%);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .25);
 
-  animation: modalDropIn 160ms ease both;
+    animation: modalDropIn 160ms ease both;
 }
 
 @keyframes modalDropIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .modalClient__dropdownState {
-  padding: 12px;
-  color: var(--muted);
-  font-size: 13px;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 13px;
 }
 
 .modalClient__dropdownList {
-  max-height: 280px;
-  overflow: auto;
+    max-height: 280px;
+    overflow: auto;
 }
 
 .modalClient__option {
-  width: 100%;
-  text-align: left;
-  border: none;
+    width: 100%;
+    text-align: left;
+    border: none;
 
-  padding: 12px 12px;
-  cursor: pointer;
+    padding: 12px 12px;
+    cursor: pointer;
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 
-  background: transparent;
-  color: var(--fg);
+    background: transparent;
+    color: var(--fg);
 
-  border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
-  transition: background 140ms ease, transform 140ms ease;
+    border-top: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    transition: background 140ms ease, transform 140ms ease;
 }
 
 .modalClient__option:hover {
-  background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
+    background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
 }
 
 .modalClient__option:active {
-  transform: scale(.995);
+    transform: scale(.995);
 }
 
 .modalClient__optionName {
-  font-weight: 800;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    font-weight: 800;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .modalClient__optionPhone {
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .modalClient__hint {
-  margin-top: 8px;
-  font-size: 12px;
-  color: color-mix(in oklab, var(--muted) 80%, var(--fg) 20%);
+    margin-top: 8px;
+    font-size: 12px;
+    color: color-mix(in oklab, var(--muted) 80%, var(--fg) 20%);
 }
 
 /* Selected client “chip/card” */
 .modalClient__selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 
-  padding: 10px 12px;
-  border-radius: 16px;
+    padding: 10px 12px;
+    border-radius: 16px;
 
-  border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
-  background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--primary) 10%, transparent 90%);
 }
 
 .modalClient__selectedText {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .modalClient__selectedName {
-  font-weight: 900;
-  font-size: 13px;
-  color: var(--fg);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    font-weight: 900;
+    font-size: 13px;
+    color: var(--fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .modalClient__selectedPhone {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
 }
 
 .modalClient__changeBtn {
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 12px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 12px;
 }
 
 
@@ -501,74 +570,74 @@ MODAL SERVICES
 =============================== */
 
 .serviceModalBarbers {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 8px;
-
-  &__item {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    min-height: 44px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
-    background: color-mix(in oklab, var(--surface-2) 68%, transparent 32%);
-    cursor: pointer;
-    transition:
-      border-color 0.2s ease,
-      background-color 0.2s ease,
-      transform 0.16s ease;
+    margin-top: 8px;
 
-    &:hover {
-      transform: translateY(-1px);
-      border-color: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+    &__item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+        background: color-mix(in oklab, var(--surface-2) 68%, transparent 32%);
+        cursor: pointer;
+        transition:
+            border-color 0.2s ease,
+            background-color 0.2s ease,
+            transform 0.16s ease;
+
+        &:hover {
+            transform: translateY(-1px);
+            border-color: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+        }
+
+        &.is-selected {
+            border-color: color-mix(in oklab, var(--primary) 28%, transparent 72%);
+            background: color-mix(in oklab, var(--primary) 12%, var(--surface-2) 88%);
+        }
+
+        input {
+            margin: 0;
+            flex-shrink: 0;
+        }
     }
 
-    &.is-selected {
-      border-color: color-mix(in oklab, var(--primary) 28%, transparent 72%);
-      background: color-mix(in oklab, var(--primary) 12%, var(--surface-2) 88%);
+    &__dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.16);
     }
 
-    input {
-      margin: 0;
-      flex-shrink: 0;
+    &__name {
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: var(--fg);
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-  }
 
-  &__dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    flex-shrink: 0;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-  }
-
-  &__name {
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: var(--fg);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__badge {
-    margin-left: auto;
-    padding: 4px 8px;
-    border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #ffd8b4;
-    background: rgba(120, 76, 25, 0.35);
-    flex-shrink: 0;
-  }
+    &__badge {
+        margin-left: auto;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #ffd8b4;
+        background: rgba(120, 76, 25, 0.35);
+        flex-shrink: 0;
+    }
 }
 
 @media (max-width: 640px) {
-  .serviceModalBarbers {
-    grid-template-columns: 1fr;
-  }
+    .serviceModalBarbers {
+        grid-template-columns: 1fr;
+    }
 }

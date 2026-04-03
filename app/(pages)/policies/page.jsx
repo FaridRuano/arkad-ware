@@ -414,7 +414,7 @@ const page = () => {
           <span aria-hidden="true" className="brand__line" />
           <div className="brand__lockup" role="img" aria-label="ARKAD — Master Barber Empire">
             {/* Reemplaza por tu wordmark */}
-            <img src="/assets/logo-arkad.svg" alt="ARKAD" className="brand__logo" />
+            <img src="/assets/icons/logo-arkad.svg" alt="ARKAD" className="brand__logo" />
             <div className="brand__subtitle">Master Barber Empire</div>
           </div>
           <span aria-hidden="true" className="brand__line" />

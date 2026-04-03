@@ -5,12 +5,14 @@ const ModalConfirm = ({
     mainText,
     active,
     setActive,
+    status = false,
     response,
     type = 'confirm',
+    title,
 }) => {
-
     useEffect(() => {
         if (!active) return
+        if (status) return
 
         const onKey = (e) => {
             if (e.key === 'Escape') setActive(false)
@@ -18,11 +20,29 @@ const ModalConfirm = ({
 
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
-    }, [active, setActive])
+    }, [active, setActive, status])
 
     if (!active) return null
 
     const isAlert = type === 'alert'
+    const isSuccess = type === 'success'
+
+    const handleClose = () => {
+        if (status) return
+        setActive(false)
+    }
+
+    const handleConfirm = () => {
+        if (status) return
+
+        if (isAlert || isSuccess) {
+            response?.()
+            setActive(false)
+            return
+        }
+
+        response?.()
+    }
 
     return (
         <div
@@ -30,35 +50,49 @@ const ModalConfirm = ({
             role="dialog"
             aria-modal="true"
             onMouseDown={(e) => {
-                if (e.target === e.currentTarget) setActive(false)
+                if (e.target === e.currentTarget && !status) {
+                    setActive(false)
+                }
             }}
         >
-            <div className="modalCard" style={{ maxWidth: 480 }}>
+            <div
+                className={`modalCard ${isAlert ? 'modalCardAlert' : ''} ${isSuccess ? 'modalCardSuccess' : ''}`}
+                style={{ maxWidth: 480 }}
+            >
                 <header className="modalHeader">
-                    <h3 className="modalTitle">
-                        Confirmación
+                    <h3
+                        className={`modalTitle ${isAlert ? 'modalTitleAlert' : ''} ${isSuccess ? 'modalTitleSuccess' : ''}`}
+                    >
+                        {title || (isSuccess ? 'Reserva confirmada' : isAlert ? 'Aviso' : 'Confirmación')}
                     </h3>
 
                     <button
+                        type="button"
                         className="modalClose"
-                        onClick={() => setActive(false)}
+                        onClick={handleClose}
                         aria-label="Cerrar"
+                        disabled={status}
                     >
                         ✕
                     </button>
                 </header>
 
-                <div className="modalBody" style={{ paddingTop: 24 }}>
+                <div
+                    className={`modalBody ${isAlert ? 'modalBodyAlert' : ''} ${isSuccess ? 'modalBodySuccess' : ''}`}
+                    style={{ paddingTop: 24 }}
+                >
                     <p style={{ margin: 0, color: 'var(--fg)', lineHeight: 1.5 }}>
                         {mainText}
                     </p>
                 </div>
 
                 <footer className="modalFooter">
-                    {!isAlert && (
+                    {!isAlert && !isSuccess && (
                         <button
+                            type="button"
                             className="__button secondary"
-                            onClick={() => setActive(false)}
+                            onClick={handleClose}
+                            disabled={status}
                         >
                             Cancelar
                         </button>
@@ -66,12 +100,11 @@ const ModalConfirm = ({
 
                     <button
                         type="button"
-                        className="__button primary"
-                        onClick={() => {
-                            response?.()
-                        }}
+                        className={`__button ${isSuccess ? 'success' : isAlert ? 'warning' : 'primary'}`}
+                        onClick={handleConfirm}
+                        disabled={status}
                     >
-                        Continuar
+                        {status ? 'Procesando...' : isSuccess ? 'Entendido' : isAlert ? 'Aceptar' : 'Confirmar'}
                     </button>
                 </footer>
             </div>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import BarberModal from '@public/components/admin/settings/BarberModal'
 import ModalConfirm from '@public/components/shared/ModalConfirm'
+import { is } from '@node_modules/date-fns/locale'
 
 const BarbersPage = () => {
   /* ======================= Loading ======================= */
@@ -27,6 +28,7 @@ const BarbersPage = () => {
   /* ===================== Confirm Modal ================== */
   const [confirmModal, setConfirmModal] = useState(false)
   const [confirmModalText, setConfirmModalText] = useState('')
+  const [isConfirming, setIsConfirming] = useState(false)
   const [selectedBarber, setSelectedBarber] = useState(null)
 
   const handleConfirmModal = () => {
@@ -34,6 +36,10 @@ const BarbersPage = () => {
   }
 
   const responseConfirmModal = async () => {
+    if (isConfirming) return
+
+    setIsConfirming(true)
+
     if (!selectedBarber?.id && !selectedBarber?._id) return
 
     const id = selectedBarber.id ?? selectedBarber._id
@@ -58,6 +64,7 @@ const BarbersPage = () => {
       setLoading(false)
       setConfirmModal(false)
       setSelectedBarber(null)
+      setIsConfirming(false)
     }
   }
   /* ====================================================== */
@@ -152,6 +159,7 @@ const BarbersPage = () => {
         active={confirmModal}
         setActive={handleConfirmModal}
         response={responseConfirmModal}
+        status={isConfirming}
         type="confirm"
       />
 

@@ -100,6 +100,16 @@
             background: color-mix(in srgb, var(--negative) 24%, var(--bg) 76%);
         }
     }
+
+    &.success {
+        background: color-mix(in srgb, var(--positive) 18%, var(--bg) 82%);
+        border-color: color-mix(in srgb, var(--positive) 35%, var(--border) 65%);
+        color: var(--fg);
+
+        &:hover {
+            background: color-mix(in srgb, var(--positive) 24%, var(--bg) 76%);
+        }
+    }
 }
 
 a.link {
@@ -237,12 +247,12 @@ a.link {
 ========================= */
 
 .page {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
 
-  @media (max-width: 980px) {
-    gap: 20px;
-  }
+    @media (max-width: 980px) {
+        gap: 20px;
+    }
 }

@@ -34,13 +34,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .select("_id")
           .lean();
 
-        const isFirstLogin = !access;
+        const normalizedRole = user.role || "user";
+        const isFirstLogin = normalizedRole === "user" && !access;
 
         return {
           id: user._id.toString(),
           email: user.email,
           name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
-          role: user.role || "user",
+          role: normalizedRole,
           isFirstLogin,
         };
       },

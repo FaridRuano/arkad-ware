@@ -11,9 +11,13 @@ export const isValidTimeHHMM = (value = "") =>
 
 export const pad = (n) => String(n).padStart(2, "0");
 
+export const GUAYAQUIL_UTC_OFFSET_MINUTES = 5 * 60;
+
 export const parseDateLocal = (dateStr) => {
   const [y, m, d] = String(dateStr).split("-").map(Number);
-  return new Date(y, m - 1, d, 0, 0, 0, 0);
+
+  // 00:00 en Guayaquil => 05:00 UTC
+  return new Date(Date.UTC(y, m - 1, d, 0 + 5, 0, 0, 0));
 };
 
 export const formatDateLocal = (date) => {
@@ -32,9 +36,14 @@ export const minutesToHHMM = (minutes) => {
 };
 
 export const combineDateAndMinutes = (dateStr, minutes) => {
-  const date = parseDateLocal(dateStr);
-  date.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
-  return date;
+  const [y, m, d] = String(dateStr).split("-").map(Number);
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  // Hora local de Guayaquil convertida a UTC para guardar correctamente
+  return new Date(
+    Date.UTC(y, m - 1, d, hours + 5, mins, 0, 0)
+  );
 };
 
 export const getBusinessRangeForDay = (businessSettings, dayIndex) => {
@@ -212,6 +221,12 @@ export const getConflictingAppointments = async ({ barberId, dateStr }) => {
     .lean();
 };
 
+const utcToGuayaquilMinutes = (date) => {
+  let hours = date.getUTCHours() - 5;
+  if (hours < 0) hours += 24;
+  return hours * 60 + date.getUTCMinutes();
+};
+
 export const removeBusyRanges = (ranges, appointments) => {
   let nextRanges = [...ranges];
 
@@ -219,8 +234,8 @@ export const removeBusyRanges = (ranges, appointments) => {
     const start = new Date(appt.startAt);
     const end = new Date(appt.endAt);
 
-    const startMinutes = start.getHours() * 60 + start.getMinutes();
-    const endMinutes = end.getHours() * 60 + end.getMinutes();
+    const startMinutes = utcToGuayaquilMinutes(start);
+    const endMinutes = utcToGuayaquilMinutes(end);
 
     nextRanges = applyBlockRange(nextRanges, startMinutes, endMinutes);
   }

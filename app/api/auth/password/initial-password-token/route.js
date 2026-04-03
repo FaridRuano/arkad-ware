@@ -16,6 +16,13 @@ export async function POST(req) {
             );
         }
 
+        if (session?.user?.role !== "user") {
+            return NextResponse.json(
+                { error: "Este proceso solo aplica para usuarios del sistema" },
+                { status: 403 }
+            );
+        }
+
         if (session?.user?.isFirstLogin !== true) {
             return NextResponse.json(
                 { error: "Este usuario no requiere primer ingreso" },

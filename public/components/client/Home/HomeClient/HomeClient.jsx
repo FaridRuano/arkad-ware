@@ -187,7 +187,7 @@ export default function HomeClient({ session, userName }) {
         }
 
         fetchAppointments();
-    }, [session?.user?.id]);
+    }, [session?.user?.id, bookingSuccessModal, appointmentActionLoading]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {

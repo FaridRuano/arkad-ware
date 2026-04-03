@@ -75,28 +75,28 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         if (!barberId || !serviceId) return false;
 
         setIsLoadingDates(true);
-        setDatesError('');
-        setBookingError('');
-        setBookingSuccess('');
+        setDatesError("");
+        setBookingError("");
+        setBookingSuccess("");
         setAvailableDates([]);
         setSelectedDate(null);
         setSelectedTime(null);
         setAvailableSlots([]);
-        setSlotsError('');
+        setSlotsError("");
 
         try {
             const res = await fetch(
-                `/api/client/schedule?serviceId=${serviceId}&barberId=${barberId}`,
+                `/api/client/schedule/dates?serviceId=${serviceId}&barberId=${barberId}`,
                 {
-                    method: 'GET',
-                    cache: 'no-store',
+                    method: "GET",
+                    cache: "no-store",
                 }
             );
 
             const data = await res.json().catch(() => ({}));
 
             if (!res.ok) {
-                throw new Error(data?.error || 'No se pudo obtener la disponibilidad');
+                throw new Error(data?.error || "No se pudieron cargar los días disponibles");
             }
 
             setAvailableDates(Array.isArray(data?.availableDates) ? data.availableDates : []);
@@ -105,12 +105,14 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
                 timezone: data?.timezone || prev.timezone,
                 minNoticeMinutes: Number(data?.minNoticeMinutes || 0),
                 maxDaysAhead: Number(data?.maxDaysAhead || 30),
-                durationMinutes: Number(data?.durationMinutes || service?.durationMinutes || 0),
+                durationMinutes: Number(
+                    data?.durationMinutes || service?.durationMinutes || 0
+                ),
             }));
 
             return true;
         } catch (err) {
-            setDatesError(err?.message || 'No se pudieron cargar los días disponibles');
+            setDatesError(err?.message || "No se pudieron cargar los días disponibles");
             return false;
         } finally {
             setIsLoadingDates(false);
@@ -124,31 +126,31 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         if (!barberId || !serviceId || !dateValue) return false;
 
         setIsLoadingSlots(true);
-        setSlotsError('');
-        setBookingError('');
-        setBookingSuccess('');
+        setSlotsError("");
+        setBookingError("");
+        setBookingSuccess("");
         setAvailableSlots([]);
         setSelectedTime(null);
 
         try {
             const res = await fetch(
-                `/api/client/schedule?serviceId=${serviceId}&barberId=${barberId}&date=${dateValue}`,
+                `/api/client/schedule/slots?serviceId=${serviceId}&barberId=${barberId}&date=${dateValue}`,
                 {
-                    method: 'GET',
-                    cache: 'no-store',
+                    method: "GET",
+                    cache: "no-store",
                 }
             );
 
             const data = await res.json().catch(() => ({}));
 
             if (!res.ok) {
-                throw new Error(data?.error || 'No se pudieron cargar los horarios');
+                throw new Error(data?.error || "No se pudieron cargar los horarios");
             }
 
             setAvailableSlots(Array.isArray(data?.slots) ? data.slots : []);
             return true;
         } catch (err) {
-            setSlotsError(err?.message || 'No se pudieron cargar los horarios');
+            setSlotsError(err?.message || "No se pudieron cargar los horarios");
             return false;
         } finally {
             setIsLoadingSlots(false);

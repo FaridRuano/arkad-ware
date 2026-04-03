@@ -315,3 +315,108 @@ export const getDefaultBusinessSettings = () => ({
     sunday: { enabled: false, start: "", end: "" },
   },
 });
+
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const MONTH_LABELS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+export const formatDateLabel = (dateStr) => {
+  const date = parseDateLocal(dateStr);
+  return `${DAY_LABELS[date.getDay()]} ${date.getDate()} ${MONTH_LABELS[date.getMonth()]}`;
+};
+
+export const getTodayStart = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+};
+
+export const isSameLocalDate = (a, b) => {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+};
+
+export const isDateAllowedByMinNotice = ({
+  dateStr,
+  businessSettings,
+}) => {
+  const minNoticeMinutes = Number(businessSettings?.bookingMinNoticeMinutes || 0);
+  const date = parseDateLocal(dateStr);
+  const now = new Date();
+  const todayStart = getTodayStart();
+
+  if (date < todayStart) return false;
+  if (minNoticeMinutes <= 0) return true;
+
+  if (isSameLocalDate(date, now)) {
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    const latestReasonableStart = 24 * 60 - minNoticeMinutes;
+
+    return minutesNow <= latestReasonableStart;
+  }
+
+  return true;
+};
+
+export const hasDayAvailabilityBySchedule = ({
+  businessSettings,
+  barberSchedule,
+  dateStr,
+}) => {
+  const ranges = normalizeBaseRanges({
+    businessSettings,
+    barberSchedule,
+    dateStr,
+  });
+
+  return ranges.length > 0;
+};
+
+export const getAvailableDatesForBarber = ({
+  businessSettings,
+  barberSchedule,
+}) => {
+  const settings = businessSettings || getDefaultBusinessSettings();
+  const maxDaysAhead = Number(settings.bookingMaxDaysAhead || 30);
+  const today = new Date();
+
+  const dates = [];
+
+  for (let offset = 0; offset < maxDaysAhead; offset++) {
+    const current = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + offset,
+      0,
+      0,
+      0,
+      0
+    );
+
+    const dateStr = formatDateLocal(current);
+
+    if (
+      !isDateAllowedByMinNotice({
+        dateStr,
+        businessSettings: settings,
+      })
+    ) {
+      continue;
+    }
+
+    if (
+      !hasDayAvailabilityBySchedule({
+        businessSettings: settings,
+        barberSchedule,
+        dateStr,
+      })
+    ) {
+      continue;
+    }
+
+    dates.push(dateStr);
+  }
+
+  return dates;
+};

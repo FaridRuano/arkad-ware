@@ -13,8 +13,12 @@ import {
     MapPin,
 } from "lucide-react";
 import styles from "./login-client.module.scss";
+import { useRouter } from "next/navigation";
 
 export default function LoginClient() {
+
+    const router = useRouter();
+
     const [form, setForm] = useState({
         email: "",
         password: "",
@@ -157,7 +161,7 @@ export default function LoginClient() {
                                 <button
                                     type="button"
                                     className={styles.forgotPassword}
-                                    onClick={() => { }}
+                                    onClick={() => router.push("/auth/forgot-password")}
                                 >
                                     Olvidé mi contraseña
                                 </button>

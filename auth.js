@@ -18,6 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { default: connectMongoDB } = await import("@libs/mongodb");
         const { default: User } = await import("@models/User");
+        const { default: UserAccess } = await import("@models/UserAccess");
 
         await connectMongoDB();
 
@@ -30,17 +31,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcrypt.compare(password, user.password);
         if (!ok) return null;
 
-        // Mejor que user.save() para evitar validaciones/hook inesperados
-        await User.updateOne(
-          { _id: user._id },
-          { $set: { lastLoginAt: new Date() } }
-        );
+        const access = await UserAccess.findOne({ userId: user._id })
+          .select("_id")
+          .lean();
+
+        const isFirstLogin = !access;
 
         return {
           id: user._id.toString(),
           email: user.email,
           name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
           role: user.role || "user",
+          isFirstLogin,
         };
       },
     }),
@@ -48,11 +50,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   callbacks: {
     async jwt({ token, user }) {
-      // Se ejecuta al iniciar sesión y en cada request
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.isFirstLogin = user.isFirstLogin;
       }
+
       return token;
     },
 
@@ -60,7 +63,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session?.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.isFirstLogin = token.isFirstLogin;
       }
+
       return session;
     },
   },

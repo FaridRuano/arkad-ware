@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 
 import { auth } from "@auth";
 import Appointment from "@models/Appointment";
+import Barber from "@models/Barber";
+import User from "@models/User";
 import connectMongoDB from "@libs/mongodb";
 
 const TZ = "America/Guayaquil";

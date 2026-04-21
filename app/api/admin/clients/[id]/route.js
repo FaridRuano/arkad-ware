@@ -3,6 +3,8 @@ import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
 import mongoose from "mongoose";
 import Appointment from "@models/Appointment";
+import Barber from "@models/Barber";
+import Service from "@models/Service";
 import { validateClientDocument } from "@utils/documentId";
 
 const cleanPhone = (v) => String(v ?? "").trim().replace(/[^\d]/g, "");

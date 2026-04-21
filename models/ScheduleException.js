@@ -1,131 +1,159 @@
 import mongoose from "mongoose";
 
-const isValidTimeHHMM = (value = "") => /^([01]\d|2[0-3]):([0-5]\d)$/.test(value);
+const SCOPES = ["business", "barber"];
+const TYPES = ["full_day", "time_range"];
+
+const isValidTimeHHMM = (value = "") =>
+  /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(value || "").trim());
 
 const ScheduleExceptionSchema = new mongoose.Schema(
-    {
-        barber: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Barber",
-            default: null,
-            index: true,
-        },
-
-        date: {
-            type: String,
-            required: [true, "La fecha es obligatoria"],
-            validate: {
-                validator(value) {
-                    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
-                },
-                message: "La fecha debe tener formato YYYY-MM-DD",
-            },
-            index: true,
-        },
-
-        type: {
-            type: String,
-            required: [true, "El tipo de excepción es obligatorio"],
-            enum: {
-                values: ["open", "block"],
-                message: "El tipo de excepción debe ser 'open' o 'block'",
-            },
-        },
-
-        allDay: {
-            type: Boolean,
-            default: false,
-        },
-
-        start: {
-            type: String,
-            default: "",
-            validate: {
-                validator(value) {
-                    if (!value) return true;
-                    return isValidTimeHHMM(value);
-                },
-                message: "La hora de inicio debe tener formato HH:MM",
-            },
-        },
-
-        end: {
-            type: String,
-            default: "",
-            validate: {
-                validator(value) {
-                    if (!value) return true;
-                    return isValidTimeHHMM(value);
-                },
-                message: "La hora de fin debe tener formato HH:MM",
-            },
-        },
-
-        reason: {
-            type: String,
-            trim: true,
-            default: "",
-            maxlength: [200, "La razón no puede superar los 200 caracteres"],
-        },
-
-        notes: {
-            type: String,
-            trim: true,
-            default: "",
-            maxlength: [300, "Las notas no pueden superar los 300 caracteres"],
-        },
-
-        isActive: {
-            type: Boolean,
-            default: true,
-        },
+  {
+    scope: {
+      type: String,
+      enum: SCOPES,
+      required: [true, "El alcance de la excepción es obligatorio"],
+      index: true,
     },
-    {
-        timestamps: true,
-    }
+
+    barberId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Barber",
+      default: null,
+      index: true,
+    },
+
+    type: {
+      type: String,
+      enum: TYPES,
+      required: [true, "El tipo de excepción es obligatorio"],
+    },
+
+    startDate: {
+      type: Date,
+      required: [true, "La fecha inicial es obligatoria"],
+      index: true,
+    },
+
+    endDate: {
+      type: Date,
+      required: [true, "La fecha final es obligatoria"],
+      index: true,
+    },
+
+    startTime: {
+      type: String,
+      default: "",
+      validate: {
+        validator(value) {
+          if (!value) return true;
+          return isValidTimeHHMM(value);
+        },
+        message: "La hora inicial debe tener formato HH:MM",
+      },
+    },
+
+    endTime: {
+      type: String,
+      default: "",
+      validate: {
+        validator(value) {
+          if (!value) return true;
+          return isValidTimeHHMM(value);
+        },
+        message: "La hora final debe tener formato HH:MM",
+      },
+    },
+
+    reason: {
+      type: String,
+      trim: true,
+      default: "",
+      maxlength: [240, "La razón no puede superar los 240 caracteres"],
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    deactivatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    deactivatedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
 );
 
-ScheduleExceptionSchema.index({ barber: 1, date: 1 });
-ScheduleExceptionSchema.index({ date: 1, type: 1 });
+ScheduleExceptionSchema.index({ scope: 1, barberId: 1, startDate: 1, endDate: 1 });
+ScheduleExceptionSchema.index({ isActive: 1, startDate: 1, endDate: 1 });
 
 ScheduleExceptionSchema.pre("validate", function (next) {
-    const hasTimeRange = Boolean(this.start || this.end);
+  try {
+    this.startTime = String(this.startTime || "").trim();
+    this.endTime = String(this.endTime || "").trim();
+    this.reason = String(this.reason || "").trim();
 
-    if (this.allDay) {
-        this.start = "";
-        this.end = "";
-        return next();
+    if (this.scope === "barber") {
+      if (!this.barberId) {
+        return next(new Error("barberId es obligatorio cuando el alcance es 'barber'"));
+      }
+    } else if (this.scope === "business") {
+      this.barberId = null;
     }
 
-    if (hasTimeRange) {
-        if (!this.start || !this.end) {
-            return next(
-                new Error("La excepción debe tener hora de inicio y fin completas")
-            );
-        }
+    if (!this.startDate || Number.isNaN(new Date(this.startDate).getTime())) {
+      return next(new Error("La fecha inicial no es válida"));
+    }
 
-        if (!isValidTimeHHMM(this.start) || !isValidTimeHHMM(this.end)) {
-            return next(
-                new Error("Las horas de la excepción deben tener formato HH:MM")
-            );
-        }
+    if (!this.endDate || Number.isNaN(new Date(this.endDate).getTime())) {
+      return next(new Error("La fecha final no es válida"));
+    }
 
-        if (this.start >= this.end) {
-            return next(
-                new Error("La hora de inicio debe ser menor que la hora de fin")
-            );
-        }
-    } else {
-        return next(
-            new Error("La excepción debe ser de día completo o tener un rango horario")
-        );
+    if (new Date(this.startDate).getTime() > new Date(this.endDate).getTime()) {
+      return next(new Error("La fecha inicial no puede ser mayor que la fecha final"));
+    }
+
+    if (this.type === "full_day") {
+      this.startTime = "";
+      this.endTime = "";
+      return next();
+    }
+
+    if (!this.startTime || !this.endTime) {
+      return next(new Error("startTime y endTime son obligatorios en excepciones por rango"));
+    }
+
+    if (!isValidTimeHHMM(this.startTime) || !isValidTimeHHMM(this.endTime)) {
+      return next(new Error("Las horas deben tener formato HH:MM"));
+    }
+
+    if (this.startTime >= this.endTime) {
+      return next(new Error("La hora inicial debe ser menor que la hora final"));
     }
 
     next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 const ScheduleException =
-    mongoose.models.ScheduleException ||
-    mongoose.model("ScheduleException", ScheduleExceptionSchema);
+  mongoose.models.ScheduleException ||
+  mongoose.model("ScheduleException", ScheduleExceptionSchema);
 
 export default ScheduleException;

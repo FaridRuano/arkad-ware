@@ -1,0 +1,648 @@
+/* =========================
+   APPOINTMENT OVERLAY
+   (mismo look & feel del modal existente)
+   ========================= */
+
+.apptOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: grid;
+    place-items: center;
+    padding: 18px;
+
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    animation: apptOverlayIn 180ms ease-out both;
+}
+
+@keyframes apptOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Contenedor del overlay */
+.apptOverlay__panel {
+    width: min(860px, 100%);
+    max-height: calc(100vh - 36px);
+    border-radius: 22px;
+
+    background: linear-gradient(180deg,
+            color-mix(in oklab, var(--surface-1) 92%, #fff 8%),
+            var(--surface-1));
+
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    box-shadow: var(--shadow-1);
+
+    transform-origin: center;
+    animation: apptPanelIn 220ms cubic-bezier(.2, .9, .2, 1) both;
+
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes apptPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(.985);
+        filter: blur(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes apptOverlayLoaderSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Shine sutil arriba (igual al modal) */
+.apptOverlay__panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+
+    background: radial-gradient(900px 280px at 15% -10%,
+            color-mix(in oklab, var(--primary) 18%, transparent 82%),
+            transparent 55%);
+    opacity: .9;
+}
+
+/* Header */
+.apptOverlay__header {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 18px 20px;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+}
+
+.apptOverlay__title {
+    margin: 0;
+    font-size: 18px;
+    letter-spacing: .2px;
+    color: var(--fg);
+    font-weight: 900;
+}
+
+.apptOverlay__subtitle {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Botón cerrar (idéntico al modal) */
+.apptOverlay__close {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+
+    display: grid;
+    place-items: center;
+
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    color: color-mix(in oklab, var(--fg) 80%, var(--muted) 20%);
+
+    cursor: pointer;
+    transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.apptOverlay__close:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--surface-2) 88%, transparent 12%);
+    border-color: color-mix(in oklab, var(--border) 85%, transparent 15%);
+}
+
+.apptOverlay__close:active {
+    transform: translateY(0px) scale(.98);
+}
+
+/* Body */
+.apptOverlay__body {
+    position: relative;
+    z-index: 1;
+    padding: 14px 18px 16px;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    flex: 1;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.apptOverlay__loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    min-height: 320px;
+    padding: 16px 0;
+    text-align: center;
+}
+
+.apptOverlay__loader {
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in oklab, var(--border) 72%, transparent 28%);
+    background: color-mix(in oklab, var(--surface-2) 74%, transparent 26%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.apptOverlay__loaderSpinner {
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    border: 2px solid color-mix(in oklab, var(--border) 72%, transparent 28%);
+    border-top-color: var(--primary);
+    animation: apptOverlayLoaderSpin .9s linear infinite;
+}
+
+.apptOverlay__loadingTitle {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--fg);
+}
+
+.apptOverlay__loadingText {
+    max-width: 320px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: color-mix(in oklab, var(--muted) 76%, var(--fg) 24%);
+}
+
+/* Grid info */
+.apptOverlay__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.apptOverlay__assignGrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.apptOverlay__field {
+    padding: 10px 11px;
+    border-radius: 14px;
+
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 75%, transparent 25%);
+
+    min-width: 0;
+}
+
+.apptOverlay__field--full {
+    grid-column: 1 / -1;
+}
+
+.apptOverlay__label {
+    color: color-mix(in oklab, var(--muted) 70%, var(--fg) 30%);
+    font-size: 11px;
+    letter-spacing: .2px;
+}
+
+.apptOverlay__value {
+    margin-top: 5px;
+    color: var(--fg);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.apptOverlay__notes {
+    font-weight: 650;
+    color: color-mix(in oklab, var(--fg) 90%, var(--muted) 10%);
+    white-space: pre-wrap;
+}
+
+/* Pills */
+.apptOverlay__pill {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 999px;
+
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    color: color-mix(in oklab, var(--fg) 86%, var(--muted) 14%);
+}
+
+/* Pay pill */
+.apptOverlay__pill--pay.is-paid {
+    background: color-mix(in oklab, var(--primary) 12%, transparent 88%);
+    border-color: color-mix(in oklab, var(--primary) 22%, transparent 78%);
+}
+
+.apptOverlay__pill--pay.is-unpaid {
+    background: color-mix(in oklab, var(--negative) 10%, transparent 90%);
+    border-color: color-mix(in oklab, var(--negative) 18%, transparent 82%);
+}
+
+/* Divider */
+.apptOverlay__divider {
+    height: 1px;
+    background: color-mix(in oklab, var(--border) 75%, transparent 25%);
+    margin: 14px 0;
+}
+
+/* Actions */
+.apptOverlay__actions {
+    margin-top: 6px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+}
+
+.apptOverlay__actionsRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.apptOverlay__assignBox {
+    padding: 14px;
+    border-radius: 16px;
+
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+}
+
+.apptOverlay__assignActions {
+    display: flex;
+    align-items: flex-end;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field__label {
+    color: color-mix(in oklab, var(--muted) 68%, var(--fg) 32%);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+
+.field__selectWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.field__select {
+    width: 100%;
+    min-height: 42px;
+    padding: 11px 44px 11px 13px;
+    border-radius: 14px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: 1px solid color-mix(in oklab, var(--border) 76%, transparent 24%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    color: var(--fg);
+    font-size: 13px;
+    font-weight: 700;
+    outline: none;
+    transition:
+        border-color 140ms ease,
+        box-shadow 140ms ease,
+        background 140ms ease,
+        transform 140ms ease;
+}
+
+.field__select:hover {
+    border-color: color-mix(in oklab, var(--primary) 22%, var(--border) 78%);
+    background: color-mix(in oklab, var(--surface-2) 88%, transparent 12%);
+}
+
+.field__select:focus {
+    border-color: color-mix(in oklab, var(--primary) 62%, var(--border) 38%);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 14%, transparent 86%);
+    transform: translateY(-1px);
+}
+
+.field__select:disabled {
+    opacity: .7;
+    cursor: not-allowed;
+}
+
+.field__selectIcon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: color-mix(in oklab, var(--muted) 68%, var(--fg) 32%);
+    font-size: 11px;
+    line-height: 1;
+}
+
+.field__hint {
+    color: color-mix(in oklab, var(--muted) 80%, var(--fg) 20%);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+.apptOverlay__actionsRow--wrap {
+    flex-wrap: wrap;
+}
+
+/* Botones - reusando tu estilo de .__button del modal */
+.apptOverlay .btn {
+    border-radius: 12px;
+    padding: 9px 12px;
+    transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease, background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+    cursor: pointer;
+
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    outline: none;
+    font-size: 13px;
+
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    color: var(--fg);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    height: 38px;
+}
+
+.apptOverlay .btn:hover {
+    transform: translateY(-1px);
+    background: color-mix(in oklab, var(--surface-2) 88%, transparent 12%);
+    border-color: color-mix(in oklab, var(--border) 90%, transparent 10%);
+}
+
+.apptOverlay .btn:active {
+    transform: translateY(0px) scale(.99);
+}
+
+.apptOverlay .btn.is-disabled,
+.apptOverlay .btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Variantes */
+.apptOverlay .btn--primary {
+    background: color-mix(in oklab, var(--primary) 85%, var(--surface-2) 15%);
+    color: var(--black);
+    font-weight: 700;
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+.apptOverlay .btn--money {
+    background: color-mix(in oklab, var(--positive) 85%, var(--surface-2) 15%);
+    color: var(--black);
+    font-weight: 700;
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--positive) 18%, transparent 82%);
+}
+
+.apptOverlay .btn--ghost {
+    background: transparent;
+    border: 1px solid color-mix(in oklab, var(--border) 70%, transparent 30%);
+    color: color-mix(in oklab, var(--fg) 85%, var(--muted) 15%);
+}
+
+.apptOverlay .btn--ghost:hover {
+    background: color-mix(in oklab, var(--primary) 8%, transparent 92%);
+}
+
+.apptOverlay .btn--primary:hover {
+    box-shadow: 0 14px 34px color-mix(in oklab, var(--primary) 22%, transparent 78%);
+}
+
+.apptOverlay .btn--danger {
+    background: color-mix(in oklab, var(--negative) 75%, var(--surface-2) 25%);
+    color: var(--black);
+    font-weight: 800;
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--negative) 16%, transparent 84%);
+}
+
+.apptOverlay .btn--danger:hover {
+    box-shadow: 0 14px 34px color-mix(in oklab, var(--negative) 22%, transparent 78%);
+}
+
+/* WhatsApp - usando success si tienes, si no, derivamos de primary */
+.apptOverlay .btn--wa {
+    background: color-mix(in oklab, var(--positive, var(--primary)) 24%, transparent 76%);
+    border-color: color-mix(in oklab, var(--positive, var(--primary)) 32%, transparent 68%);
+}
+
+.apptOverlay__paidBadge {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    background: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+    color: var(--primary);
+
+    border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent 70%);
+
+    box-shadow: 0 6px 18px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+.apptOverlay__finalHint {
+    font-size: 13px;
+    color: color-mix(in oklab, var(--muted) 75%, var(--fg) 25%);
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in oklab, var(--border) 75%, transparent 25%);
+    background: color-mix(in oklab, var(--surface-2) 70%, transparent 30%);
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+    .apptOverlay__panel {
+        width: min(760px, 100%);
+        max-height: calc(100vh - 24px);
+    }
+}
+
+@media (max-width: 720px) {
+    .apptOverlay {
+        padding: 12px;
+    }
+
+    .apptOverlay__panel {
+        max-height: calc(100vh - 24px);
+    }
+
+    .apptOverlay__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .apptOverlay__assignGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .apptOverlay__assignActions {
+        display: block;
+    }
+
+    .apptOverlay__assignActions .btn {
+        width: 100%;
+    }
+
+    .apptOverlay__body {
+        padding: 12px 12px 16px;
+    }
+
+    .apptOverlay__header {
+        padding: 14px 14px;
+    }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+
+    .apptOverlay,
+    .apptOverlay__panel {
+        animation: none !important;
+    }
+
+    .apptOverlay__close,
+    .apptOverlay .btn {
+        transition: none !important;
+    }
+}
+
+.apptOverlay__cancelBox {
+    margin-top: 20px;
+    padding: 18px;
+    border-radius: 20px;
+
+    background: linear-gradient(180deg,
+            color-mix(in srgb, var(--negative) 12%, transparent) 0%,
+            color-mix(in srgb, var(--white) 3%, transparent) 100%);
+
+    border: 1px solid color-mix(in srgb, var(--negative) 22%, transparent);
+
+    animation: apptCancelReveal 0.2s ease;
+}
+
+.apptOverlay__sectionTitle {
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--fg);
+}
+
+.apptOverlay__cancelError {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--negative) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--negative) 22%, transparent);
+    color: color-mix(in srgb, var(--negative) 45%, white);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.apptOverlay__cancelGrid {
+    display: grid;
+    gap: 14px;
+}
+
+.apptOverlay__cancelActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+}
+
+.field__textarea {
+    width: 100%;
+    min-height: 96px;
+    padding: 12px 14px;
+    resize: vertical;
+    border-radius: 14px;
+    border: 1px solid color-mix(in oklab, var(--border) 76%, transparent 24%);
+    background:
+        linear-gradient(180deg,
+            color-mix(in oklab, var(--surface-2) 82%, transparent 18%),
+            color-mix(in oklab, var(--surface-1) 92%, transparent 8%));
+    color: var(--fg);
+    outline: none;
+    line-height: 1.45;
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.field__textarea:focus {
+    border-color: color-mix(in oklab, var(--primary) 62%, var(--border) 38%);
+    background:
+        linear-gradient(180deg,
+            color-mix(in oklab, var(--primary) 8%, var(--surface-2) 92%),
+            color-mix(in oklab, var(--surface-1) 90%, transparent 10%));
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 14%, transparent 86%);
+}
+
+.field__textarea::placeholder {
+    color: color-mix(in srgb, var(--light) 60%, transparent);
+}
+
+@keyframes apptCancelReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

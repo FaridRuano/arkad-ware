@@ -70,10 +70,14 @@ export async function GET(request) {
 
         const settings = businessSettings || getDefaultBusinessSettings();
 
-        const availableDates = getAvailableDatesForBarber({
+        const availableDateStrings = await getAvailableDatesForBarber({
+            service,
+            barberId,
             businessSettings: settings,
             barberSchedule,
-        }).map((dateStr) => ({
+        });
+
+        const availableDates = availableDateStrings.map((dateStr) => ({
             date: dateStr,
             label: formatDateLabel(dateStr),
             hasAvailability: true,

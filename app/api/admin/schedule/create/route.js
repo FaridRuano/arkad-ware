@@ -5,7 +5,13 @@ import Appointment from "@models/Appointment";
 import User from "@models/User";
 import Barber from "@models/Barber";
 import Service from "@models/Service";
+import BusinessSettings from "@models/BusinessSettings";
 import { auth } from "@auth";
+import {
+  formatDateLocal,
+  getScheduleExceptionsInRange,
+  slotConflictsWithException,
+} from "@libs/schedule/exceptions";
 
 function buildStartAt({ startAt, date, time }) {
   if (startAt && typeof startAt === "string") {
@@ -22,6 +28,22 @@ function buildStartAt({ startAt, date, time }) {
   }
 
   return "";
+}
+
+function normalizeDurationToInterval(durationMinutes, slotIntervalMinutes) {
+  const duration = Number(durationMinutes || 0);
+  const interval = Number(slotIntervalMinutes || 0);
+
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+  if (!Number.isFinite(interval) || interval <= 0) return Math.ceil(duration);
+
+  return Math.ceil(duration / interval) * interval;
+}
+
+function getLocalMinutesFromUTCDate(date) {
+  const safe = new Date(date);
+  const hours = (safe.getUTCHours() + 19) % 24;
+  return hours * 60 + safe.getUTCMinutes();
 }
 
 export async function POST(req) {
@@ -121,6 +143,10 @@ export async function POST(req) {
     }
 
     const results = await Promise.all(queries);
+    const businessSettings = await BusinessSettings.findOne({ isActive: true })
+      .sort({ createdAt: -1 })
+      .select("slotIntervalMinutes")
+      .lean();
 
     const client = results[0];
     const service = results[1];
@@ -163,11 +189,16 @@ export async function POST(req) {
       }
     }
 
-    const durationMinutes = Number(service?.durationMinutes || 0);
+    const rawDurationMinutes = Number(service?.durationMinutes || 0);
+    const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
+    const durationMinutes = normalizeDurationToInterval(
+      rawDurationMinutes,
+      slotIntervalMinutes
+    );
     const price = Number(service?.price || 0);
     const serviceName = String(service?.name || "").trim();
 
-    if (!durationMinutes || durationMinutes < 5) {
+    if (!rawDurationMinutes || rawDurationMinutes < 5) {
       return NextResponse.json(
         { error: "El servicio no tiene una duración válida" },
         { status: 400 }
@@ -206,6 +237,31 @@ export async function POST(req) {
 
     const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
     const excludedStatuses = ["cancelled", "no_assistance"];
+    const dateStr = String(body?.date || "").trim() || formatDateLocal(startAt);
+    const startMinutes = getLocalMinutesFromUTCDate(startAt);
+    const endMinutes = getLocalMinutesFromUTCDate(endAt);
+
+    const activeExceptions = await getScheduleExceptionsInRange({
+      startDate: dateStr,
+      endDate: dateStr,
+      barberId: hasBarberAssigned ? barberIdRaw : null,
+      activeOnly: true,
+    });
+
+    if (
+      slotConflictsWithException({
+        exceptions: activeExceptions,
+        dateStr,
+        startMinutes,
+        endMinutes,
+        barberId: hasBarberAssigned ? barberIdRaw : null,
+      })
+    ) {
+      return NextResponse.json(
+        { error: "Ese horario está bloqueado por una excepción activa" },
+        { status: 409 }
+      );
+    }
 
     // Solo validar conflicto si hay barbero asignado
     if (hasBarberAssigned) {
@@ -245,6 +301,7 @@ export async function POST(req) {
       startAt,
       endAt,
       durationMinutes,
+      serviceDurationMinutes: rawDurationMinutes,
       price,
       status: "pending",
       paymentStatus: "unpaid",
@@ -296,7 +353,8 @@ export async function POST(req) {
         service: {
           id: service._id?.toString?.() ?? service._id,
           name: serviceName,
-          durationMinutes,
+          durationMinutes: rawDurationMinutes,
+          scheduledDurationMinutes: durationMinutes,
           price,
           color: service?.color || "#CFB690",
         },
@@ -304,6 +362,7 @@ export async function POST(req) {
         startAt,
         endAt,
         durationMinutes,
+        serviceDurationMinutes: rawDurationMinutes,
         price,
         status: "pending",
         paymentStatus: "unpaid",

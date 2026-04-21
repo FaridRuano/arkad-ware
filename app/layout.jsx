@@ -1,4 +1,3 @@
-import Footer from "@public/components/shared/Footer/Footer";
 import "@public/styles/global-styles.scss";
 import { Manrope, Outfit } from "next/font/google";
 

@@ -1,0 +1,28 @@
+.root {
+  min-height: 100vh;
+}
+
+.content {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-height: 100vh;
+  padding: 24px;
+  transition:
+    margin-left 0.25s ease,
+    width 0.25s ease,
+    padding 0.25s ease;
+}
+
+.sidebarCollapsed .content {
+  margin-left: 84px;
+  width: calc(100% - 84px);
+}
+
+@media (max-width: 980px) {
+  .content,
+  .sidebarCollapsed .content {
+    margin-left: 0;
+    width: 100%;
+    padding: 72px 18px;
+  }
+}

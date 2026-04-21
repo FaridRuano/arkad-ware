@@ -7,6 +7,10 @@ import Service from "@models/Service";
 import BarberSchedule from "@models/BarberSchedule";
 import BusinessSettings from "@models/BusinessSettings";
 import { auth } from "@auth";
+import {
+  getScheduleExceptionsInRange,
+  slotConflictsWithException,
+} from "@libs/schedule/exceptions";
 
 function buildStartAt({ startAt, date, time }) {
   if (startAt && typeof startAt === "string") {
@@ -131,6 +135,16 @@ function isInsideBreak(startMinutes, endMinutes, breakStart, breakEnd) {
   return startMinutes < breakEnd && endMinutes > breakStart;
 }
 
+function normalizeDurationToInterval(durationMinutes, slotIntervalMinutes) {
+  const duration = Number(durationMinutes || 0);
+  const interval = Number(slotIntervalMinutes || 0);
+
+  if (!Number.isFinite(duration) || duration <= 0) return 0;
+  if (!Number.isFinite(interval) || interval <= 0) return Math.ceil(duration);
+
+  return Math.ceil(duration / interval) * interval;
+}
+
 export async function POST(req) {
   try {
     const session = await auth();
@@ -183,6 +197,10 @@ export async function POST(req) {
     let parsedEndAt = null;
     let selectedService = null;
     let selectedBarber = null;
+    const businessSettings = await BusinessSettings.findOne({ isActive: true })
+      .sort({ createdAt: -1 })
+      .lean();
+    const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
 
     // 1) Validar hora
     if (hasStartAt) {
@@ -237,10 +255,15 @@ export async function POST(req) {
       } else {
         validation.serviceValid = true;
 
+        const normalizedDurationMinutes = normalizeDurationToInterval(
+          service.durationMinutes,
+          slotIntervalMinutes
+        );
+
         selectedService = {
           id: toId(service._id),
           name: service.name ?? "—",
-          durationMinutes: Number(service.durationMinutes || 0),
+          durationMinutes: normalizedDurationMinutes,
           price: Number(service.price || 0),
           color: service.color || "#CFB690",
           allowedBarberIds: Array.isArray(service.barbers)
@@ -263,17 +286,12 @@ export async function POST(req) {
       .lean();
 
     // 6) Horarios
-    const [businessSettings, barberSchedules] = await Promise.all([
-      BusinessSettings.findOne({ isActive: true })
-        .sort({ createdAt: -1 })
-        .lean(),
-      BarberSchedule.find({
+    const barberSchedules = await BarberSchedule.find({
         barber: { $in: activeBarbers.map((b) => b._id) },
         isActive: true,
       })
         .select("_id barber weekSchedule useBusinessHoursAsFallback isActive")
-        .lean(),
-    ]);
+        .lean();
 
     const barberScheduleMap = new Map(
       barberSchedules.map((item) => [toId(item.barber), item])
@@ -281,6 +299,7 @@ export async function POST(req) {
 
     // 7) Si hay startAt + service => consultar conflictos
     let conflictsMap = new Map();
+    let activeExceptions = [];
 
     if (
       validation.startAtValid &&
@@ -312,6 +331,12 @@ export async function POST(req) {
           },
         ])
       );
+
+      activeExceptions = await getScheduleExceptionsInRange({
+        startDate: body?.date || startAtStr.slice(0, 10),
+        endDate: body?.date || startAtStr.slice(0, 10),
+        activeOnly: true,
+      });
     }
 
     // 8) Construir lista de barberos con compatibilidad + disponibilidad + horario real
@@ -367,7 +392,14 @@ export async function POST(req) {
         !conflict &&
         worksThisDay &&
         insideWorkingHours &&
-        !insideBreak;
+        !insideBreak &&
+        !slotConflictsWithException({
+          exceptions: activeExceptions,
+          dateStr: body?.date || startAtStr.slice(0, 10),
+          startMinutes: appointmentStartMinutes ?? 0,
+          endMinutes: appointmentEndMinutes ?? 0,
+          barberId,
+        });
 
       let reason = "";
 
@@ -379,6 +411,16 @@ export async function POST(req) {
         reason = "Fuera del horario laboral";
       } else if (insideBreak) {
         reason = "Horario dentro del descanso";
+      } else if (
+        slotConflictsWithException({
+          exceptions: activeExceptions,
+          dateStr: body?.date || startAtStr.slice(0, 10),
+          startMinutes: appointmentStartMinutes ?? 0,
+          endMinutes: appointmentEndMinutes ?? 0,
+          barberId,
+        })
+      ) {
+        reason = "Horario bloqueado por excepción";
       } else if (conflict) {
         reason = "Horario ocupado";
       }

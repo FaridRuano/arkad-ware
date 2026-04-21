@@ -6,9 +6,20 @@ import Barber from "@models/Barber";
 import Service from "@models/Service";
 import User from "@models/User";
 import { auth } from "@auth";
+import {
+    formatDateLocal,
+    getScheduleExceptionsInRange,
+    slotConflictsWithException,
+} from "@libs/schedule/exceptions";
 
 function toId(value) {
     return value?.toString?.() ?? value ?? null;
+}
+
+function getLocalMinutesFromUTCDate(date) {
+    const safe = new Date(date);
+    const hours = (safe.getUTCHours() + 19) % 24;
+    return hours * 60 + safe.getUTCMinutes();
 }
 
 export async function PATCH(req, { params }) {
@@ -118,6 +129,29 @@ export async function PATCH(req, { params }) {
             return NextResponse.json(
                 { error: "Este barbero no tiene asignado ese servicio" },
                 { status: 400 }
+            );
+        }
+
+        const appointmentDate = formatDateLocal(appointment.startAt);
+        const activeExceptions = await getScheduleExceptionsInRange({
+            startDate: appointmentDate,
+            endDate: appointmentDate,
+            barberId: rawBarberId,
+            activeOnly: true,
+        });
+
+        if (
+            slotConflictsWithException({
+                exceptions: activeExceptions,
+                dateStr: appointmentDate,
+                startMinutes: getLocalMinutesFromUTCDate(appointment.startAt),
+                endMinutes: getLocalMinutesFromUTCDate(appointment.endAt),
+                barberId: rawBarberId,
+            })
+        ) {
+            return NextResponse.json(
+                { error: "Ese horario está bloqueado por una excepción activa" },
+                { status: 409 }
             );
         }
 

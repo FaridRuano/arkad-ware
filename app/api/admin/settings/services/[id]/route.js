@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import Service from "@models/Service";
 import Barber from "@models/Barber";
+import BusinessSettings from "@models/BusinessSettings";
 
 function toTitleCase(value = "") {
     return value
@@ -55,6 +56,8 @@ export async function PATCH(req, { params }) {
         }
 
         const body = await req.json().catch(() => ({}));
+        const businessSettings = await BusinessSettings.findOne().select("slotIntervalMinutes");
+        const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
 
         const nameRaw = body?.name;
         const descriptionRaw = body?.description;
@@ -112,6 +115,20 @@ export async function PATCH(req, { params }) {
             if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
                 return NextResponse.json(
                     { error: "La duración debe ser un número entero de minutos mayor a 0" },
+                    { status: 400 }
+                );
+            }
+
+            if (durationMinutes % slotIntervalMinutes !== 0) {
+                return NextResponse.json(
+                    { error: `La duración debe ir en bloques de ${slotIntervalMinutes} minutos` },
+                    { status: 400 }
+                );
+            }
+
+            if (durationMinutes > slotIntervalMinutes * 4) {
+                return NextResponse.json(
+                    { error: `La duración no puede superar ${slotIntervalMinutes * 4} minutos` },
                     { status: 400 }
                 );
             }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
 import bcrypt from "bcryptjs";
+import { validateClientDocument } from "@utils/documentId";
 
 function toTitleCase(value = "") {
   return value
@@ -32,7 +33,8 @@ export async function POST(req) {
 
     const body = await req.json().catch(() => ({}));
 
-    const cedula = cleanStr(body?.cedula);
+    const documentResult = validateClientDocument(body?.cedula);
+    const cedula = documentResult.value;
     const firstName = cleanStr(body?.firstName);
     const lastName = cleanStr(body?.lastName);
     const email = cleanEmail(body?.email);
@@ -40,8 +42,8 @@ export async function POST(req) {
     const address = cleanStr(body?.address);
 
     // ✅ Validaciones estrictas
-    if (!cedula || !/^\d{10}$/.test(cedula)) {
-      return NextResponse.json({ error: "La cédula debe tener 10 dígitos" }, { status: 400 });
+    if (!documentResult.ok) {
+      return NextResponse.json({ error: documentResult.message }, { status: 400 });
     }
     if (!firstName) {
       return NextResponse.json({ error: "Nombre es requerido" }, { status: 400 });
@@ -67,7 +69,7 @@ export async function POST(req) {
 
     if (exists) {
       if (exists.cedula === cedula) {
-        return NextResponse.json({ error: "Ya existe un cliente con esa cédula" }, { status: 409 });
+        return NextResponse.json({ error: "Ya existe un cliente con ese documento" }, { status: 409 });
       }
       if (exists.email === email) {
         return NextResponse.json({ error: "Ya existe un cliente con ese email" }, { status: 409 });
@@ -121,7 +123,7 @@ export async function POST(req) {
     // ✅ Errores de unique index (por si se cuela)
     if (err?.code === 11000) {
       const key = Object.keys(err?.keyPattern || {})?.[0] || "campo";
-      const map = { cedula: "cédula", email: "email", phone: "teléfono" };
+      const map = { cedula: "documento", email: "email", phone: "teléfono" };
 
       return NextResponse.json(
         { error: `Ya existe un cliente con ese ${map[key] || key}` },

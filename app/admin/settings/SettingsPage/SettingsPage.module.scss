@@ -1,0 +1,133 @@
+/* =========================
+   SETTINGS DASHBOARD
+   ========================= */
+.settings-dashboard {
+  width: 100%;
+
+  &__intro {
+    margin-bottom: 24px;
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: clamp(1.4rem, 2vw, 1.9rem);
+      color: var(--fg);
+    }
+
+    p {
+      margin: 0;
+      color: var(--fg-soft, var(--fg));
+      font-size: 0.98rem;
+      max-width: 680px;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 190px;
+    padding: 22px;
+    border-radius: 22px;
+    text-decoration: none;
+    color: var(--fg);
+    background-color: var(--surface-1);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+    box-shadow: var(--shadow-1);
+    transition:
+      transform 0.22s ease,
+      border-color 0.22s ease,
+      box-shadow 0.22s ease,
+      background-color 0.22s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      border-color: color-mix(in oklab, var(--primary) 28%, transparent 72%);
+      box-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
+    }
+  }
+
+  &__cardTop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  &__icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+    color: var(--primary);
+
+    svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2.2;
+    }
+  }
+
+  &__arrow {
+    color: color-mix(in oklab, var(--fg) 42%, transparent 58%);
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+
+  &__card:hover &__arrow {
+    color: var(--primary);
+    transform: translateX(3px);
+  }
+
+  &__content {
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.08rem;
+      color: var(--fg);
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.94rem;
+      line-height: 1.5;
+      color: var(--fg-soft, var(--fg));
+    }
+  }
+}
+
+@media (max-width: 1180px) {
+  .settings-dashboard {
+    &__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 700px) {
+  .settings-dashboard {
+    &__grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    &__card {
+      min-height: 165px;
+      padding: 18px;
+      border-radius: 18px;
+    }
+
+    &__icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+    }
+  }
+}

@@ -1,0 +1,151 @@
+.pageLoader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 260px;
+  padding: 28px;
+  text-align: center;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -40% 15% auto;
+    height: 180px;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--primary) 22%, transparent 78%),
+      transparent 68%
+    );
+    filter: blur(10px);
+    animation: pageLoaderFade 2.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  &__visual {
+    position: relative;
+    width: 116px;
+    height: 116px;
+    display: grid;
+    place-items: center;
+  }
+
+  &__spinner {
+    width: 82px;
+    height: 82px;
+    border-radius: 999px;
+    border: 6px solid color-mix(in oklab, var(--surface-2) 75%, transparent 25%);
+    border-top-color: var(--primary);
+    border-right-color: color-mix(in oklab, var(--primary) 40%, transparent 60%);
+    box-shadow:
+      0 0 0 10px color-mix(in oklab, var(--primary) 4%, transparent 96%),
+      0 20px 40px color-mix(in oklab, black 18%, transparent 82%);
+    animation: pageLoaderSpin 1.05s linear infinite;
+  }
+
+  &__glow {
+    position: absolute;
+    inset: 28px;
+    border-radius: 999px;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--primary) 34%, transparent 66%),
+      transparent 72%
+    );
+    animation:
+      pageLoaderFade 1.8s ease-in-out infinite,
+      pageLoaderPulse 2.4s ease-in-out infinite;
+  }
+
+  &__skeleton {
+    width: min(100%, 320px);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  &__line {
+    display: block;
+    width: 76%;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklab, var(--surface-2) 85%, transparent 15%) 0%,
+      color-mix(in oklab, white 14%, var(--surface-2) 86%) 48%,
+      color-mix(in oklab, var(--surface-2) 85%, transparent 15%) 100%
+    );
+    background-size: 200% 100%;
+    animation: pageLoaderShimmer 1.35s ease-in-out infinite;
+
+    &--lg {
+      width: 88%;
+      height: 12px;
+    }
+
+    &--sm {
+      width: 58%;
+    }
+  }
+
+  &__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  &__text {
+    max-width: 520px;
+    font-size: 0.94rem;
+    line-height: 1.5;
+    color: var(--fg-soft);
+  }
+}
+
+@keyframes pageLoaderSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pageLoaderFade {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes pageLoaderPulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes pageLoaderShimmer {
+  0% {
+    background-position: 130% 0;
+  }
+
+  100% {
+    background-position: -30% 0;
+  }
+}

@@ -1,0 +1,294 @@
+.root {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.inner {
+  width: max-content;
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+}
+
+.link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--fg-soft, var(--fg));
+  background: transparent;
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease,
+    transform 0.18s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.link:hover {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+  transform: translateY(-1px);
+}
+
+.link:active {
+  transform: translateY(0);
+}
+
+.linkActive {
+  background: var(--primary);
+  color: var(--bg);
+  box-shadow: 0 10px 20px color-mix(in oklab, var(--primary) 24%, transparent 76%);
+}
+
+.linkActive .icon {
+  opacity: 1;
+}
+
+.linkActive span {
+  font-weight: 700;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  stroke-width: 2.1;
+  opacity: 0.95;
+}
+
+.mobile {
+  display: none;
+}
+
+.mobileTrigger {
+  width: 100%;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+  border-radius: 18px;
+  color: var(--fg);
+  cursor: pointer;
+  background-color: transparent;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.16s ease;
+}
+
+.mobileTrigger:hover {
+  border-color: color-mix(in oklab, var(--primary) 20%, transparent 80%);
+}
+
+.mobileTriggerOpen .mobileChevron {
+  transform: rotate(180deg);
+}
+
+.mobileTriggerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mobileLabel {
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobileChevron {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--fg-soft);
+  transition: transform 0.2s ease;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  opacity: 0;
+  animation: subnavFadeIn 0.24s ease forwards;
+}
+
+.drawer {
+  position: fixed;
+  left: 18px;
+  right: 18px;
+  top: 100px;
+  bottom: 100px;
+  z-index: 1410;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background: color-mix(in oklab, var(--surface-1) 94%, black 6%);
+  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: subnavDrawerIn 0.24s ease forwards;
+}
+
+@keyframes subnavFadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes subnavDrawerIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 18px 18px 14px;
+  border-bottom: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+}
+
+.drawerClose {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+  color: var(--fg);
+  cursor: pointer;
+  transition:
+    transform 0.16s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.drawerClose:hover {
+  transform: translateY(-1px);
+  color: var(--primary);
+}
+
+.drawerList {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+
+.drawerLink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 54px;
+  padding: 0 16px;
+  border-radius: 18px;
+  text-decoration: none;
+  color: var(--fg);
+  background: color-mix(in oklab, var(--surface-2) 68%, transparent 32%);
+  border: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.16s ease,
+    color 0.2s ease;
+}
+
+.drawerLink:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+.drawerLinkActive {
+  background: color-mix(in oklab, var(--primary) 18%, var(--surface-2) 82%);
+  border-color: color-mix(in oklab, var(--primary) 26%, transparent 74%);
+}
+
+.drawerLinkLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.drawerLinkLeft span {
+  font-size: 0.96rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.drawerActiveMark {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--primary);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+@media (max-width: 768px) {
+  .scroll {
+    display: none;
+  }
+
+  .mobile {
+    display: block;
+  }
+}

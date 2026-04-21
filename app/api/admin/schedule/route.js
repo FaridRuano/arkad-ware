@@ -4,6 +4,10 @@ import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
 import BarberSchedule from "@models/BarberSchedule";
 import BusinessSettings from "@models/BusinessSettings";
+import {
+  attachBarberMetaToExceptions,
+  getScheduleExceptionsInRange,
+} from "@libs/schedule/exceptions";
 
 function isValidDateString(value = "") {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -216,6 +220,7 @@ export async function GET(req) {
 
     const match = {
       startAt: { $gte: start, $lt: end },
+      status: { $ne: "cancelled" },
       ...(barberObjectId ? { barberId: barberObjectId } : {}),
     };
 
@@ -284,6 +289,7 @@ export async function GET(req) {
           startAt: 1,
           endAt: 1,
           durationMinutes: 1,
+          serviceDurationMinutes: 1,
           price: 1,
 
           status: 1,
@@ -378,6 +384,7 @@ export async function GET(req) {
         startAt: a?.startAt ?? null,
         endAt: a?.endAt ?? null,
         durationMinutes: a?.durationMinutes ?? 0,
+        serviceDurationMinutes: a?.serviceDurationMinutes ?? a?.durationMinutes ?? 0,
         price: a?.price ?? 0,
 
         status: a?.status ?? "pending",
@@ -438,11 +445,21 @@ export async function GET(req) {
       barberObjectId,
     });
 
+    const exceptions = await attachBarberMetaToExceptions(
+      await getScheduleExceptionsInRange({
+        startDate: date,
+        endDate: date,
+        barberId: barberId || null,
+        activeOnly: true,
+      })
+    );
+
     return NextResponse.json({
       date,
       barberId: barberId || null,
       startAtRange: { start, end },
       appointments,
+      exceptions,
       meta: {
         ...stats,
         dayNumber: scheduleContext.dayNumber,

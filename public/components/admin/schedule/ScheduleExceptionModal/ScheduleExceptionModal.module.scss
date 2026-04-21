@@ -1,0 +1,171 @@
+.exceptionModal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+}
+
+.exceptionModal__panel {
+  width: min(560px, 100%);
+  border-radius: 22px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.exceptionModal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.exceptionModal__title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.exceptionModal__subtitle {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.exceptionModal__close {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.exceptionModal__body {
+  display: grid;
+  gap: 14px;
+  padding: 16px 20px 20px;
+}
+
+.exceptionModal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.exceptionModal__dayInfo {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.exceptionModal__dayLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.exceptionModal__dayValue {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.exceptionModal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.exceptionModal__error {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--negative) 22%, transparent);
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+  color: color-mix(in srgb, var(--negative) 45%, white);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field__input,
+.field__textarea {
+  width: 100%;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+  padding: 11px 13px;
+  outline: none;
+}
+
+.field__textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.button {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.button--ghost {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.button--primary {
+  background: var(--primary);
+  color: var(--black);
+  border-color: transparent;
+}
+
+@media (max-width: 640px) {
+  .exceptionModal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exceptionModal__header,
+  .exceptionModal__body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .exceptionModal__footer {
+    flex-direction: column-reverse;
+  }
+
+  .button {
+    width: 100%;
+  }
+}

@@ -1,12 +1,14 @@
 'use client';
 
-import ScheduleBarberSelector from '@public/components/admin/schedule/ScheduleBarberSelector';
-import ScheduleCalendar from '@public/components/admin/schedule/ScheduleCalendar';
-import ScheduleDateNavigator from '@public/components/admin/schedule/ScheduleDateNavigator';
+import ScheduleBarberSelector from '@public/components/admin/schedule/ScheduleBarberSelector/ScheduleBarberSelector';
+import ScheduleCalendar from '@public/components/admin/schedule/ScheduleCalendar/ScheduleCalendar';
+import ScheduleDateNavigator from '@public/components/admin/schedule/ScheduleDateNavigator/ScheduleDateNavigator';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import AppCreateModal from '@public/components/admin/schedule/AppCreateModal';
-import AppReviewModal from '@public/components/admin/schedule/AppReviewModal';
+import AppCreateModal from '@public/components/admin/schedule/AppCreateModal/AppCreateModal';
+import AppReviewModal from '@public/components/admin/schedule/AppReviewModal/AppReviewModal';
+import ScheduleExceptionModal from '@public/components/admin/schedule/ScheduleExceptionModal/ScheduleExceptionModal';
+import ScheduleExceptionDetailsModal from '@public/components/admin/schedule/ScheduleExceptionDetailsModal/ScheduleExceptionDetailsModal';
 
 function getTodayISO() {
     const now = new Date();
@@ -26,6 +28,14 @@ function getSafeTimeHMFromISO(iso = '') {
     const hh = String(d.getHours()).padStart(2, '0');
     const mm = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
+}
+
+function sortAppointmentsByStart(list = []) {
+    return [...list].sort((a, b) => {
+        const aStart = new Date(a?.startAt || 0).getTime();
+        const bStart = new Date(b?.startAt || 0).getTime();
+        return aStart - bStart;
+    });
 }
 
 export default function SchedulePage() {
@@ -54,6 +64,7 @@ export default function SchedulePage() {
     const [barbers, setBarbers] = useState([]);
     const [services, setServices] = useState([]);
     const [schedule, setSchedule] = useState(null);
+    const [exceptions, setExceptions] = useState([]);
 
     // =========================
     // Review modal extra state
@@ -82,6 +93,8 @@ export default function SchedulePage() {
     // =========================
     const [savingAppointment, setSavingAppointment] = useState(false);
     const [updatingAppointment, setUpdatingAppointment] = useState(false);
+    const [savingException, setSavingException] = useState(false);
+    const [updatingException, setUpdatingException] = useState(false);
 
     // =========================
     // Modal state
@@ -89,6 +102,9 @@ export default function SchedulePage() {
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [activeAppointment, setActiveAppointment] = useState(null);
+    const [exceptionModalOpen, setExceptionModalOpen] = useState(false);
+    const [exceptionModalMode, setExceptionModalMode] = useState('full_day');
+    const [activeException, setActiveException] = useState(null);
 
     // =========================
     // Create modal context
@@ -107,14 +123,18 @@ export default function SchedulePage() {
         return barbers.find((b) => b.id === selectedBarberId) || null;
     }, [barbers, selectedBarberId]);
 
-    const isInitialLoading = loadingSchedule || loadingBarbers || loadingServices;
+    const shouldShowCalendarLoading = loadingSchedule && !schedule && appointments.length === 0;
+    const isCalendarRefreshing =
+        loadingSchedule && (!!schedule || appointments.length > 0 || exceptions.length > 0);
 
     // =========================
     // Fetch: schedule
     // =========================
-    const fetchSchedule = useCallback(async () => {
+    const fetchSchedule = useCallback(async ({ silent = false } = {}) => {
         try {
-            setLoadingSchedule(true);
+            if (!silent) {
+                setLoadingSchedule(true);
+            }
             setScheduleError('');
 
             const params = new URLSearchParams();
@@ -136,15 +156,19 @@ export default function SchedulePage() {
             }
 
             setAppointments(Array.isArray(data?.appointments) ? data.appointments : []);
+            setExceptions(Array.isArray(data?.exceptions) ? data.exceptions : []);
             setMeta(data?.meta || null);
             setSchedule(data?.schedule || null);
         } catch (error) {
             setAppointments([]);
+            setExceptions([]);
             setMeta(null);
             setSchedule(null);
             setScheduleError(error?.message || 'Error cargando agenda');
         } finally {
-            setLoadingSchedule(false);
+            if (!silent) {
+                setLoadingSchedule(false);
+            }
         }
     }, [dateISO, selectedBarberId]);
 
@@ -259,6 +283,10 @@ export default function SchedulePage() {
         await fetchSchedule();
     }, [fetchSchedule]);
 
+    const refreshScheduleSilently = useCallback(async () => {
+        await fetchSchedule({ silent: true });
+    }, [fetchSchedule]);
+
     const refreshCatalogs = useCallback(async () => {
         await Promise.all([fetchBarbers(), fetchServices()]);
     }, [fetchBarbers, fetchServices]);
@@ -356,7 +384,6 @@ export default function SchedulePage() {
             barberId: '',
             serviceId: '',
         });
-        setSelectedBarberId(initialBarberIdFromURL)
     }, []);
 
     const openDetailModal = useCallback((appointment) => {
@@ -371,6 +398,23 @@ export default function SchedulePage() {
         setActiveAppointment(null);
         setReviewBarbers([]);
         setReviewBarbersError('');
+    }, []);
+
+    const openExceptionModal = useCallback((mode) => {
+        setExceptionModalMode(mode === 'time_range' ? 'time_range' : 'full_day');
+        setExceptionModalOpen(true);
+    }, []);
+
+    const closeExceptionModal = useCallback(() => {
+        setExceptionModalOpen(false);
+    }, []);
+
+    const openExceptionDetails = useCallback((exception) => {
+        setActiveException(exception || null);
+    }, []);
+
+    const closeExceptionDetails = useCallback(() => {
+        setActiveException(null);
     }, []);
 
     // =========================
@@ -392,14 +436,27 @@ export default function SchedulePage() {
                 throw new Error(data?.error || 'Error creando cita');
             }
 
+            const createdAppointment = data?.appointment || null;
+
+            if (createdAppointment) {
+                const matchesCurrentBarberFilter =
+                    !selectedBarberId ||
+                    (createdAppointment?.barberId || createdAppointment?.barber?.id) === selectedBarberId;
+
+                if (matchesCurrentBarberFilter) {
+                    setAppointments((prev) => sortAppointmentsByStart([...prev, createdAppointment]));
+                }
+            }
+
             closeCreateModal();
-            await refreshSchedule();
+
+            void refreshScheduleSilently();
         } catch (error) {
             console.error('handleCreateAppointment:', error);
         } finally {
             setSavingAppointment(false);
         }
-    }, [closeCreateModal, refreshSchedule]);
+    }, [closeCreateModal, refreshScheduleSilently, selectedBarberId]);
 
     const handleUpdateStatus = useCallback(async (id, to, extra = {}) => {
         try {
@@ -420,6 +477,15 @@ export default function SchedulePage() {
                 throw new Error(data?.error || 'Error actualizando estado');
             }
 
+            if (to === 'cancelled') {
+                setAppointments((prev) =>
+                    prev.filter((appointment) => (appointment?.id || appointment?._id) !== id)
+                );
+                closeDetailModal();
+                void refreshScheduleSilently();
+                return;
+            }
+
             await refreshSchedule();
 
             setActiveAppointment((prev) => {
@@ -436,7 +502,7 @@ export default function SchedulePage() {
         } finally {
             setUpdatingAppointment(false);
         }
-    }, [refreshSchedule]);
+    }, [closeDetailModal, refreshSchedule, refreshScheduleSilently]);
 
     const handleTogglePaid = useCallback(async (id, paymentStatus) => {
         try {
@@ -492,14 +558,17 @@ export default function SchedulePage() {
                 throw new Error(data?.error || 'Error cancelando cita');
             }
 
+            setAppointments((prev) =>
+                prev.filter((appointment) => (appointment?.id || appointment?._id) !== id)
+            );
             closeDetailModal();
-            await refreshSchedule();
+            void refreshScheduleSilently();
         } catch (error) {
             console.error('handleCancelAppointment:', error);
         } finally {
             setUpdatingAppointment(false);
         }
-    }, [closeDetailModal, refreshSchedule]);
+    }, [closeDetailModal, refreshScheduleSilently]);
 
     const handleAssignBarber = useCallback(async (appointmentId, payload = {}) => {
         try {
@@ -540,6 +609,52 @@ export default function SchedulePage() {
         }
     }, [refreshSchedule, fetchReviewBarbers, activeAppointment]);
 
+    const handleCreateException = useCallback(async (payload) => {
+        try {
+            setSavingException(true);
+
+            const res = await fetch('/api/admin/schedule/exceptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data?.error || 'No se pudo crear la excepción');
+            }
+
+            closeExceptionModal();
+            await refreshSchedule();
+        } finally {
+            setSavingException(false);
+        }
+    }, [closeExceptionModal, refreshSchedule]);
+
+    const handleToggleException = useCallback(async (id, isActive) => {
+        try {
+            setUpdatingException(true);
+
+            const res = await fetch(`/api/admin/schedule/exceptions/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                throw new Error(data?.error || 'No se pudo actualizar la excepción');
+            }
+
+            closeExceptionDetails();
+            await refreshSchedule();
+        } finally {
+            setUpdatingException(false);
+        }
+    }, [closeExceptionDetails, refreshSchedule]);
+
     return (
         <div className="page schedule-page">
             <AppCreateModal
@@ -557,6 +672,7 @@ export default function SchedulePage() {
             <AppReviewModal
                 open={detailModalOpen}
                 appointment={activeAppointment}
+                loading={loadingReviewBarbers}
                 onClose={closeDetailModal}
                 onUpdateStatus={handleUpdateStatus}
                 onTogglePaid={handleTogglePaid}
@@ -564,6 +680,25 @@ export default function SchedulePage() {
                 availableBarbers={reviewBarbers}
                 assigningBarber={assigningBarber || loadingReviewBarbers}
                 onAssignBarber={handleAssignBarber}
+            />
+
+            <ScheduleExceptionModal
+                open={exceptionModalOpen}
+                mode={exceptionModalMode}
+                scope={selectedBarberId ? 'barber' : 'business'}
+                dateISO={dateISO}
+                selectedBarber={activeBarber}
+                saving={savingException}
+                onClose={closeExceptionModal}
+                onSubmit={handleCreateException}
+            />
+
+            <ScheduleExceptionDetailsModal
+                open={!!activeException}
+                exception={activeException}
+                loading={updatingException}
+                onClose={closeExceptionDetails}
+                onToggleActive={(isActive) => handleToggleException(activeException?.id, isActive)}
             />
 
             <ScheduleBarberSelector
@@ -591,11 +726,15 @@ export default function SchedulePage() {
             <ScheduleCalendar
                 dateISO={dateISO}
                 appointments={appointments}
+                exceptions={exceptions}
                 schedule={schedule}
                 selectedBarberId={selectedBarberId}
                 onCreateAtSlot={openCreateModal}
                 onOpenAppointment={openDetailModal}
-                loading={loadingSchedule}
+                onCreateException={openExceptionModal}
+                onOpenException={openExceptionDetails}
+                loading={shouldShowCalendarLoading}
+                refreshing={isCalendarRefreshing}
             />
         </div>
     );

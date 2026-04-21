@@ -82,6 +82,12 @@ const AppointmentSchema = new mongoose.Schema(
       min: 5,
     },
 
+    serviceDurationMinutes: {
+      type: Number,
+      default: null,
+      min: 5,
+    },
+
     // ───────────── PRECIO ─────────────
     price: {
       type: Number,

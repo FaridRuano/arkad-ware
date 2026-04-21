@@ -1,0 +1,357 @@
+.dailyPage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dailyHero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 10%, transparent 90%), transparent 34%),
+    color-mix(in srgb, var(--surface-2) 70%, transparent 30%);
+  animation: dailyFadeUp .42s ease-out both;
+}
+
+.dailyHero__eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.dailyHero__title {
+  margin: 6px 0 0;
+  font-size: 30px;
+  color: var(--fg);
+}
+
+.dailyHero__text {
+  margin: 8px 0 0;
+  max-width: 620px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.dailyHero__meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.dailyHero__date {
+  font-size: 16px;
+  color: var(--fg);
+}
+
+.dailyHero__status {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-1) 68%, transparent 32%);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dailyStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dailyStatCard {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent 28%);
+  animation: dailyFadeUp .52s ease-out both;
+}
+
+.dailyStatCard--warn {
+  border-color: color-mix(in srgb, var(--warning) 36%, var(--border) 64%);
+}
+
+.dailyStatCard--accent {
+  border-color: color-mix(in srgb, var(--positive) 36%, var(--border) 64%);
+}
+
+.dailyStatCard__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.dailyStatCard__value {
+  display: block;
+  margin-top: 8px;
+  font-size: 28px;
+  color: var(--fg);
+}
+
+.dailyGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 16px;
+}
+
+.dailyGrid--bottom {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dailyPanel {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent 30%);
+  animation: dailyFadeUp .58s ease-out both;
+}
+
+.dailyPanel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.dailyPanel__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border) 68%);
+  background: color-mix(in srgb, var(--primary) 10%, transparent 90%);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+.dailyPanel__title {
+  margin: 8px 0 0;
+  font-size: 18px;
+  color: var(--fg);
+}
+
+.dailyFocusCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dailyFocusCard__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dailyFocusCard__name {
+  margin: 0;
+  font-size: 24px;
+  color: var(--fg);
+}
+
+.dailyFocusCard__meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dailyFocusCard__chips,
+.dailyActions,
+.dailyListItem__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.dailyFocusCard__info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.dailyInfoItem {
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1) 45%);
+}
+
+.dailyInfoItem__label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.dailyInfoItem__value {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.dailyAlert {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--warning) 36%, var(--border) 64%);
+  background: color-mix(in srgb, var(--warning) 12%, var(--bg) 88%);
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.dailyButton,
+.dailyMiniButton {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent 30%);
+  color: var(--fg);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dailyButton--ghost {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.dailyButton--positive {
+  border-color: color-mix(in srgb, var(--positive) 36%, var(--border) 64%);
+}
+
+.dailyButton--warning,
+.dailyMiniButton--warning {
+  border-color: color-mix(in srgb, var(--warning) 36%, var(--border) 64%);
+}
+
+.dailyButton--danger {
+  border-color: color-mix(in srgb, var(--negative) 36%, var(--border) 64%);
+}
+
+.dailyList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dailyListItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1) 45%);
+}
+
+.dailyListItem__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  strong {
+    color: var(--fg);
+    font-size: 14px;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--muted);
+  }
+}
+
+.dailyPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-1) 68%, transparent 32%);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.dailyPill--pending { border-color: color-mix(in srgb, var(--warning) 40%, var(--border) 60%); }
+.dailyPill--confirmed { border-color: color-mix(in srgb, var(--secondary) 40%, var(--border) 60%); }
+.dailyPill--in_progress { border-color: color-mix(in srgb, var(--primary) 40%, var(--border) 60%); }
+.dailyPill--completed,
+.dailyPill--paid { border-color: color-mix(in srgb, var(--positive) 40%, var(--border) 60%); }
+.dailyPill--cancelled,
+.dailyPill--no_assistance,
+.dailyPill--unpaid { border-color: color-mix(in srgb, var(--negative) 40%, var(--border) 60%); }
+
+.dailyEmpty,
+.dailyState {
+  padding: 22px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-1) 68%, transparent 32%);
+  color: var(--muted);
+}
+
+.dailyState--error {
+  color: var(--negative);
+}
+
+@keyframes dailyFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .dailyStats,
+  .dailyGrid,
+  .dailyGrid--bottom,
+  .dailyFocusCard__info {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .dailyHero,
+  .dailyStats,
+  .dailyGrid,
+  .dailyGrid--bottom,
+  .dailyFocusCard__info {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .dailyHero__meta,
+  .dailyFocusCard__top,
+  .dailyListItem,
+  .dailyPanel__header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dailyFocusCard__chips,
+  .dailyActions,
+  .dailyListItem__actions {
+    justify-content: flex-start;
+  }
+}

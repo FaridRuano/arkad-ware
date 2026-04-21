@@ -1,0 +1,800 @@
+.schedule-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: fadeIn 0.55s ease both;
+
+  &__headerContent {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 18px 20px;
+    border-radius: 22px;
+    background: color-mix(in oklab, var(--surface-1) 88%, black 12%);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+    box-shadow: var(--shadow-1);
+    opacity: 0;
+    transform: translateY(18px);
+    animation: scheduleIntroLift 0.7s cubic-bezier(.22, 1, .36, 1) 0.08s forwards;
+  }
+
+  &__titleWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: clamp(1.4rem, 2vw, 2rem);
+    line-height: 1;
+    font-weight: 800;
+    color: var(--fg);
+    letter-spacing: -0.03em;
+  }
+
+  &__subtitle,
+  &__sectionText {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--fg-soft);
+  }
+
+  &__state {
+    display: flex;
+    min-height: 220px;
+    padding: 18px;
+    border-radius: 22px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    background: color-mix(in oklab, var(--surface-1) 90%, black 10%);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+    box-shadow: var(--shadow-1);
+  }
+
+  &__stateTitle {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  &__stateText {
+    max-width: 520px;
+    color: var(--fg-soft);
+  }
+
+  &__sectionHead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  &__sectionTitle {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--fg);
+    letter-spacing: -0.02em;
+  }
+
+  &__barberList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.schedule-business-card,
+.barber-schedule-card {
+  border-radius: 22px;
+  background: color-mix(in oklab, var(--surface-1) 92%, black 8%);
+  border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+  box-shadow: var(--shadow-1);
+}
+
+.schedule-business-card {
+  padding: 18px;
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+
+  &__titleWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--fg);
+  }
+
+  &__text {
+    margin: 0;
+    color: var(--fg-soft);
+    line-height: 1.5;
+    font-size: 0.88rem;
+    font-weight: 100;
+  }
+
+  &__saveBtn {
+    min-width: 160px;
+  }
+
+  &__grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__ranges {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  &__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__rules {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__actionsWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  &__actionsMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-end;
+  }
+
+  &__actionsLabel {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+
+  &__actionsHint {
+    font-size: 0.76rem;
+    color: var(--fg-soft);
+  }
+
+  &__discardBtn {
+    min-width: 160px;
+  }
+}
+
+.schedule-range-card {
+  padding: 12px;
+  border-radius: 16px;
+  background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+  border: 1px solid color-mix(in oklab, var(--fg) 6%, transparent 94%);
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  &__times {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+.schedule-summary-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--surface-2) 70%, transparent 30%);
+
+  &__label {
+    font-size: 0.72rem;
+    color: var(--fg-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+
+  &__value {
+    color: var(--fg);
+    font-weight: 700;
+  }
+}
+
+.schedule-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &__input {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border-radius: 6px;
+    border: 1px solid color-mix(in oklab, var(--fg) 14%, transparent 86%);
+    background: color-mix(in oklab, var(--surface-2) 75%, transparent 25%);
+    display: grid;
+    place-items: center;
+    transition:
+      background-color 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.14s ease;
+
+    &::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 3px;
+      background: #0f0f0f;
+      transform: scale(0);
+      transition: transform 0.16s ease;
+    }
+
+    &:checked {
+      background: var(--primary);
+      border-color: color-mix(in oklab, var(--primary) 70%, white 30%);
+
+      &::after {
+        transform: scale(1);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  &__text {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+  }
+
+  &--stacked {
+    justify-content: center;
+  }
+}
+
+.barber-schedule-card {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.22s ease,
+    opacity 0.22s ease,
+    filter 0.22s ease;
+  opacity: 0;
+  transform: translateY(20px) scale(0.988);
+  animation: scheduleCardReveal 0.55s cubic-bezier(.2, .8, .2, 1) forwards;
+  animation-delay: calc(var(--card-index, 0) * 60ms + 150ms);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &.is-inactive {
+    opacity: 0.78;
+    filter: saturate(0.65);
+  }
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  &__identity {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__titleRow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__color {
+    width: 13px;
+    height: 13px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, .18);
+  }
+
+  &__name {
+    margin: 0;
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: var(--fg);
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: #ffe2c6;
+    background: rgba(120, 76, 25, 0.45);
+
+    &--ghost {
+      color: var(--fg);
+      background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    }
+
+    &--accent {
+      color: color-mix(in oklab, var(--primary) 82%, white 18%);
+      background: color-mix(in oklab, var(--primary) 14%, transparent 86%);
+    }
+  }
+
+  &__text {
+    margin: 0;
+    color: var(--fg-soft);
+    line-height: 1.4;
+    font-size: 0.84rem;
+    font-weight: 100;
+  }
+
+  &__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+
+  &__summaryItem {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--fg-soft);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+  }
+
+  &__saveBtn {
+    min-width: 160px;
+  }
+
+  &__controls {
+    margin-bottom: 12px;
+  }
+
+  &__days {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__footer {
+    margin-top: 12px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__actionsWrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+    margin-bottom: 12px;
+    padding-top: 12px;
+  }
+
+  &__actionsMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__actionsLabel {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fg);
+  }
+
+  &__actionsHint {
+    font-size: 0.76rem;
+    color: var(--fg-soft);
+    max-width: 34ch;
+  }
+
+  &__discardBtn {
+    min-width: 160px;
+  }
+
+  &__trigger {
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  &__triggerMeta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  &__chevron {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: var(--fg-soft);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    border: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+    transition: transform 0.22s ease, color 0.18s ease;
+
+    &.is-open {
+      transform: rotate(180deg);
+      color: var(--primary);
+    }
+  }
+
+  &__panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition: grid-template-rows 0.26s ease;
+
+    &.is-open {
+      grid-template-rows: 1fr;
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  &__panelInner {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    border-top: 0 solid transparent;
+  }
+
+  &__panel.is-open &__panelInner {
+    padding: 0 16px 16px;
+    border-top: 1px solid color-mix(in oklab, var(--fg) 8%, transparent 92%);
+  }
+}
+
+.schedule-day-row {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+  border: 1px solid color-mix(in oklab, var(--fg) 6%, transparent 94%);
+
+  &__dayWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__day {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  &__times {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__discardBtn {
+    min-width: 160px;
+  }
+}
+
+.schedule-day-row.is-locked {
+  opacity: 0.55;
+}
+
+.schedule-day-row.is-locked .field__input {
+  cursor: not-allowed;
+}
+
+.schedule-day-row.is-locked .schedule-toggle {
+  cursor: not-allowed;
+}
+
+.schedule-inherited-banner {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--fg-soft);
+  background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+}
+
+.schedule-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+
+  &__label {
+    display: block;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-align: left;
+  }
+
+  &__input {
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 10px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in oklab, var(--fg) 10%, transparent 90%);
+    background: color-mix(in oklab, var(--surface-2) 78%, transparent 22%);
+    font-size: 0.84rem;
+    transition:
+      border-color 0.18s ease,
+      background-color 0.18s ease,
+      box-shadow 0.18s ease;
+
+    &:focus {
+      border-color: color-mix(in oklab, var(--primary) 40%, transparent 60%);
+      box-shadow: 0 0 0 3px color-mix(in oklab, var(--primary) 14%, transparent 86%);
+      outline: none;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.schedule-setting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in oklab, var(--surface-2) 72%, transparent 28%);
+  border: 1px solid color-mix(in oklab, var(--fg) 7%, transparent 93%);
+
+  &__label {
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-soft);
+    text-align: center;
+  }
+}
+
+@keyframes scheduleIntroLift {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scheduleCardReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.988);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1100px) {
+  .schedule-business-card {
+
+    &__ranges,
+    &__rules {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .schedule-day-row {
+    grid-template-columns: 1fr;
+
+    &__times {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-page {
+    gap: 18px;
+
+    &__headerContent {
+      padding: 18px;
+      border-radius: 20px;
+    }
+
+    &__state {
+      min-height: 220px;
+      padding: 22px 18px;
+      border-radius: 20px;
+    }
+  }
+
+  .schedule-business-card,
+  .barber-schedule-card {
+    padding: 16px;
+    border-radius: 20px;
+
+    &__actions {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__actionsWrap,
+    &__actionsMeta {
+      width: 100%;
+      align-items: stretch;
+    }
+
+    &__discardBtn,
+    &__saveBtn {
+      width: 100%;
+    }
+  }
+
+  .schedule-business-card {
+
+    &__top,
+    .barber-schedule-card__top {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__saveBtn {
+      width: 100%;
+    }
+  }
+
+  .barber-schedule-card {
+    &__actionsWrap {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+
+    &__trigger {
+      padding: 14px;
+    }
+
+    &__panelInner {
+      padding: 0 14px 14px;
+    }
+
+    &__saveBtn {
+      width: 100%;
+    }
+  }
+
+  .schedule-range-card {
+    &__times {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .schedule-day-row {
+    &__times {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .schedule-summary-chip {
+    width: 100%;
+  }
+}

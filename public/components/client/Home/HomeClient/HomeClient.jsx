@@ -6,7 +6,7 @@ import styles from './home-client.module.scss';
 import ServicesSection from '../ServiceSection/ServicesSection';
 import BookingModal from '../BookingModal/BookingModal';
 import { signOut } from 'next-auth/react';
-import ModalConfirm from '@public/components/shared/ModalConfirm';
+import ModalConfirm from '@public/components/shared/ModalConfirm/ModalConfirm';
 
 const HERO_IMAGES = [
     '/assets/imgs/barber-hero-1.jpg',

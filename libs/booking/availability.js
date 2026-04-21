@@ -1,50 +1,31 @@
 import Appointment from "@models/Appointment";
-import ScheduleException from "@models/ScheduleException";
+import {
+  applyExceptionsToRanges as applyScheduleExceptionsToRanges,
+  combineDateAndMinutes,
+  formatDateLocal,
+  getScheduleExceptionsInRange,
+  isValidDateString,
+  isValidTimeHHMM,
+  minutesToHHMM,
+  parseDateLocal,
+  parseTimeToMinutes,
+} from "@libs/schedule/exceptions";
+
+export {
+  combineDateAndMinutes,
+  formatDateLocal,
+  isValidDateString,
+  isValidTimeHHMM,
+  minutesToHHMM,
+  parseDateLocal,
+  parseTimeToMinutes,
+};
 
 export const ACTIVE_APPOINTMENT_STATUSES = ["pending", "confirmed", "in_progress"];
-
-export const isValidDateString = (value = "") =>
-  /^\d{4}-\d{2}-\d{2}$/.test(String(value));
-
-export const isValidTimeHHMM = (value = "") =>
-  /^([01]\d|2[0-3]):([0-5]\d)$/.test(String(value));
 
 export const pad = (n) => String(n).padStart(2, "0");
 
 export const GUAYAQUIL_UTC_OFFSET_MINUTES = 5 * 60;
-
-export const parseDateLocal = (dateStr) => {
-  const [y, m, d] = String(dateStr).split("-").map(Number);
-
-  // 00:00 en Guayaquil => 05:00 UTC
-  return new Date(Date.UTC(y, m - 1, d, 0 + 5, 0, 0, 0));
-};
-
-export const formatDateLocal = (date) => {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-};
-
-export const parseTimeToMinutes = (time) => {
-  const [h, m] = String(time || "00:00").split(":").map(Number);
-  return h * 60 + m;
-};
-
-export const minutesToHHMM = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${pad(h)}:${pad(m)}`;
-};
-
-export const combineDateAndMinutes = (dateStr, minutes) => {
-  const [y, m, d] = String(dateStr).split("-").map(Number);
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-
-  // Hora local de Guayaquil convertida a UTC para guardar correctamente
-  return new Date(
-    Date.UTC(y, m - 1, d, hours + 5, mins, 0, 0)
-  );
-};
 
 export const getBusinessRangeForDay = (businessSettings, dayIndex) => {
   if (!businessSettings?.generalSchedule) return null;
@@ -175,37 +156,6 @@ export const applyOpenRange = (ranges, openStart, openEnd) => {
   return merged;
 };
 
-export const applyExceptionsToRanges = (ranges, exceptions) => {
-  let nextRanges = [...ranges];
-
-  const sorted = [...exceptions].sort((a, b) => {
-    if (a.type === b.type) return 0;
-    return a.type === "block" ? -1 : 1;
-  });
-
-  for (const exception of sorted) {
-    if (exception.allDay) {
-      if (exception.type === "block") {
-        nextRanges = [];
-      }
-      continue;
-    }
-
-    const start = parseTimeToMinutes(exception.start);
-    const end = parseTimeToMinutes(exception.end);
-
-    if (exception.type === "block") {
-      nextRanges = applyBlockRange(nextRanges, start, end);
-    } else if (exception.type === "open") {
-      nextRanges = applyOpenRange(nextRanges, start, end);
-    }
-  }
-
-  return nextRanges
-    .filter((range) => range.end > range.start)
-    .sort((a, b) => a.start - b.start);
-};
-
 export const getConflictingAppointments = async ({ barberId, dateStr }) => {
   const startOfDay = parseDateLocal(dateStr);
   const endOfDay = parseDateLocal(dateStr);
@@ -281,6 +231,8 @@ export const getAvailabilityForDate = async ({
   dateStr,
   businessSettings,
   barberSchedule,
+  exceptions = null,
+  appointments = null,
 }) => {
   const baseRanges = normalizeBaseRanges({
     businessSettings,
@@ -290,18 +242,29 @@ export const getAvailabilityForDate = async ({
 
   if (!baseRanges.length) return [];
 
-  const exceptions = await ScheduleException.find({
-    isActive: true,
-    date: dateStr,
-    $or: [{ barber: null }, { barber: barberId }],
-  })
-    .select("type allDay start end barber")
-    .lean();
+  const relevantExceptions = Array.isArray(exceptions)
+    ? exceptions
+    : await getScheduleExceptionsInRange({
+        startDate: dateStr,
+        endDate: dateStr,
+        barberId,
+        activeOnly: true,
+      });
 
-  const rangesAfterExceptions = applyExceptionsToRanges(baseRanges, exceptions);
+  const rangesAfterExceptions = applyScheduleExceptionsToRanges({
+    ranges: baseRanges,
+    exceptions: relevantExceptions,
+    dateStr,
+    barberId,
+  });
   if (!rangesAfterExceptions.length) return [];
 
-  const busyAppointments = await getConflictingAppointments({ barberId, dateStr });
+  const busyAppointments = Array.isArray(appointments)
+    ? appointments.filter((appointment) => {
+        const appointmentDate = formatDateLocal(appointment?.startAt);
+        return appointmentDate === dateStr;
+      })
+    : await getConflictingAppointments({ barberId, dateStr });
   const freeRanges = removeBusyRanges(rangesAfterExceptions, busyAppointments);
   if (!freeRanges.length) return [];
 
@@ -388,13 +351,44 @@ export const hasDayAvailabilityBySchedule = ({
   return ranges.length > 0;
 };
 
-export const getAvailableDatesForBarber = ({
+export const getAvailableDatesForBarber = async ({
+  service,
+  barberId,
   businessSettings,
   barberSchedule,
 }) => {
   const settings = businessSettings || getDefaultBusinessSettings();
   const maxDaysAhead = Number(settings.bookingMaxDaysAhead || 30);
   const today = new Date();
+  const startDate = formatDateLocal(today);
+  const endDate = formatDateLocal(
+    new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + Math.max(maxDaysAhead - 1, 0),
+      0,
+      0,
+      0,
+      0
+    )
+  );
+
+  const [exceptions, appointments] = await Promise.all([
+    getScheduleExceptionsInRange({
+      startDate,
+      endDate,
+      barberId,
+      activeOnly: true,
+    }),
+    Appointment.find({
+      barberId,
+      status: { $in: ACTIVE_APPOINTMENT_STATUSES },
+      startAt: { $lt: combineDateAndMinutes(endDate, 24 * 60) },
+      endAt: { $gt: combineDateAndMinutes(startDate, 0) },
+    })
+      .select("startAt endAt status barberId")
+      .lean(),
+  ]);
 
   const dates = [];
 
@@ -420,17 +414,23 @@ export const getAvailableDatesForBarber = ({
       continue;
     }
 
-    if (
-      !hasDayAvailabilityBySchedule({
-        businessSettings: settings,
-        barberSchedule,
-        dateStr,
-      })
-    ) {
-      continue;
-    }
+    const slots = await getAvailabilityForDate({
+      service: {
+        durationMinutes:
+          Number(service?.durationMinutes || 0) ||
+          Number(settings.slotIntervalMinutes || 30),
+      },
+      barberId,
+      dateStr,
+      businessSettings: settings,
+      barberSchedule,
+      exceptions,
+      appointments,
+    });
 
-    dates.push(dateStr);
+    if (slots.length > 0) {
+      dates.push(dateStr);
+    }
   }
 
   return dates;

@@ -1,6 +1,6 @@
 import { auth } from "@auth";
 import { redirect } from "next/navigation";
-import AdminShell from "@public/components/admin/AdminShell";
+import AdminShell from "@public/components/admin/AdminShell/AdminShell";
 
 export default async function ClientLayout({ children }) {
   const session = await auth();

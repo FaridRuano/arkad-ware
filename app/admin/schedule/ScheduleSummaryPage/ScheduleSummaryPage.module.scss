@@ -1,0 +1,522 @@
+.scheduleSummaryPage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.scheduleSummaryHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.9fr);
+  gap: 16px;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 10%, transparent 90%), transparent 35%),
+    color-mix(in srgb, var(--surface-2) 70%, transparent 30%);
+  animation: scheduleSummaryFadeUp .42s ease-out both;
+}
+
+.scheduleSummaryHero__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scheduleSummaryHero__eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.scheduleSummaryHero__title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.05;
+  color: var(--fg);
+}
+
+.scheduleSummaryHero__text {
+  margin: 0;
+  max-width: 620px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.scheduleSummaryHero__controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scheduleSummaryToggle {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--bg) 60%, var(--surface-1) 40%);
+  align-self: flex-end;
+}
+
+.scheduleSummaryToggle__item {
+  min-width: 84px;
+  height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scheduleSummaryToggle__item.is-active {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.scheduleSummaryDateField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scheduleSummaryDateField__label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.scheduleSummaryDateField__input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 70%, var(--surface-1) 30%);
+  color: var(--fg);
+}
+
+.scheduleSummaryContext {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+  animation: scheduleSummaryFadeUp .48s ease-out both;
+}
+
+.scheduleSummaryContext__main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scheduleSummaryContext__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.scheduleSummaryContext__value {
+  font-size: 16px;
+  color: var(--fg);
+}
+
+.scheduleSummaryContext__status {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent 28%);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.scheduleSummaryStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summaryStatCard {
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent 28%);
+  animation: scheduleSummaryFadeUp .52s ease-out both;
+}
+
+.summaryStatCard:nth-child(2) {
+  animation-delay: .05s;
+}
+
+.summaryStatCard:nth-child(3) {
+  animation-delay: .1s;
+}
+
+.summaryStatCard:nth-child(4) {
+  animation-delay: .15s;
+}
+
+.summaryStatCard--accent {
+  border-color: color-mix(in srgb, var(--positive) 34%, var(--border) 66%);
+}
+
+.summaryStatCard__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.summaryStatCard__value {
+  display: block;
+  margin-top: 10px;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--fg);
+}
+
+.summaryStatCard__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.scheduleSummaryGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.85fr);
+  gap: 16px;
+}
+
+.scheduleSummaryGrid--lists {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.scheduleSummaryPanel {
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent 30%);
+  animation: scheduleSummaryFadeUp .58s ease-out both;
+}
+
+.scheduleSummaryGrid .scheduleSummaryPanel:nth-child(2) {
+  animation-delay: .08s;
+}
+
+.scheduleSummaryGrid--lists .scheduleSummaryPanel:nth-child(1) {
+  animation-delay: .12s;
+}
+
+.scheduleSummaryGrid--lists .scheduleSummaryPanel:nth-child(2) {
+  animation-delay: .18s;
+}
+
+.scheduleSummaryPanel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.scheduleSummaryPanel__title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--fg);
+}
+
+.scheduleSummaryPanel__titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.scheduleSummaryPanel__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border) 68%);
+  background: color-mix(in srgb, var(--primary) 10%, transparent 90%);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+.scheduleSummaryPanel__text {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.scheduleSummaryLegend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scheduleSummaryLegend__item {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.scheduleSummaryLegend__item--high {
+  color: var(--positive);
+}
+
+.scheduleSummaryChart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  align-items: end;
+  gap: 10px;
+  min-height: 280px;
+}
+
+.scheduleSummaryChart__bar {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.scheduleSummaryChart__bar:disabled {
+  cursor: default;
+}
+
+.scheduleSummaryChart__value {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.scheduleSummaryChart__track {
+  width: 100%;
+  max-width: 58px;
+  height: 190px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent 28%);
+  background: color-mix(in srgb, var(--bg) 58%, var(--surface-1) 42%);
+}
+
+.scheduleSummaryChart__fill {
+  width: 100%;
+  min-height: 0;
+  border-radius: 18px 18px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-1) 70%, transparent 30%);
+  transition: transform 160ms ease, filter 160ms ease, border-color 160ms ease;
+}
+
+.scheduleSummaryChart__fill[style*='height: 0%'] {
+  border-color: transparent;
+  background: transparent;
+}
+
+.scheduleSummaryChart__bar:hover .scheduleSummaryChart__fill {
+  transform: translateY(-2px);
+}
+
+.scheduleSummaryChart__bar.is-selected .scheduleSummaryChart__track {
+  border-color: color-mix(in srgb, var(--primary) 38%, var(--border) 62%);
+}
+
+.scheduleSummaryChart__bar.is-selected .scheduleSummaryChart__fill {
+  outline: 2px solid color-mix(in srgb, var(--primary) 40%, transparent 60%);
+}
+
+.scheduleSummaryChart__bar--excellent .scheduleSummaryChart__fill {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--positive) 75%, white 25%), var(--positive));
+}
+
+.scheduleSummaryChart__bar--good .scheduleSummaryChart__fill {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 78%, white 22%), var(--primary));
+}
+
+.scheduleSummaryChart__bar--medium .scheduleSummaryChart__fill {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--secondary) 78%, white 22%), var(--secondary));
+}
+
+.scheduleSummaryChart__bar--low .scheduleSummaryChart__fill {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warning) 72%, white 28%), var(--warning));
+}
+
+.scheduleSummaryChart__label,
+.scheduleSummaryChart__day {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.summaryHighlightList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.summaryHighlightItem {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent 24%);
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1) 45%);
+}
+
+.summaryHighlightItem__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.summaryHighlightItem__value {
+  display: block;
+  margin-top: 8px;
+  font-size: 24px;
+  color: var(--fg);
+}
+
+.summaryAppointmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summaryAppointmentItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface-1) 45%);
+}
+
+.summaryAppointmentItem__main,
+.summaryAppointmentItem__side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.summaryAppointmentItem__side {
+  align-items: flex-end;
+}
+
+.summaryAppointmentItem__title {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.summaryAppointmentItem__meta,
+.summaryAppointmentItem__time {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.summaryPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent 30%);
+  color: var(--fg);
+}
+
+.summaryPill--pending { border-color: color-mix(in srgb, var(--warning) 40%, var(--border) 60%); }
+.summaryPill--confirmed { border-color: color-mix(in srgb, var(--secondary) 40%, var(--border) 60%); }
+.summaryPill--in_progress { border-color: color-mix(in srgb, var(--primary) 40%, var(--border) 60%); }
+.summaryPill--completed,
+.summaryPill--paid { border-color: color-mix(in srgb, var(--positive) 40%, var(--border) 60%); }
+.summaryPill--unpaid { border-color: color-mix(in srgb, var(--negative) 40%, var(--border) 60%); }
+
+.scheduleSummaryEmpty,
+.scheduleSummaryState {
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent 26%);
+  background: color-mix(in srgb, var(--surface-2) 72%, transparent 28%);
+  color: var(--muted);
+}
+
+.scheduleSummaryState--error {
+  color: var(--negative);
+}
+
+@keyframes scheduleSummaryFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 1100px) {
+  .scheduleSummaryStats,
+  .scheduleSummaryGrid,
+  .scheduleSummaryGrid--lists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .scheduleSummaryHero,
+  .scheduleSummaryStats,
+  .scheduleSummaryGrid,
+  .scheduleSummaryGrid--lists {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduleSummaryToggle {
+    align-self: stretch;
+  }
+
+  .scheduleSummaryToggle__item {
+    flex: 1;
+  }
+
+  .scheduleSummaryChart {
+    min-height: 220px;
+  }
+
+  .scheduleSummaryChart__track {
+    height: 160px;
+  }
+
+  .summaryAppointmentItem {
+    flex-direction: column;
+  }
+
+  .summaryAppointmentItem__side {
+    align-items: flex-start;
+  }
+
+  .scheduleSummaryContext {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

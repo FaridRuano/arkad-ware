@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import SubNav from '@public/components/admin/shared/SubNav'
+import SubNav from '@public/components/admin/shared/SubNav/SubNav'
 
 export default function SubNavWrapper({
   items = [],

@@ -139,9 +139,35 @@ export default function HomeClient({ session, userName }) {
 
     const accountMenuRef = useRef(null);
     const galleryImages = useMemo(() => GALLERY_IMAGES, []);
+    const heroGalleryFrames = useMemo(() => {
+        const horizontalImages = galleryImages
+            .map((image, index) => ({ ...image, sourceIndex: index }))
+            .filter((image) => image.orientation === 'horizontal');
+        const verticalImages = galleryImages
+            .map((image, index) => ({ ...image, sourceIndex: index }))
+            .filter((image) => image.orientation === 'vertical');
+
+        if (!horizontalImages.length || !verticalImages.length) {
+            return [getFeaturedGalleryImages(galleryImages, 0)];
+        }
+
+        const frames = [];
+
+        for (let verticalStep = 0; verticalStep < verticalImages.length; verticalStep += 1) {
+            for (let horizontalStep = 0; horizontalStep < horizontalImages.length; horizontalStep += 1) {
+                frames.push([
+                    horizontalImages[horizontalStep % horizontalImages.length],
+                    verticalImages[verticalStep % verticalImages.length],
+                    horizontalImages[(horizontalStep + 1) % horizontalImages.length],
+                ]);
+            }
+        }
+
+        return frames;
+    }, [galleryImages]);
     const featuredGalleryImages = useMemo(
-        () => getFeaturedGalleryImages(galleryImages, heroGalleryStep),
-        [galleryImages, heroGalleryStep]
+        () => heroGalleryFrames[heroGalleryStep % heroGalleryFrames.length],
+        [heroGalleryFrames, heroGalleryStep]
     );
 
     const openBookingModal = (service) => {
@@ -344,14 +370,14 @@ export default function HomeClient({ session, userName }) {
     }, []);
 
     useEffect(() => {
-        if (isGalleryModalOpen || hoveredHeroCardIndex !== null || isHeroGalleryTransitioning) return undefined;
+        if (heroGalleryFrames.length <= 1 || isGalleryModalOpen || hoveredHeroCardIndex !== null) return undefined;
 
         const interval = window.setInterval(() => {
-            setHeroGalleryStep((prev) => prev + 1);
-        }, 3200);
+            setHeroGalleryStep((prev) => (prev + 1) % heroGalleryFrames.length);
+        }, 4500);
 
         return () => window.clearInterval(interval);
-    }, [galleryImages.length, hoveredHeroCardIndex, isGalleryModalOpen, isHeroGalleryTransitioning]);
+    }, [heroGalleryFrames.length, hoveredHeroCardIndex, isGalleryModalOpen]);
 
     useEffect(() => {
         const currentSignature = heroGalleryImages.map((image) => image.src).join('|');
@@ -606,7 +632,7 @@ export default function HomeClient({ session, userName }) {
                                 </div>
                                 <div className={styles.heroVisualChip}>
                                     <Scissors size={16} />
-                                    <span>Reserva activa</span>
+                                    <span>Galería de cortes</span>
                                 </div>
                             </div>
 

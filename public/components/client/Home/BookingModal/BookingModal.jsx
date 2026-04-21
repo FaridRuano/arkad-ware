@@ -34,6 +34,8 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
     const [bookingError, setBookingError] = useState('');
     const [bookingSuccess, setBookingSuccess] = useState('');
 
+    const punctualityNotice = 'El servicio contempla un tiempo de espera maximo de 5 minutos, por favor llega puntual para respetar tu horario.';
+
     const availableBarbers = useMemo(() => {
         if (!service?.barbers || !Array.isArray(service.barbers)) return [];
         return service.barbers;
@@ -248,7 +250,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
 
             onBookingSuccess?.({
                 title: 'Reserva confirmada',
-                message: data?.message || 'Tu cita ha sido registrada correctamente.',
+                message: `${data?.message || 'Tu cita ha sido registrada correctamente.'} Recuerda llegar puntual: el tiempo de espera maximo es de 5 minutos.`,
             });
         } catch (err) {
             setBookingError(err?.message || 'No se pudo crear la reserva.');
@@ -380,6 +382,10 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
                                     <p>
                                         Revisa la información y confirma para guardar tu cita.
                                     </p>
+                                    <div className={styles.noticeCard}>
+                                        <strong>Aviso importante</strong>
+                                        <p>{punctualityNotice}</p>
+                                    </div>
                                 </div>
                             )}
 

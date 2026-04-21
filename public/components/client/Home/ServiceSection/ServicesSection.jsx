@@ -89,12 +89,36 @@ export default function ServicesSection({ onReserve, onReserveLimitReached }) {
 
     fetchInitialData();
 
-    const reserveBlocked = !isLoadingBookingStatus && !bookingStatus.canBook;
-
     return () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!services.length) return;
+
+    const elements = Array.from(document.querySelectorAll('[data-service-reveal]'));
+
+    if (!elements.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.isVisible);
+          }
+        });
+      },
+      {
+        threshold: 0.12,
+        rootMargin: '0px 0px -8% 0px',
+      }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+
+    return () => observer.disconnect();
+  }, [services]);
 
 
   if (isLoading) {
@@ -143,8 +167,13 @@ export default function ServicesSection({ onReserve, onReserveLimitReached }) {
       )} */}
 
       <div className={styles.servicesGrid}>
-        {services.map((service) => (
-          <article className={`${styles.serviceCard} ${styles.loaded}`} key={service.id}>
+        {services.map((service, index) => (
+          <article
+            className={`${styles.serviceCard} ${styles.loaded}`}
+            key={service.id}
+            data-service-reveal
+            style={{ '--stagger-order': index }}
+          >
             <div className={styles.serviceCardContent}>
               <div className={styles.serviceCardTop}>
                 <div
@@ -160,7 +189,7 @@ export default function ServicesSection({ onReserve, onReserveLimitReached }) {
               </div>
 
               <p className={styles.serviceCardDescription}>
-                {service.description || 'Servicio profesional con atención personalizada.'}
+                {service.description || 'Servicio profesional con atencion personalizada y la experiencia Arkad incluida.'}
               </p>
             </div>
 

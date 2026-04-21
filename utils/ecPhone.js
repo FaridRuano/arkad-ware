@@ -84,3 +84,25 @@ export function ecPhoneErrorMessage(reason) {
       return "Número inválido.";
   }
 }
+
+/**
+ * Formatea cualquier variante razonable de celular Ecuador para UI:
+ * - +5939XXXXXXXX => +593 9XX XXX XXX
+ * - 09XXXXXXXXX   => +593 9XX XXX XXX
+ * - 9XXXXXXXX     => +593 9XX XXX XXX
+ * Si no parece un móvil EC válido, devuelve el valor original.
+ */
+export function formatEcMobileDisplay(input) {
+  const raw = String(input ?? "").trim();
+  if (!raw) return "";
+
+  let digits = onlyDigits(raw);
+
+  if (digits.startsWith("593")) digits = digits.slice(3);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+
+  const validation = validateEcMobileRemainder(digits);
+  if (!validation.ok) return raw;
+
+  return `+593 ${formatEcMobileRemainderPretty(validation.remainder)}`;
+}

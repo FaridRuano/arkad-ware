@@ -382,6 +382,13 @@
   gap: 14px;
 }
 
+.dashboardClient__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
 .dashboardEmpty,
 .dashboardState {
   padding: 22px;

@@ -596,23 +596,9 @@ export default function HomeClient({ session, userName }) {
                                 </a>
                             </div>
 
-                            <div className={styles.heroStats}>
-                                <article className={styles.heroStatCard}>
-                                    <span className={styles.heroStatValue}>Comunidad</span>
-                                    <span className={styles.heroStatLabel}>Estamos construyendo una comunidad exclusiva alrededor de la experiencia Arkad.</span>
-                                </article>
-                                <article className={styles.heroStatCard}>
-                                    <span className={styles.heroStatValue}>Networking</span>
-                                    <span className={styles.heroStatLabel}>Un espacio pensado para conectar con personas, ideas y nuevas oportunidades.</span>
-                                </article>
-                                <article className={styles.heroStatCard}>
-                                    <span className={styles.heroStatValue}>Beneficios</span>
-                                    <span className={styles.heroStatLabel}>Pronto sumaremos beneficios exclusivos para quienes formen parte de Arkad.</span>
-                                </article>
-                            </div>
                         </div>
 
-                        <div className={styles.heroVisualPanel}>
+                        <div className={`${styles.heroVisualPanel} ${styles.revealUp}`} data-reveal>
                             <div className={styles.heroVisualHeader}>
                                 <div>
                                     <span className={styles.heroVisualEyebrow}>Sesion Arkad</span>
@@ -658,6 +644,23 @@ export default function HomeClient({ session, userName }) {
                                         </div>
                                     </button>
                                 ))}
+                            </div>
+                        </div>
+
+                        <div className={`${styles.heroStatsWrap} ${styles.revealUp}`} data-reveal>
+                            <div className={styles.heroStats}>
+                                <article className={styles.heroStatCard}>
+                                    <span className={styles.heroStatValue}>Comunidad</span>
+                                    <span className={styles.heroStatLabel}>Estamos construyendo una comunidad exclusiva alrededor de la experiencia Arkad.</span>
+                                </article>
+                                <article className={styles.heroStatCard}>
+                                    <span className={styles.heroStatValue}>Networking</span>
+                                    <span className={styles.heroStatLabel}>Un espacio pensado para conectar con personas, ideas y nuevas oportunidades.</span>
+                                </article>
+                                <article className={styles.heroStatCard}>
+                                    <span className={styles.heroStatValue}>Beneficios</span>
+                                    <span className={styles.heroStatLabel}>Pronto sumaremos beneficios exclusivos para quienes formen parte de Arkad.</span>
+                                </article>
                             </div>
                         </div>
                     </div>

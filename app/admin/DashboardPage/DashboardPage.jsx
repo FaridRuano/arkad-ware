@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import PageLoader from '@public/components/shared/PageLoader/PageLoader'
 import styles from './DashboardPage.module.scss'
+import { formatEcMobileDisplay } from '@utils/ecPhone'
 
 const m = (...tokens) =>
   tokens
@@ -47,6 +48,12 @@ function formatDate(value) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value))
+}
+
+function formatPrimaryContact(phone, email) {
+  if (phone) return formatEcMobileDisplay(phone)
+  if (email) return email
+  return 'Sin contacto principal'
 }
 
 function SummaryCard({ label, value, hint, accent = false }) {
@@ -382,9 +389,9 @@ export default function DashboardPage() {
                 ) : (
                   recentClients.map((client) => (
                     <article className={m('dashboardClient')} key={client.id}>
-                      <div>
+                      <div className={m('dashboardClient__main')}>
                         <strong>{client.name}</strong>
-                        <span>{client.phone || client.email || 'Sin contacto principal'}</span>
+                        <span>{formatPrimaryContact(client.phone, client.email)}</span>
                       </div>
                       <time>{formatDate(client.createdAt)}</time>
                     </article>

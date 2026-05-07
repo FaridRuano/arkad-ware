@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import Barber from "@models/Barber";
 import BarberSchedule from "@models/BarberSchedule";
-import BusinessSettings from "@models/BusinessSettings";
 
 const DAY_VALUES = [0, 1, 2, 3, 4, 5, 6];
 
@@ -102,28 +101,6 @@ function normalizeSchedule(doc) {
   };
 }
 
-
-function buildWeekScheduleFromBusiness(generalSchedule) {
-  const mapRangeToDay = (day, range) => ({
-    day,
-    enabled: Boolean(range?.enabled),
-    start: range?.enabled ? range?.start || "" : "",
-    end: range?.enabled ? range?.end || "" : "",
-    breakStart: "",
-    breakEnd: "",
-  });
-
-  return [
-    mapRangeToDay(0, generalSchedule?.sunday),
-    mapRangeToDay(1, generalSchedule?.weekdays),
-    mapRangeToDay(2, generalSchedule?.weekdays),
-    mapRangeToDay(3, generalSchedule?.weekdays),
-    mapRangeToDay(4, generalSchedule?.weekdays),
-    mapRangeToDay(5, generalSchedule?.weekdays),
-    mapRangeToDay(6, generalSchedule?.saturday),
-  ];
-}
-
 /* ─────────────────────────────────────────────
    PATCH /api/admin/settings/schedule/barbers/[id]
 ───────────────────────────────────────────── */
@@ -203,23 +180,7 @@ export async function PATCH(req, { params }) {
     }
 
     if (body?.useBusinessHoursAsFallback !== undefined) {
-      const nextUseFallback = Boolean(body.useBusinessHoursAsFallback);
-      update.useBusinessHoursAsFallback = nextUseFallback;
-
-      if (nextUseFallback) {
-        const businessSettings = await BusinessSettings.findOne().select("generalSchedule");
-
-        if (!businessSettings?.generalSchedule) {
-          return NextResponse.json(
-            { error: "No existe una configuración general de horarios para sincronizar" },
-            { status: 400 }
-          );
-        }
-
-        update.weekSchedule = buildWeekScheduleFromBusiness(
-          businessSettings.generalSchedule
-        );
-      }
+      update.useBusinessHoursAsFallback = Boolean(body.useBusinessHoursAsFallback);
     }
 
     if (body?.notes !== undefined) {

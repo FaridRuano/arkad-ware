@@ -353,6 +353,111 @@ textarea.field__input:focus {
     font-size: 12px;
 }
 
+.fieldToggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in oklab, var(--border) 78%, transparent 22%);
+    background: color-mix(in oklab, var(--surface-2) 74%, transparent 26%);
+    cursor: pointer;
+    transition:
+        border-color 140ms ease,
+        background 140ms ease,
+        transform 140ms ease,
+        box-shadow 140ms ease;
+
+    &:hover {
+        transform: translateY(-1px);
+        border-color: color-mix(in oklab, var(--primary) 26%, var(--border) 74%);
+        background: color-mix(in oklab, var(--surface-2) 84%, transparent 16%);
+    }
+
+    &.is-active {
+        border-color: color-mix(in oklab, var(--primary) 28%, var(--border) 72%);
+        background: color-mix(in oklab, var(--primary) 10%, var(--surface-2) 90%);
+        box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 10%, transparent 90%);
+    }
+}
+
+.fieldToggle__input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+
+.fieldToggle__input:focus-visible+.fieldToggle__box {
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 16%, transparent 84%);
+    border-color: color-mix(in oklab, var(--primary) 52%, var(--border) 48%);
+}
+
+.fieldToggle__box {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    border: 1px solid color-mix(in oklab, var(--border) 82%, transparent 18%);
+    background: color-mix(in oklab, var(--surface-1) 86%, transparent 14%);
+    display: grid;
+    place-items: center;
+    transition:
+        border-color 140ms ease,
+        background 140ms ease,
+        box-shadow 140ms ease,
+        transform 140ms ease;
+}
+
+.fieldToggle.is-active .fieldToggle__box {
+    border-color: color-mix(in oklab, var(--primary) 54%, transparent 46%);
+    background: linear-gradient(180deg,
+            color-mix(in oklab, var(--primary) 84%, #fff 16%),
+            var(--primary));
+    box-shadow: 0 10px 18px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+}
+
+.fieldToggle__mark {
+    width: 10px;
+    height: 6px;
+    border-left: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    transform: rotate(-45deg) scale(.7);
+    transform-origin: center;
+    opacity: 0;
+    transition:
+        opacity 140ms ease,
+        transform 140ms ease,
+        border-color 140ms ease;
+}
+
+.fieldToggle.is-active .fieldToggle__mark {
+    opacity: 1;
+    transform: rotate(-45deg) scale(1);
+    border-color: var(--black);
+}
+
+.fieldToggle__content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.fieldToggle__title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--fg);
+}
+
+.fieldToggle__text {
+    font-size: 12px;
+    color: color-mix(in oklab, var(--muted) 78%, var(--fg) 22%);
+}
+
 /* Footer */
 .modalFooter {
     position: relative;
@@ -612,6 +717,7 @@ MODAL SERVICES
     margin-top: 8px;
 
     &__item {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 10px;
@@ -634,12 +740,65 @@ MODAL SERVICES
         &.is-selected {
             border-color: color-mix(in oklab, var(--primary) 28%, transparent 72%);
             background: color-mix(in oklab, var(--primary) 12%, var(--surface-2) 88%);
+            box-shadow: 0 12px 28px color-mix(in oklab, var(--primary) 10%, transparent 90%);
         }
+    }
 
-        input {
-            margin: 0;
-            flex-shrink: 0;
-        }
+    &__input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    &__check {
+        width: 20px;
+        height: 20px;
+        border-radius: 7px;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        border: 1px solid color-mix(in oklab, var(--border) 82%, transparent 18%);
+        background: color-mix(in oklab, var(--surface-1) 86%, transparent 14%);
+        transition:
+            border-color 140ms ease,
+            background 140ms ease,
+            box-shadow 140ms ease,
+            transform 140ms ease;
+    }
+
+    &__checkMark {
+        width: 9px;
+        height: 5px;
+        border-left: 2px solid transparent;
+        border-bottom: 2px solid transparent;
+        transform: rotate(-45deg) scale(.7);
+        transform-origin: center;
+        opacity: 0;
+        transition:
+            opacity 140ms ease,
+            transform 140ms ease,
+            border-color 140ms ease;
+    }
+
+    &__item.is-selected &__check {
+        border-color: color-mix(in oklab, var(--primary) 54%, transparent 46%);
+        background: linear-gradient(180deg,
+                color-mix(in oklab, var(--primary) 84%, #fff 16%),
+                var(--primary));
+        box-shadow: 0 10px 18px color-mix(in oklab, var(--primary) 18%, transparent 82%);
+    }
+
+    &__item.is-selected &__checkMark {
+        opacity: 1;
+        transform: rotate(-45deg) scale(1);
+        border-color: var(--black);
+    }
+
+    &__input:focus-visible+&__check {
+        box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 16%, transparent 84%);
+        border-color: color-mix(in oklab, var(--primary) 52%, var(--border) 48%);
     }
 
     &__dot {

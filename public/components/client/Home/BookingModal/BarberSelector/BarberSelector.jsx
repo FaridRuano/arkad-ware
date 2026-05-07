@@ -1,6 +1,6 @@
 'use client';
 
-import { Scissors } from 'lucide-react';
+import Image from 'next/image';
 import styles from './barber-selector.module.scss';
 
 export default function BarberSelector({
@@ -42,16 +42,18 @@ export default function BarberSelector({
 
                                 <div className={styles.cardContent}>
                                     <div className={styles.icon}>
-                                        <Scissors size={16} />
+                                        <Image
+                                            src="/assets/icons/arkad.svg"
+                                            alt=""
+                                            width={18}
+                                            height={18}
+                                            className={styles.iconMark}
+                                        />
                                     </div>
 
                                     <div className={styles.texts}>
                                         <h5>{barber?.name || 'Barbero'}</h5>
-                                        <span>
-                                            {isActive
-                                                ? 'Seleccionado'
-                                                : 'Disponible para este servicio'}
-                                        </span>
+                                        {barber?.notes ? <span>{barber.notes}</span> : null}
                                     </div>
                                 </div>
                             </button>

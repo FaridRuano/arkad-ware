@@ -1,9 +1,11 @@
-import React from 'react'
+import ForgotPasswordClient from "@public/components/public/ForgotPasswordClient/ForgotPasswordClient";
+import Footer from "@public/components/shared/Footer/Footer";
 
-const page = () => {
-  return (
-    <div>page</div>
-  )
+export default function ForgotPasswordPage() {
+    return (
+        <>
+            <ForgotPasswordClient />
+            <Footer />
+        </>
+    );
 }
-
-export default page

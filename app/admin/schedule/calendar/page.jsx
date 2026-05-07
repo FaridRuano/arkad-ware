@@ -208,10 +208,22 @@ export default function SchedulePage() {
             setLoadingServices(true);
             setServicesError('');
 
-            const res = await fetch('/api/admin/schedule/services', {
+            const params = new URLSearchParams();
+
+            if (selectedBarberId) {
+                params.set('barberId', selectedBarberId);
+            }
+
+            const query = params.toString();
+            const res = await fetch(
+                query
+                    ? `/api/admin/schedule/services?${query}`
+                    : '/api/admin/schedule/services',
+                {
                 method: 'GET',
                 cache: 'no-store',
-            });
+                }
+            );
 
             const data = await res.json().catch(() => ({}));
 
@@ -226,7 +238,7 @@ export default function SchedulePage() {
         } finally {
             setLoadingServices(false);
         }
-    }, []);
+    }, [selectedBarberId]);
 
     // =========================
     // Fetch: review barbers

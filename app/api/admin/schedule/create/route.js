@@ -30,16 +30,6 @@ function buildStartAt({ startAt, date, time }) {
   return "";
 }
 
-function normalizeDurationToInterval(durationMinutes, slotIntervalMinutes) {
-  const duration = Number(durationMinutes || 0);
-  const interval = Number(slotIntervalMinutes || 0);
-
-  if (!Number.isFinite(duration) || duration <= 0) return 0;
-  if (!Number.isFinite(interval) || interval <= 0) return Math.ceil(duration);
-
-  return Math.ceil(duration / interval) * interval;
-}
-
 function getLocalMinutesFromUTCDate(date) {
   const safe = new Date(date);
   const hours = (safe.getUTCHours() + 19) % 24;
@@ -143,11 +133,6 @@ export async function POST(req) {
     }
 
     const results = await Promise.all(queries);
-    const businessSettings = await BusinessSettings.findOne({ isActive: true })
-      .sort({ createdAt: -1 })
-      .select("slotIntervalMinutes")
-      .lean();
-
     const client = results[0];
     const service = results[1];
     const barber = hasBarberAssigned ? results[2] : null;
@@ -190,11 +175,7 @@ export async function POST(req) {
     }
 
     const rawDurationMinutes = Number(service?.durationMinutes || 0);
-    const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
-    const durationMinutes = normalizeDurationToInterval(
-      rawDurationMinutes,
-      slotIntervalMinutes
-    );
+    const durationMinutes = rawDurationMinutes;
     const price = Number(service?.price || 0);
     const serviceName = String(service?.name || "").trim();
 

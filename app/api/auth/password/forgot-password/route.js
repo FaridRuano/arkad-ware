@@ -1,53 +1,41 @@
 import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
-import { createPasswordActionToken } from "@libs/password-tokens";
-import { getRequestIp, getRequestUserAgent } from "@libs/request-meta";
 
 export async function POST(req) {
     try {
         const body = await req.json();
-        const { email = "" } = body;
+        const { identifier = "" } = body;
 
-        if (!email) {
+        if (!identifier) {
             return NextResponse.json(
-                { error: "El correo es obligatorio" },
+                { error: "Debes ingresar un correo o cédula" },
                 { status: 400 }
             );
         }
 
         await connectMongoDB();
 
+        const normalizedIdentifier = identifier.trim();
+        const normalizedEmail = normalizedIdentifier.toLowerCase();
+
         const user = await User.findOne({
-            email: email.trim().toLowerCase(),
-        }).select("_id email");
+            $or: [
+                { email: normalizedEmail },
+                { cedula: normalizedIdentifier },
+            ],
+        }).select("_id email cedula");
 
         if (!user) {
             return NextResponse.json({
                 ok: true,
-                message: "Si el correo existe, se enviará un enlace de recuperación",
+                message: "Si la cuenta existe, solicita tu código presencial al negocio.",
             });
         }
 
-        const ip = getRequestIp(req);
-        const userAgent = getRequestUserAgent(req);
-
-        const { rawToken, expiresAt } = await createPasswordActionToken({
-            userId: user._id,
-            purpose: "reset_password",
-            expiresInMinutes: 30,
-            requestedIp: ip,
-            requestedUserAgent: userAgent,
-        });
-
-        // Aquí luego conectas nodemailer o tu proveedor
-        // const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${rawToken}`
-
-        console.log("Reset token:", rawToken, "expiresAt:", expiresAt);
-
         return NextResponse.json({
             ok: true,
-            message: "Si el correo existe, se enviará un enlace de recuperación",
+            message: "Solicita tu código presencial al negocio para continuar con el cambio.",
         });
     } catch (error) {
         console.error("POST /api/auth/password/forgot-password error:", error);

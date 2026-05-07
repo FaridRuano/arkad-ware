@@ -1,41 +1,38 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { signOut } from "next-auth/react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
-    ShieldCheck,
-    LockKeyhole,
+    AlertTriangle,
+    ArrowLeft,
     ArrowRight,
     CheckCircle2,
-    AlertTriangle,
     KeyRound,
+    LockKeyhole,
+    ShieldCheck,
+    UserRoundSearch,
     Eye,
     EyeOff,
 } from "lucide-react";
-import styles from "./update-password.module.scss";
+import styles from "./forgot-password.module.scss";
 
 const initialForm = {
-    currentPassword: "",
+    identifier: "",
+    recoveryCode: "",
     newPassword: "",
     confirmPassword: "",
 };
 
-export default function UpdatePasswordClient({ sessionUser }) {
+export default function ForgotPasswordClient() {
+    const router = useRouter();
     const [form, setForm] = useState(initialForm);
-    const [token, setToken] = useState("");
-    const [tokenLoading, setTokenLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [redirecting, setRedirecting] = useState(false);
-
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [tokenError, setTokenError] = useState("");
-    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-    const canRequestToken = sessionUser?.isFirstLogin === true;
 
     const passwordChecks = useMemo(() => {
         const newPassword = form.newPassword || "";
@@ -47,75 +44,21 @@ export default function UpdatePasswordClient({ sessionUser }) {
             hasNumber: /\d/.test(newPassword),
         };
     }, [form.newPassword]);
+
+    const identifier = form.identifier.trim();
+    const recoveryCode = form.recoveryCode.trim();
     const passwordMatches =
         form.confirmPassword.length > 0 && form.newPassword === form.confirmPassword;
     const canSubmit =
-        Boolean(token) &&
-        Boolean(form.currentPassword.trim()) &&
+        Boolean(identifier) &&
+        Boolean(recoveryCode) &&
         passwordChecks.minLength &&
         passwordChecks.hasUppercase &&
         passwordChecks.hasLowercase &&
         passwordChecks.hasNumber &&
         passwordMatches &&
-        !tokenLoading &&
         !submitting &&
-        !redirecting &&
-        !!sessionUser;
-
-    useEffect(() => {
-        if (!sessionUser) {
-            setTokenLoading(false);
-            return;
-        }
-
-        if (!canRequestToken) {
-            setTokenLoading(false);
-            return;
-        }
-
-        let ignore = false;
-
-        const createInitialToken = async () => {
-            try {
-                setTokenLoading(true);
-                setTokenError("");
-
-                const res = await fetch("/api/auth/password/initial-password-token", {
-                    method: "POST",
-                    cache: "no-store",
-                });
-
-                const data = await res.json().catch(() => ({}));
-
-                if (!res.ok) {
-                    throw new Error(
-                        data?.error || "No se pudo generar el token de primer ingreso."
-                    );
-                }
-
-                if (!ignore) {
-                    setToken(data?.token || "");
-                }
-            } catch (err) {
-                if (!ignore) {
-                    setTokenError(
-                        err?.message ||
-                        "No se pudo preparar el proceso de actualización de contraseña."
-                    );
-                }
-            } finally {
-                if (!ignore) {
-                    setTokenLoading(false);
-                }
-            }
-        };
-
-        createInitialToken();
-
-        return () => {
-            ignore = true;
-        };
-    }, [canRequestToken, sessionUser]);
+        !redirecting;
 
     const handleChange = (e) => {
         setError("");
@@ -129,21 +72,10 @@ export default function UpdatePasswordClient({ sessionUser }) {
         }));
     };
 
-    const handleCancel = async () => {
-        setError("");
-        setSuccess("");
-        await signOut({ redirect: true, redirectTo: "/" });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!token) {
-            setError("No se encontró un token válido para completar el primer ingreso.");
-            return;
-        }
-
-        if (!form.currentPassword || !form.newPassword || !form.confirmPassword) {
+        if (!form.identifier || !form.recoveryCode || !form.newPassword || !form.confirmPassword) {
             setError("Completa todos los campos.");
             return;
         }
@@ -159,41 +91,16 @@ export default function UpdatePasswordClient({ sessionUser }) {
         setSuccess("");
 
         try {
-            let city = null;
-            let latitude = null;
-            let longitude = null;
-
-            if ("geolocation" in navigator) {
-                await new Promise((resolve) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            latitude = position.coords?.latitude ?? null;
-                            longitude = position.coords?.longitude ?? null;
-                            resolve();
-                        },
-                        () => resolve(),
-                        {
-                            enableHighAccuracy: false,
-                            timeout: 5000,
-                            maximumAge: 600000,
-                        }
-                    );
-                });
-            }
-
-            const res = await fetch("/api/auth/password/complete-initial-password", {
+            const res = await fetch("/api/auth/password/reset-password", {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    token,
-                    currentPassword: form.currentPassword,
+                    identifier: form.identifier,
+                    recoveryCode: form.recoveryCode,
                     newPassword: form.newPassword,
                     confirmPassword: form.confirmPassword,
-                    city,
-                    latitude,
-                    longitude,
                 }),
             });
 
@@ -201,30 +108,27 @@ export default function UpdatePasswordClient({ sessionUser }) {
 
             if (!res.ok) {
                 throw new Error(
-                    data?.error || "No se pudo completar el cambio de contraseña."
+                    data?.error || "No se pudo restablecer la contraseña."
                 );
             }
 
             setSuccess(
-                data?.message ||
-                "Tu contraseña fue actualizada correctamente. Volverás al acceso."
+                data?.message || "Tu contraseña fue actualizada correctamente."
             );
             setRedirecting(true);
 
-            setTimeout(async () => {
-                await signOut({ redirect: true, redirectTo: "/" });
+            setTimeout(() => {
+                router.push("/");
             }, 1400);
         } catch (err) {
             setError(
                 err?.message ||
-                "Ocurrió un problema al actualizar la contraseña. Inténtalo nuevamente."
+                "Ocurrió un problema al cambiar la contraseña. Inténtalo nuevamente."
             );
         } finally {
             setSubmitting(false);
         }
     };
-
-    const isBlocked = tokenLoading || submitting || redirecting || !sessionUser;
 
     return (
         <main className={styles.updatePage}>
@@ -265,29 +169,34 @@ export default function UpdatePasswordClient({ sessionUser }) {
                     <div className={`${styles.copy} ${styles.introCopy}`}>
                         <div className={styles.badge}>
                             <ShieldCheck size={15} />
-                            <span>Primer ingreso protegido</span>
+                            <span>Recuperación presencial</span>
                         </div>
 
                         <h1>
-                            Configura una nueva
+                            Recupera el acceso
                             <br />
-                            contraseña segura
+                            con tu código
                         </h1>
 
                         <p>
-                            Por seguridad, tu primer acceso requiere actualizar la contraseña
-                            temporal asignada por administración antes de continuar.
+                            Si olvidaste tu contraseña, solicita el código de recuperación
+                            en la barberia. Cuando lo tengas, ingrésalo aquí junto con tu correo
+                            o cédula para definir una nueva clave.
                         </p>
+                    </div>
 
-                        <div className={styles.infoPanel}>
-                            <div className={styles.infoItem}>
-                                <KeyRound size={16} />
-                                <span>Usa una clave distinta a tu cédula.</span>
-                            </div>
-                            <div className={styles.infoItem}>
-                                <CheckCircle2 size={16} />
-                                <span>Después del cambio volverás a iniciar sesión.</span>
-                            </div>
+                    <div className={`${styles.infoPanel} ${styles.introInfo}`}>
+                        <div className={styles.infoItem}>
+                            <KeyRound size={18} />
+                            <span>El código se entrega presencialmente en la barberia.</span>
+                        </div>
+                        <div className={styles.infoItem}>
+                            <UserRoundSearch size={18} />
+                            <span>Puedes identificarte con tu correo o tu cédula.</span>
+                        </div>
+                        <div className={styles.infoItem}>
+                            <LockKeyhole size={18} />
+                            <span>Al confirmar, tu contraseña anterior dejará de funcionar.</span>
                         </div>
                     </div>
                 </div>
@@ -305,49 +214,49 @@ export default function UpdatePasswordClient({ sessionUser }) {
                             </div>
                         ) : null}
                         <div className={styles.cardHeader}>
-                            <span className={styles.eyebrow}>Seguridad de acceso</span>
-                            <h2>Actualiza tu contraseña</h2>
+                            <span className={styles.eyebrow}>Recuperar contraseña</span>
+                            <h2>Ingresa tus datos</h2>
                         </div>
 
-                        {!sessionUser ? (
-                            <div className={`${styles.statusBox} ${styles.statusWarning}`}>
-                                Debes iniciar sesión primero para completar este paso.
-                            </div>
-                        ) : null}
-
-                        {tokenError ? (
-                            <div className={`${styles.message} ${styles.messageError}`}>
-                                <AlertTriangle size={16} />
-                                <span>{tokenError}</span>
-                            </div>
-                        ) : null}
+                        <div className={`${styles.statusBox} ${styles.statusWarning}`}>
+                            Usa el código que te entregaron en persona para continuar con
+                            el cambio de contraseña.
+                        </div>
 
                         <form onSubmit={handleSubmit} className={styles.form}>
                             <div className={styles.field}>
-                                <label htmlFor="currentPassword">Contraseña actual</label>
+                                <label htmlFor="identifier">Correo o cédula</label>
                                 <div className={styles.inputWrap}>
-                                    <LockKeyhole size={18} />
+                                    <UserRoundSearch size={18} />
                                     <input
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        type={showCurrentPassword ? "text" : "password"}
-                                        value={form.currentPassword}
+                                        id="identifier"
+                                        name="identifier"
+                                        type="text"
+                                        value={form.identifier}
                                         onChange={handleChange}
-                                        placeholder="Ingresa tu contraseña temporal"
-                                        autoComplete="current-password"
+                                        placeholder="correo@ejemplo.com o 1234567890"
+                                        autoComplete="username"
+                                        disabled={submitting || redirecting}
                                         required
-                                        disabled={isBlocked || !token}
                                     />
-                                    <button
-                                        type="button"
-                                        className={styles.passwordToggle}
-                                        onClick={() => setShowCurrentPassword((prev) => !prev)}
-                                        onMouseDown={(e) => e.preventDefault()}
-                                        aria-label={showCurrentPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                        aria-pressed={showCurrentPassword}
-                                    >
-                                        {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
+                                </div>
+                            </div>
+
+                            <div className={styles.field}>
+                                <label htmlFor="recoveryCode">Código de recuperación</label>
+                                <div className={styles.inputWrap}>
+                                    <KeyRound size={18} />
+                                    <input
+                                        id="recoveryCode"
+                                        name="recoveryCode"
+                                        type="text"
+                                        value={form.recoveryCode}
+                                        onChange={handleChange}
+                                        placeholder="Ingresa el código entregado"
+                                        autoComplete="one-time-code"
+                                        disabled={submitting || redirecting}
+                                        required
+                                    />
                                 </div>
                             </div>
 
@@ -363,8 +272,8 @@ export default function UpdatePasswordClient({ sessionUser }) {
                                         onChange={handleChange}
                                         placeholder="Crea una nueva contraseña"
                                         autoComplete="new-password"
+                                        disabled={submitting || redirecting}
                                         required
-                                        disabled={isBlocked || !token}
                                     />
                                     <button
                                         type="button"
@@ -389,10 +298,10 @@ export default function UpdatePasswordClient({ sessionUser }) {
                                         type={showConfirmPassword ? "text" : "password"}
                                         value={form.confirmPassword}
                                         onChange={handleChange}
-                                        placeholder="Confirma la nueva contraseña"
+                                        placeholder="Confirma tu nueva contraseña"
                                         autoComplete="new-password"
+                                        disabled={submitting || redirecting}
                                         required
-                                        disabled={isBlocked || !token}
                                     />
                                     <button
                                         type="button"
@@ -410,70 +319,68 @@ export default function UpdatePasswordClient({ sessionUser }) {
                             <div className={styles.checkList}>
                                 <div className={passwordChecks.minLength ? styles.checkOk : styles.checkItem}>
                                     <span />
-                                    Mínimo 8 caracteres
+                                    Mínimo 8 caracteres.
                                 </div>
                                 <div className={passwordChecks.hasUppercase ? styles.checkOk : styles.checkItem}>
                                     <span />
-                                    Al menos una mayúscula
+                                    Al menos una letra mayúscula.
                                 </div>
                                 <div className={passwordChecks.hasLowercase ? styles.checkOk : styles.checkItem}>
                                     <span />
-                                    Al menos una minúscula
+                                    Al menos una letra minúscula.
                                 </div>
                                 <div className={passwordChecks.hasNumber ? styles.checkOk : styles.checkItem}>
                                     <span />
-                                    Al menos un número
+                                    Al menos un número.
                                 </div>
                                 <div className={passwordMatches ? styles.checkOk : styles.checkItem}>
                                     <span />
-                                    Las contraseñas coinciden
+                                    Las contraseñas coinciden.
                                 </div>
                             </div>
 
                             {error ? (
                                 <div className={`${styles.message} ${styles.messageError}`}>
-                                    <AlertTriangle size={16} />
+                                    <AlertTriangle size={18} />
                                     <span>{error}</span>
                                 </div>
                             ) : null}
 
                             {success ? (
                                 <div className={`${styles.message} ${styles.messageSuccess}`}>
-                                    <CheckCircle2 size={16} />
+                                    <CheckCircle2 size={18} />
                                     <span>{success}</span>
                                 </div>
                             ) : null}
 
-                            <button
-                                type="submit"
-                                disabled={!canSubmit}
-                                className={styles.submit}
-                            >
-                                <span>
-                                    {submitting
-                                        ? "Actualizando..."
-                                        : redirecting
-                                            ? "Redirigiendo..."
-                                        : tokenLoading
-                                            ? "Preparando seguridad..."
-                                            : "Guardar nueva contraseña"}
-                                </span>
-                                {!submitting && !tokenLoading && !redirecting ? <ArrowRight size={18} /> : null}
-                            </button>
                             <div className={styles.actionsRow}>
                                 <button
+                                    type="submit"
+                                    disabled={!canSubmit}
+                                    className={styles.submit}
+                                >
+                                    <span>
+                                        {submitting ? "Guardando..." : "Guardar nueva contraseña"}
+                                    </span>
+                                    {!submitting && <ArrowRight size={18} />}
+                                </button>
+
+                                <button
                                     type="button"
-                                    onClick={handleCancel}
                                     className={styles.cancelButton}
+                                    onClick={() => router.push("/")}
                                     disabled={submitting || redirecting}
                                 >
-                                    Cancelar y volver
+                                    <ArrowLeft size={16} />
+                                    Volver al acceso
                                 </button>
                             </div>
                         </form>
 
                         <div className={styles.footNote}>
-                            Este paso es obligatorio para activar tu acceso definitivo al sistema.
+                            Este flujo usa un código único temporal del negocio. Más
+                            adelante podemos reemplazarlo por códigos individuales por
+                            cliente sin cambiar la experiencia de la pantalla.
                         </div>
                     </section>
                 </div>

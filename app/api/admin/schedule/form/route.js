@@ -41,6 +41,13 @@ function parseTimeToMinutes(value = "") {
   return hh * 60 + mm;
 }
 
+function formatMinutesToHHMM(totalMinutes = 0) {
+  const safeMinutes = Math.max(0, Number(totalMinutes || 0));
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 function getMinutesFromDate(date) {
   if (!date || Number.isNaN(new Date(date).getTime())) return null;
   const d = new Date(date);
@@ -50,6 +57,11 @@ function getMinutesFromDate(date) {
 function getDayNumberFromDate(date) {
   if (!date || Number.isNaN(new Date(date).getTime())) return null;
   return new Date(date).getDay(); // 0 domingo ... 6 sábado
+}
+
+function getDayNumberFromDateString(dateString = "") {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateString || "").trim())) return null;
+  return new Date(`${dateString}T12:00:00-05:00`).getDay();
 }
 
 function getBusinessRangeForDay(businessSettings, dayNumber) {
@@ -135,16 +147,6 @@ function isInsideBreak(startMinutes, endMinutes, breakStart, breakEnd) {
   return startMinutes < breakEnd && endMinutes > breakStart;
 }
 
-function normalizeDurationToInterval(durationMinutes, slotIntervalMinutes) {
-  const duration = Number(durationMinutes || 0);
-  const interval = Number(slotIntervalMinutes || 0);
-
-  if (!Number.isFinite(duration) || duration <= 0) return 0;
-  if (!Number.isFinite(interval) || interval <= 0) return Math.ceil(duration);
-
-  return Math.ceil(duration / interval) * interval;
-}
-
 export async function POST(req) {
   try {
     const session = await auth();
@@ -172,6 +174,8 @@ export async function POST(req) {
 
     const rawServiceId = String(body?.serviceId || "").trim();
     const rawBarberId = String(body?.barberId || "").trim();
+    const rawDate = String(body?.date || "").trim();
+    const rawTime = String(body?.time || "").trim();
 
     const startAtStr = buildStartAt({
       startAt: body?.startAt,
@@ -195,13 +199,13 @@ export async function POST(req) {
 
     let parsedStartAt = null;
     let parsedEndAt = null;
+    let appointmentStartMinutes = parseTimeToMinutes(rawTime);
+    let appointmentEndMinutes = null;
     let selectedService = null;
     let selectedBarber = null;
     const businessSettings = await BusinessSettings.findOne({ isActive: true })
       .sort({ createdAt: -1 })
       .lean();
-    const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
-
     // 1) Validar hora
     if (hasStartAt) {
       parsedStartAt = new Date(startAtStr);
@@ -255,15 +259,12 @@ export async function POST(req) {
       } else {
         validation.serviceValid = true;
 
-        const normalizedDurationMinutes = normalizeDurationToInterval(
-          service.durationMinutes,
-          slotIntervalMinutes
-        );
+        const durationMinutes = Number(service.durationMinutes || 0);
 
         selectedService = {
           id: toId(service._id),
           name: service.name ?? "—",
-          durationMinutes: normalizedDurationMinutes,
+          durationMinutes,
           price: Number(service.price || 0),
           color: service.color || "#CFB690",
           allowedBarberIds: Array.isArray(service.barbers)
@@ -275,6 +276,10 @@ export async function POST(req) {
           parsedEndAt = new Date(
             parsedStartAt.getTime() + selectedService.durationMinutes * 60 * 1000
           );
+          appointmentEndMinutes =
+            appointmentStartMinutes != null
+              ? appointmentStartMinutes + selectedService.durationMinutes
+              : null;
         }
       }
     }
@@ -349,13 +354,10 @@ export async function POST(req) {
 
       const conflict = conflictsMap.get(barberId) || null;
 
-      const dayNumber = validation.startAtValid ? getDayNumberFromDate(parsedStartAt) : null;
-      const appointmentStartMinutes = validation.startAtValid
-        ? getMinutesFromDate(parsedStartAt)
-        : null;
-      const appointmentEndMinutes =
-        validation.startAtValid && parsedEndAt
-          ? getMinutesFromDate(parsedEndAt)
+      const dayNumber = rawDate
+        ? getDayNumberFromDateString(rawDate)
+        : validation.startAtValid
+          ? getDayNumberFromDate(parsedStartAt)
           : null;
 
       const barberSchedule = barberScheduleMap.get(barberId) || null;
@@ -408,7 +410,7 @@ export async function POST(req) {
       } else if (!worksThisDay) {
         reason = "No trabaja este día";
       } else if (!insideWorkingHours) {
-        reason = "Fuera del horario laboral";
+        reason = "Queda fuera del horario laboral";
       } else if (insideBreak) {
         reason = "Horario dentro del descanso";
       } else if (

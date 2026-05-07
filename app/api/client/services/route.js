@@ -17,7 +17,7 @@ export async function GET() {
             .select("name description durationMinutes price color barbers")
             .populate({
                 path: "barbers",
-                select: "name color isActive",
+                select: "name color isActive notes",
             })
             .lean();
 
@@ -30,6 +30,7 @@ export async function GET() {
                             id: String(barber._id),
                             name: String(barber.name || "").trim(),
                             color: barber.color || null,
+                            notes: String(barber.notes || "").trim(),
                         }))
                         .filter((barber) => barber.name)
                     : [];

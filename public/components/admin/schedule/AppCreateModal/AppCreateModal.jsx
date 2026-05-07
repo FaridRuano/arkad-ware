@@ -98,6 +98,18 @@ export default function AppCreateModal({
     return fromGlobal || null;
   }, [availableBarbers, barbers, finalBarberId]);
 
+  const selectedBarberResolvedMeta = useMemo(() => {
+    if (!selectedBarberMeta) return null;
+    if (!selectedBarberId) return selectedBarberMeta;
+
+    return {
+      ...selectedBarberMeta,
+      enabled: true,
+      available: true,
+      reason: '',
+    };
+  }, [selectedBarberMeta, selectedBarberId]);
+
   const canValidateForm = useMemo(() => {
     if (!open) return false;
     if (!startAtISO) return false;
@@ -310,12 +322,12 @@ export default function AppCreateModal({
     }
 
     if (finalBarberId) {
-      if (validation && validation?.barberValid === false) {
+      if (validation && validation?.barberValid === false && !selectedBarberId) {
         return 'El barbero seleccionado no está disponible';
       }
 
-      if (selectedBarberMeta && selectedBarberMeta?.enabled === false) {
-        return selectedBarberMeta?.reason || 'Barbero no disponible';
+      if (selectedBarberResolvedMeta && selectedBarberResolvedMeta?.enabled === false) {
+        return selectedBarberResolvedMeta?.reason || 'Barbero no disponible';
       }
     }
 
@@ -467,13 +479,13 @@ export default function AppCreateModal({
               <label className={m('field__label')}>Barbero</label>
               <input
                 className={m('field__input')}
-                value={selectedBarberMeta?.name || '—'}
+                value={selectedBarberResolvedMeta?.name || '—'}
                 readOnly
               />
 
-              {!!selectedBarberMeta?.reason && !selectedBarberMeta?.enabled && (
+              {!!selectedBarberResolvedMeta?.reason && !selectedBarberResolvedMeta?.enabled && (
                 <div className={m('field__hint')} style={{ color: '#d9534f' }}>
-                  {selectedBarberMeta.reason}
+                  {selectedBarberResolvedMeta.reason}
                 </div>
               )}
             </div>
@@ -662,7 +674,7 @@ export default function AppCreateModal({
                 formState.loading ||
                 !selectedClient?.id ||
                 !serviceId ||
-                formState?.data?.validation?.canSubmit === false
+                (formState?.data?.validation?.canSubmit === false && !selectedBarberId)
               }
             >
               {saving

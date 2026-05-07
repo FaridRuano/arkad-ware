@@ -353,13 +353,26 @@ export default function ServiceModal({
 
             <div className={m('field')}>
               <label className={m('field__label')}>Estado</label>
-              <label style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <label className={m('fieldToggle', form.isActive ? 'is-active' : 'is-inactive')}>
                 <input
+                  className={m('fieldToggle__input')}
                   type="checkbox"
                   checked={Boolean(form.isActive)}
                   onChange={(e) => setField('isActive', e.target.checked)}
                 />
-                <span>{form.isActive ? 'Activo' : 'Inactivo'}</span>
+                <span className={m('fieldToggle__box')} aria-hidden="true">
+                  <span className={m('fieldToggle__mark')} />
+                </span>
+                <span className={m('fieldToggle__content')}>
+                  <span className={m('fieldToggle__title')}>
+                    {form.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                  <span className={m('fieldToggle__text')}>
+                    {form.isActive
+                      ? 'Disponible para agendar citas'
+                      : 'Oculto al crear nuevas citas'}
+                  </span>
+                </span>
               </label>
               <div className={m('field__hint')}>
                 Si lo desactivas, el servicio no debería aparecer disponible al agendar.
@@ -385,10 +398,15 @@ export default function ServiceModal({
                         className={m('serviceModalBarbers__item', checked ? 'is-selected' : '')}
                       >
                         <input
+                          className={m('serviceModalBarbers__input')}
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggleBarber(barberId)}
                         />
+
+                        <span className={m('serviceModalBarbers__check')} aria-hidden="true">
+                          <span className={m('serviceModalBarbers__checkMark')} />
+                        </span>
 
                         <span
                           className={m('serviceModalBarbers__dot')}

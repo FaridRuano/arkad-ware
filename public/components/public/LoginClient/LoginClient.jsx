@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import {
     LockKeyhole,
     Mail,
+    Eye,
+    EyeOff,
     ArrowRight,
     ShieldCheck,
     Facebook,
@@ -25,14 +27,38 @@ export default function LoginClient() {
     });
 
     const [loading, setLoading] = useState(false);
+    const [redirecting, setRedirecting] = useState(false);
     const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [errorHighlight, setErrorHighlight] = useState(false);
+    const normalizedEmail = form.email.trim();
+    const normalizedPassword = form.password.trim();
+    const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+    const isSubmitDisabled = loading || redirecting || !isEmailValid || !normalizedPassword;
+
+    useEffect(() => {
+        if (!error) return;
+
+        setErrorHighlight(true);
+
+        const timeoutId = window.setTimeout(() => {
+            setErrorHighlight(false);
+        }, 3000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [error]);
 
     const handleChange = (e) => {
         setError("");
+        setErrorHighlight(false);
         setForm((prev) => ({
             ...prev,
             [e.target.name]: e.target.value,
         }));
+    };
+
+    const handleTogglePassword = () => {
+        setShowPassword((prev) => !prev);
     };
 
     const handleSubmit = async (e) => {
@@ -49,10 +75,12 @@ export default function LoginClient() {
         setLoading(false);
 
         if (result?.error) {
+            setRedirecting(false);
             setError("Correo o contraseña incorrectos.");
             return;
         }
 
+        setRedirecting(true);
         window.location.href = "/";
     };
 
@@ -116,7 +144,15 @@ export default function LoginClient() {
                 <div className={`${styles.panelWrap} ${styles.introPanel}`}>
                     <div className={styles.panelGlow} />
 
-                    <section className={styles.card}>
+                    <section className={`${styles.card} ${redirecting ? styles.cardRedirecting : ""}`}>
+                        {redirecting ? (
+                            <div className={styles.redirectOverlay} aria-live="polite">
+                                <div className={styles.redirectOverlayCard}>
+                                    <ShieldCheck size={18} />
+                                    <span>Ingresando al sistema...</span>
+                                </div>
+                            </div>
+                        ) : null}
                         <div className={styles.cardHeader}>
                             <span className={styles.eyebrow}>Bienvenido</span>
                             <h2>Inicia sesión</h2>
@@ -125,7 +161,7 @@ export default function LoginClient() {
                         <form onSubmit={handleSubmit} className={styles.form}>
                             <div className={styles.field}>
                                 <label htmlFor="email">Correo electrónico</label>
-                                <div className={styles.inputWrap}>
+                                <div className={`${styles.inputWrap} ${errorHighlight ? styles.inputErrorFlash : ""}`}>
                                     <Mail size={18} />
                                     <input
                                         id="email"
@@ -135,6 +171,7 @@ export default function LoginClient() {
                                         onChange={handleChange}
                                         placeholder="correo@ejemplo.com"
                                         autoComplete="email"
+                                        disabled={loading || redirecting}
                                         required
                                     />
                                 </div>
@@ -142,40 +179,58 @@ export default function LoginClient() {
 
                             <div className={styles.field}>
                                 <label htmlFor="password">Contraseña</label>
-                                <div className={styles.inputWrap}>
+                                <div className={`${styles.inputWrap} ${errorHighlight ? styles.inputErrorFlash : ""}`}>
                                     <LockKeyhole size={18} />
                                     <input
                                         id="password"
                                         name="password"
-                                        type="password"
+                                        type={showPassword ? "text" : "password"}
                                         value={form.password}
                                         onChange={handleChange}
                                         placeholder="Ingresa tu contraseña"
                                         autoComplete="current-password"
+                                        disabled={loading || redirecting}
                                         required
                                     />
+                                    <button
+                                        type="button"
+                                        className={styles.passwordToggle}
+                                        onClick={handleTogglePassword}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                        aria-pressed={showPassword}
+                                        title={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                        disabled={loading || redirecting}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
                             <div className={styles.formMeta}>
+                                <div
+                                    className={`${styles.errorInline} ${error ? styles.errorInlineVisible : ""}`}
+                                    aria-live="polite"
+                                >
+                                    {error || ""}
+                                </div>
                                 <button
                                     type="button"
                                     className={styles.forgotPassword}
                                     onClick={() => router.push("/auth/forgot-password")}
+                                    disabled={loading || redirecting}
                                 >
                                     Olvidé mi contraseña
                                 </button>
                             </div>
 
-                            {error ? <div className={styles.error}>{error}</div> : null}
-
                             <button
                                 type="submit"
-                                disabled={loading}
+                                disabled={isSubmitDisabled}
                                 className={styles.submit}
                             >
-                                <span>{loading ? "Ingresando..." : "Entrar al sistema"}</span>
-                                {!loading && <ArrowRight size={18} />}
+                                <span>{loading || redirecting ? "Ingresando..." : "Entrar al sistema"}</span>
+                                {!loading && !redirecting && <ArrowRight size={18} />}
                             </button>
                         </form>
 

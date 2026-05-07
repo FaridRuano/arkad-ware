@@ -205,13 +205,26 @@ export default function BarberModal({
 
             <div className={m('field')} style={{ gridColumn: "1 / -1" }}>
               <label className={m('field__label')}>Estado</label>
-              <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <label className={m('fieldToggle', form.isActive ? 'is-active' : 'is-inactive')}>
                 <input
+                  className={m('fieldToggle__input')}
                   type="checkbox"
                   checked={Boolean(form.isActive)}
                   onChange={(e) => setField("isActive", e.target.checked)}
                 />
-                <span>{form.isActive ? "Activo" : "Inactivo"}</span>
+                <span className={m('fieldToggle__box')} aria-hidden="true">
+                  <span className={m('fieldToggle__mark')} />
+                </span>
+                <span className={m('fieldToggle__content')}>
+                  <span className={m('fieldToggle__title')}>
+                    {form.isActive ? "Activo" : "Inactivo"}
+                  </span>
+                  <span className={m('fieldToggle__text')}>
+                    {form.isActive
+                      ? "Disponible para asignar citas"
+                      : "Oculto al agendar nuevas citas"}
+                  </span>
+                </span>
               </label>
               <div className={m('field__hint')}>
                 Si lo desactivas, no debería aparecer para asignar citas (pero se conserva el historial).

@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import connectMongoDB from "@libs/mongodb";
 import User from "@models/User";
-import { findValidPasswordActionToken, consumePasswordActionToken } from "@libs/password-tokens";
+import { isValidMasterPasswordResetCode } from "@libs/password-reset-code";
 
 export async function PATCH(req) {
     try {
         const body = await req.json();
         const {
-            token = "",
+            identifier = "",
+            recoveryCode = "",
             newPassword = "",
             confirmPassword = "",
         } = body;
 
-        if (!token || !newPassword || !confirmPassword) {
+        if (!identifier || !recoveryCode || !newPassword || !confirmPassword) {
             return NextResponse.json(
                 { error: "Datos incompletos" },
                 { status: 400 }
@@ -34,21 +35,24 @@ export async function PATCH(req) {
             );
         }
 
-        await connectMongoDB();
-
-        const validToken = await findValidPasswordActionToken({
-            rawToken: token,
-            purpose: "reset_password",
-        });
-
-        if (!validToken) {
+        if (!isValidMasterPasswordResetCode(recoveryCode)) {
             return NextResponse.json(
-                { error: "El enlace es inválido o ha expirado" },
+                { error: "El código de recuperación no es válido" },
                 { status: 400 }
             );
         }
 
-        const user = await User.findById(validToken.userId).select("+password cedula");
+        await connectMongoDB();
+
+        const normalizedIdentifier = identifier.trim();
+        const normalizedEmail = normalizedIdentifier.toLowerCase();
+
+        const user = await User.findOne({
+            $or: [
+                { email: normalizedEmail },
+                { cedula: normalizedIdentifier },
+            ],
+        }).select("+password cedula");
 
         if (!user) {
             return NextResponse.json(
@@ -66,11 +70,6 @@ export async function PATCH(req) {
 
         user.password = await bcrypt.hash(newPassword, 10);
         await user.save();
-
-        await consumePasswordActionToken({
-            rawToken: token,
-            purpose: "reset_password",
-        });
 
         return NextResponse.json({
             ok: true,

@@ -553,7 +553,7 @@ export default function HomeClient({ session, userName }) {
                             <div className={styles.heroBadgeRow}>
                                 <div className={styles.heroBadge}>
                                     <ShieldCheck size={15} />
-                                    <span>Experiencia premium</span>
+                                    <span>Experiencia ARKAD</span>
                                 </div>
                                 <div className={styles.heroBadge}>
                                     <Sparkles size={15} />
@@ -676,8 +676,8 @@ export default function HomeClient({ session, userName }) {
                         <div className={`${styles.heroStatsWrap} ${styles.revealUp}`} data-reveal>
                             <div className={styles.heroStats}>
                                 <article className={styles.heroStatCard}>
-                                    <span className={styles.heroStatValue}>Comunidad</span>
-                                    <span className={styles.heroStatLabel}>Estamos construyendo una comunidad exclusiva alrededor de la experiencia Arkad.</span>
+                                    <span className={styles.heroStatValue}>Círculo exclusivo</span>
+                                    <span className={styles.heroStatLabel}>Un círculo pensado para quienes viven la experiencia Arkad desde el detalle, la conexión y el estilo.</span>
                                 </article>
                                 <article className={styles.heroStatCard}>
                                     <span className={styles.heroStatValue}>Networking</span>
@@ -705,8 +705,8 @@ export default function HomeClient({ session, userName }) {
                             </h2>
                             <p className={styles.sectionHeadingText}>
                                 En Arkad buscamos que cada reserva se viva como una experiencia completa:
-                                acceso a cafe, agua, licor, dulces y tiempo para disfrutar de las consolas
-                                disponibles mientras compartes el momento.
+                                un momento cuidado desde la llegada, con atencion cercana, buen ambiente y
+                                detalles que elevan tu visita mas alla del servicio.
                             </p>
                         </div>
 

@@ -35,6 +35,13 @@ function getInitials(name = '') {
     .join('') || 'CL';
 }
 
+function buildWhatsAppLink(phone) {
+  const digits = String(phone || '').replace(/[^\d]/g, '');
+  if (!digits) return '';
+
+  return `https://wa.me/${digits}`;
+}
+
 export default function ClientsPage() {
   const [loading, setLoading] = useState(false);
   const [q, setQ] = useState('');
@@ -428,6 +435,7 @@ export default function ClientsPage() {
                     const firstName = client?.firstName ?? '';
                     const lastName = client?.lastName ?? '';
                     const name = client?.name ?? (`${firstName} ${lastName}`.trim() || '—');
+                    const whatsappHref = buildWhatsAppLink(client?.phone);
 
                     return (
                       <tr
@@ -467,6 +475,29 @@ export default function ClientsPage() {
 
                         <td className={m('clients__td clients__tdActions')}>
                           <div className={m('clients__actions')}>
+                            {whatsappHref ? (
+                              <a
+                                className={m('actionBtn actionBtn--whatsapp')}
+                                title={`Abrir WhatsApp de ${name}`}
+                                href={whatsappHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                <img src="/assets/icons/whastapp.svg" alt="" aria-hidden="true" />
+                                <span className={m('srOnly')}>WhatsApp</span>
+                              </a>
+                            ) : (
+                              <button
+                                className={m('actionBtn actionBtn--whatsapp')}
+                                title="Cliente sin teléfono"
+                                onClick={(event) => event.stopPropagation()}
+                                disabled
+                              >
+                                <img src="/assets/icons/whastapp.svg" alt="" aria-hidden="true" />
+                              </button>
+                            )}
+
                             <button
                               className={m('actionBtn actionBtn--view')}
                               title="Ver historial"
@@ -523,6 +554,7 @@ export default function ClientsPage() {
                   client?.name ||
                   `${client?.firstName || ''} ${client?.lastName || ''}`.trim() ||
                   '—';
+                const whatsappHref = buildWhatsAppLink(client?.phone);
 
                 return (
                   <article
@@ -565,6 +597,27 @@ export default function ClientsPage() {
                     </div>
 
                     <div className={m('clients__mobileActions')}>
+                      {whatsappHref ? (
+                        <a
+                          className={m('__button secondary clients__whatsappButton')}
+                          href={whatsappHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          WhatsApp
+                        </a>
+                      ) : (
+                        <button
+                          className={m('__button secondary clients__whatsappButton')}
+                          type="button"
+                          onClick={(event) => event.stopPropagation()}
+                          disabled
+                        >
+                          Sin Wpp
+                        </button>
+                      )}
+
                       <button
                         className={m('__button secondary')}
                         type="button"

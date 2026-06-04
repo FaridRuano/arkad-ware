@@ -169,6 +169,14 @@ function getAppointmentDisplayDurationMinutes(appointment, fallback = DEFAULT_IN
   return value;
 }
 
+function appointmentOverlapsSlot(appointment, slot) {
+  const start = getMinutesFromDateValue(appointment?.startAt);
+  const end = getMinutesFromDateValue(appointment?.endAt);
+
+  if (start == null || end == null || end <= start) return false;
+  return start < slot.endMinutes && end > slot.minutes;
+}
+
 export default function ScheduleCalendar({
   dateISO,
   appointments = [],
@@ -280,6 +288,22 @@ export default function ScheduleCalendar({
 
     return map;
   }, [appointments, slots, startMinutes, slotInterval]);
+
+  const occupiedSlots = useMemo(() => {
+    const set = new Set();
+
+    for (const slot of slots) {
+      const hasOverlap = (appointments || []).some((appointment) =>
+        appointmentOverlapsSlot(appointment, slot)
+      );
+
+      if (hasOverlap) {
+        set.add(slot.key);
+      }
+    }
+
+    return set;
+  }, [appointments, slots]);
 
   const handleCreateAtSlot = (slot) => {
     if (slot?.isBreak || slot?.isPast) return;
@@ -419,7 +443,7 @@ export default function ScheduleCalendar({
         {slots.map((slot) => {
           const slotAppointments = appointmentsBySlot.get(slot.key) || [];
           const hasAppointments = slotAppointments.length > 0;
-          const canCreate = !slot.isBreak && !slot.isPast;
+          const isOccupied = occupiedSlots.has(slot.key);
           const slotExceptions = timeExceptions.filter((exception) =>
             exceptionOverlapsSlot(exception, slot)
           );
@@ -429,6 +453,7 @@ export default function ScheduleCalendar({
           const slotBlocksAvailability = selectedBarberId
             ? slotExceptions.length > 0
             : slotHasBusinessException;
+          const canCreate = !slot.isBreak && !slot.isPast && !isOccupied && !slotBlocksAvailability;
 
           return (
             <div
@@ -438,7 +463,7 @@ export default function ScheduleCalendar({
                 slot.isBreak && 'is-break',
                 slot.isPast && 'is-past',
                 slot.isCurrent && 'is-current',
-                !hasAppointments && !slot.isBreak && 'is-available',
+                !isOccupied && !slot.isBreak && !slotBlocksAvailability && 'is-available',
               )}
             >
               <div className={m('schedule-calendar__slot-time')}>
@@ -496,7 +521,7 @@ export default function ScheduleCalendar({
                   </div>
                 ) : null}
 
-                {!slot.isBreak && !hasAppointments && !slotBlocksAvailability ? (
+                {!slot.isBreak && !isOccupied && !slotBlocksAvailability ? (
                   <button
                     type="button"
                     className={m(
@@ -524,6 +549,13 @@ export default function ScheduleCalendar({
                         : 'Haz clic para crear una cita en este horario'}
                     </p>
                   </button>
+                ) : null}
+
+                {!slot.isBreak && isOccupied && !hasAppointments ? (
+                  <div className={m('schedule-calendar__slot-state')}>
+                    <strong>Ocupado</strong>
+                    <span>Este tramo forma parte de una cita en curso.</span>
+                  </div>
                 ) : null}
 
                 {!slot.isBreak && hasAppointments ? (

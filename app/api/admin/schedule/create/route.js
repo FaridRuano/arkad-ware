@@ -36,6 +36,59 @@ function getLocalMinutesFromUTCDate(date) {
   return hours * 60 + safe.getUTCMinutes();
 }
 
+function toId(value) {
+  return value?.toString?.() ?? value ?? null;
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+  if (!(startA instanceof Date) || !(endA instanceof Date)) return false;
+  if (!(startB instanceof Date) || !(endB instanceof Date)) return false;
+  if (
+    Number.isNaN(startA.getTime()) ||
+    Number.isNaN(endA.getTime()) ||
+    Number.isNaN(startB.getTime()) ||
+    Number.isNaN(endB.getTime())
+  ) {
+    return false;
+  }
+
+  return startA < endB && endA > startB;
+}
+
+function getAppointmentBusyBlocksForBarber(appointment, barberId) {
+  const segmentBlocks = Array.isArray(appointment?.serviceSegments)
+    ? appointment.serviceSegments
+        .filter((segment) => String(toId(segment?.barberId) || "") === String(barberId || ""))
+        .map((segment) => ({
+          id: toId(appointment?._id),
+          startAt: segment?.startAt ?? null,
+          endAt: segment?.endAt ?? null,
+          durationMinutes: segment?.durationMinutes ?? appointment?.durationMinutes ?? 0,
+          status: appointment?.status ?? "",
+          barberId: segment?.barberId ?? appointment?.barberId ?? null,
+          serviceName: segment?.serviceName ?? appointment?.serviceName ?? "",
+        }))
+    : [];
+
+  if (segmentBlocks.length > 0) return segmentBlocks;
+
+  if (String(toId(appointment?.barberId) || "") !== String(barberId || "")) {
+    return [];
+  }
+
+  return [
+    {
+      id: toId(appointment?._id),
+      startAt: appointment?.startAt ?? null,
+      endAt: appointment?.endAt ?? null,
+      durationMinutes: appointment?.durationMinutes ?? 0,
+      status: appointment?.status ?? "",
+      barberId: appointment?.barberId ?? null,
+      serviceName: appointment?.serviceName ?? "",
+    },
+  ];
+}
+
 export async function POST(req) {
   try {
     const session = await auth();
@@ -246,7 +299,7 @@ export async function POST(req) {
 
     // Solo validar conflicto si hay barbero asignado
     if (hasBarberAssigned) {
-      const conflict = await Appointment.findOne({
+      const conflicts = await Appointment.find({
         $or: [
           { barberId: barber._id },
           { "serviceSegments.barberId": barber._id },
@@ -257,13 +310,21 @@ export async function POST(req) {
       })
         .select("_id startAt endAt durationMinutes status barberId serviceName serviceSegments")
         .lean();
+      const conflict =
+        conflicts
+          .flatMap((appointment) =>
+            getAppointmentBusyBlocksForBarber(appointment, barber._id.toString())
+          )
+          .find((block) =>
+            rangesOverlap(new Date(block.startAt), new Date(block.endAt), startAt, endAt)
+          ) || null;
 
       if (conflict) {
         return NextResponse.json(
           {
             error: "Ese horario ya está ocupado para este barbero",
             conflict: {
-              id: conflict?._id?.toString?.() ?? conflict?._id,
+              id: conflict?.id,
               startAt: conflict?.startAt ?? null,
               endAt: conflict?.endAt ?? null,
               durationMinutes: conflict?.durationMinutes ?? 0,

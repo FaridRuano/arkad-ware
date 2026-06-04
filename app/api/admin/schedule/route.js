@@ -482,11 +482,16 @@ export async function GET(req) {
 
     const appointments = barberId
       ? baseAppointments.flatMap((appointment) => {
-        const matchingSegment = appointment.serviceSegments.find(
+        const matchingSegments = appointment.serviceSegments.filter(
           (segment) => String(segment?.barberId || "") === String(barberId)
         );
 
-        if (matchingSegment) return [buildSegmentAppointment(appointment, matchingSegment)];
+        if (matchingSegments.length > 0) {
+          return matchingSegments.map((segment) =>
+            buildSegmentAppointment(appointment, segment)
+          );
+        }
+
         return [appointment];
       })
       : baseAppointments.flatMap((appointment) => {

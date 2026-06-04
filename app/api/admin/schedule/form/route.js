@@ -147,6 +147,53 @@ function isInsideBreak(startMinutes, endMinutes, breakStart, breakEnd) {
   return startMinutes < breakEnd && endMinutes > breakStart;
 }
 
+function rangesOverlap(startA, endA, startB, endB) {
+  if (!(startA instanceof Date) || !(endA instanceof Date)) return false;
+  if (!(startB instanceof Date) || !(endB instanceof Date)) return false;
+  if (
+    Number.isNaN(startA.getTime()) ||
+    Number.isNaN(endA.getTime()) ||
+    Number.isNaN(startB.getTime()) ||
+    Number.isNaN(endB.getTime())
+  ) {
+    return false;
+  }
+
+  return startA < endB && endA > startB;
+}
+
+function getAppointmentBusyBlocksForBarber(appointment, barberId) {
+  const segmentBlocks = Array.isArray(appointment?.serviceSegments)
+    ? appointment.serviceSegments
+        .filter((segment) => String(toId(segment?.barberId) || "") === String(barberId || ""))
+        .map((segment) => ({
+          id: toId(appointment?._id),
+          startAt: segment?.startAt ?? null,
+          endAt: segment?.endAt ?? null,
+          durationMinutes: segment?.durationMinutes ?? appointment?.durationMinutes ?? 0,
+          status: appointment?.status ?? "",
+          serviceName: segment?.serviceName ?? appointment?.serviceName ?? "",
+        }))
+    : [];
+
+  if (segmentBlocks.length > 0) return segmentBlocks;
+
+  if (String(toId(appointment?.barberId) || "") !== String(barberId || "")) {
+    return [];
+  }
+
+  return [
+    {
+      id: toId(appointment?._id),
+      startAt: appointment?.startAt ?? null,
+      endAt: appointment?.endAt ?? null,
+      durationMinutes: appointment?.durationMinutes ?? 0,
+      status: appointment?.status ?? "",
+      serviceName: appointment?.serviceName ?? "",
+    },
+  ];
+}
+
 export async function POST(req) {
   try {
     const session = await auth();
@@ -329,30 +376,29 @@ export async function POST(req) {
       const conflictEntries = [];
 
       for (const c of conflicts) {
-        conflictEntries.push([
+        const candidateBarberIds = new Set([
           toId(c.barberId),
-          {
-            id: toId(c._id),
-            startAt: c.startAt ?? null,
-            endAt: c.endAt ?? null,
-            durationMinutes: c.durationMinutes ?? 0,
-            status: c.status ?? "",
-            serviceName: c.serviceName ?? "",
-          },
+          ...(Array.isArray(c.serviceSegments)
+            ? c.serviceSegments.map((segment) => toId(segment?.barberId))
+            : []),
         ]);
 
-        for (const segment of c.serviceSegments || []) {
-          conflictEntries.push([
-            toId(segment.barberId),
-            {
-              id: toId(c._id),
-              startAt: segment.startAt ?? c.startAt ?? null,
-              endAt: segment.endAt ?? c.endAt ?? null,
-              durationMinutes: segment.durationMinutes ?? c.durationMinutes ?? 0,
-              status: c.status ?? "",
-              serviceName: segment.serviceName ?? c.serviceName ?? "",
-            },
-          ]);
+        for (const candidateBarberId of candidateBarberIds) {
+          if (!candidateBarberId) continue;
+
+          const block = getAppointmentBusyBlocksForBarber(c, candidateBarberId).find(
+            (item) =>
+              rangesOverlap(
+                new Date(item.startAt),
+                new Date(item.endAt),
+                parsedStartAt,
+                parsedEndAt
+              )
+          );
+
+          if (block) {
+            conflictEntries.push([candidateBarberId, block]);
+          }
         }
       }
 

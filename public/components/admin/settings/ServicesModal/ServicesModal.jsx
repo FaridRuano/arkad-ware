@@ -349,7 +349,7 @@ export default function ServiceModal({
         if (e.target === e.currentTarget) onClose?.()
       }}
     >
-      <div className={m('modalCard')}>
+      <div className={m('modalCard', 'serviceModalCard')}>
         <header className={m('modalHeader')}>
           <h3 className={m('modalTitle')}>
             {isEdit ? 'Editar servicio' : 'Nuevo servicio'}
@@ -366,11 +366,11 @@ export default function ServiceModal({
           </button>
         </header>
 
-        <form className={m('modalBody')} onSubmit={handleSubmit}>
+        <form className={m('modalBody', 'serviceModalBody')} onSubmit={handleSubmit}>
           {err && <div className={m('modalError')}>{err}</div>}
 
-          <div className={m('modalGrid')}>
-            <div className={m('field')} style={{ gridColumn: '1 / -1' }}>
+          <div className={m('modalGrid', 'serviceModalGrid')}>
+            <div className={m('field')}>
               <label className={m('field__label')}>Tipo</label>
               <select
                 className={m('field__input')}
@@ -382,7 +382,7 @@ export default function ServiceModal({
               </select>
             </div>
 
-            <div className={m('field')} style={{ gridColumn: '1 / -1' }}>
+            <div className={m('field')}>
               <label className={m('field__label')}>Nombre</label>
               <input
                 className={m('field__input')}
@@ -456,7 +456,7 @@ export default function ServiceModal({
                   </select>
                 </div>
 
-                <div className={m('packagePriceSummary')} style={{ gridColumn: '1 / -1' }}>
+                <div className={m('packagePriceSummary', 'servicePackageSummary')} style={{ gridColumn: '1 / -1' }}>
                   <div className={m('packagePriceSummary__row')}>
                     <span>Precio total de servicios</span>
                     <strong>${packageSubtotal.toFixed(2)}</strong>

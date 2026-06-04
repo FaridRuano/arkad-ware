@@ -157,12 +157,15 @@ export async function PATCH(req, { params }) {
 
         const conflict = await Appointment.findOne({
             _id: { $ne: appointment._id },
-            barberId: barber._id,
+            $or: [
+                { barberId: barber._id },
+                { "serviceSegments.barberId": barber._id },
+            ],
             status: { $nin: excludedStatuses },
             startAt: { $lt: appointment.endAt },
             endAt: { $gt: appointment.startAt },
         })
-            .select("_id startAt endAt durationMinutes status barberId serviceName")
+            .select("_id startAt endAt durationMinutes status barberId serviceName serviceSegments")
             .lean();
 
         if (conflict) {

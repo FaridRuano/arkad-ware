@@ -162,12 +162,12 @@ export const getConflictingAppointments = async ({ barberId, dateStr }) => {
   endOfDay.setHours(23, 59, 59, 999);
 
   return Appointment.find({
-    barberId,
+    $or: [{ barberId }, { "serviceSegments.barberId": barberId }],
     status: { $in: ACTIVE_APPOINTMENT_STATUSES },
     startAt: { $lt: endOfDay },
     endAt: { $gt: startOfDay },
   })
-    .select("startAt endAt status")
+    .select("startAt endAt status barberId serviceSegments")
     .lean();
 };
 
@@ -177,17 +177,32 @@ const utcToGuayaquilMinutes = (date) => {
   return hours * 60 + date.getUTCMinutes();
 };
 
-export const removeBusyRanges = (ranges, appointments) => {
+export const removeBusyRanges = (ranges, appointments, barberId = null) => {
   let nextRanges = [...ranges];
 
   for (const appt of appointments) {
-    const start = new Date(appt.startAt);
-    const end = new Date(appt.endAt);
+    const matchingSegments =
+      barberId && Array.isArray(appt?.serviceSegments)
+        ? appt.serviceSegments.filter(
+            (segment) => String(segment?.barberId) === String(barberId)
+          )
+        : [];
 
-    const startMinutes = utcToGuayaquilMinutes(start);
-    const endMinutes = utcToGuayaquilMinutes(end);
+    const busyBlocks = matchingSegments.length
+      ? matchingSegments
+      : String(appt?.barberId || "") === String(barberId || appt?.barberId || "")
+        ? [{ startAt: appt.startAt, endAt: appt.endAt }]
+        : [];
 
-    nextRanges = applyBlockRange(nextRanges, startMinutes, endMinutes);
+    for (const block of busyBlocks) {
+      const start = new Date(block.startAt);
+      const end = new Date(block.endAt);
+
+      const startMinutes = utcToGuayaquilMinutes(start);
+      const endMinutes = utcToGuayaquilMinutes(end);
+
+      nextRanges = applyBlockRange(nextRanges, startMinutes, endMinutes);
+    }
   }
 
   return nextRanges.filter((range) => range.end > range.start);
@@ -234,6 +249,39 @@ export const getAvailabilityForDate = async ({
   exceptions = null,
   appointments = null,
 }) => {
+  const freeRanges = await getFreeRangesForDate({
+    barberId,
+    dateStr,
+    businessSettings,
+    barberSchedule,
+    exceptions,
+    appointments,
+  });
+
+  if (!freeRanges.length) return [];
+
+  const now = new Date();
+  const minStartDateTime = new Date(
+    now.getTime() + Number(businessSettings.bookingMinNoticeMinutes || 0) * 60 * 1000
+  );
+
+  return buildSlots({
+    dateStr,
+    ranges: freeRanges,
+    durationMinutes: Number(service.durationMinutes),
+    intervalMinutes: Number(businessSettings.slotIntervalMinutes || 30),
+    minStartDateTime,
+  });
+};
+
+export const getFreeRangesForDate = async ({
+  barberId,
+  dateStr,
+  businessSettings,
+  barberSchedule,
+  exceptions = null,
+  appointments = null,
+}) => {
   const baseRanges = normalizeBaseRanges({
     businessSettings,
     barberSchedule,
@@ -265,21 +313,250 @@ export const getAvailabilityForDate = async ({
         return appointmentDate === dateStr;
       })
     : await getConflictingAppointments({ barberId, dateStr });
-  const freeRanges = removeBusyRanges(rangesAfterExceptions, busyAppointments);
-  if (!freeRanges.length) return [];
+  const freeRanges = removeBusyRanges(rangesAfterExceptions, busyAppointments, barberId);
+  return freeRanges;
+};
 
+const rangeContains = (ranges, start, end) =>
+  ranges.some((range) => start >= range.start && end <= range.end);
+
+const getPackageFreeRangesByItem = async ({
+  packageItems,
+  dateStr,
+  businessSettings,
+  exceptions,
+  appointments,
+}) => {
+  const rangesByItem = [];
+
+  for (const item of packageItems) {
+    const ranges = await getFreeRangesForDate({
+      barberId: item.barberId,
+      dateStr,
+      businessSettings,
+      barberSchedule: item.barberSchedule,
+      exceptions,
+      appointments,
+    });
+
+    rangesByItem.push(ranges);
+  }
+
+  return rangesByItem;
+};
+
+export const getPackageAvailabilityForDate = async ({
+  items,
+  dateStr,
+  businessSettings,
+  exceptions = null,
+  appointments = null,
+}) => {
+  const packageItems = Array.isArray(items) ? items : [];
+  if (packageItems.length < 2) return [];
+
+  const settings = businessSettings || getDefaultBusinessSettings();
+  const rangesByItem = await getPackageFreeRangesByItem({
+    packageItems,
+    dateStr,
+    businessSettings: settings,
+    exceptions,
+    appointments,
+  });
+
+  if (rangesByItem.some((ranges) => ranges.length === 0)) return [];
+
+  const totalDuration = packageItems.reduce(
+    (sum, item) => sum + Number(item.durationMinutes || 0),
+    0
+  );
+  const packageSlots = [];
   const now = new Date();
   const minStartDateTime = new Date(
-    now.getTime() + Number(businessSettings.bookingMinNoticeMinutes || 0) * 60 * 1000
+    now.getTime() + Number(settings.bookingMinNoticeMinutes || 0) * 60 * 1000
+  );
+  const intervalMinutes = Number(settings.slotIntervalMinutes || 30);
+
+  for (const firstRange of rangesByItem[0]) {
+    for (
+      let packageStart = firstRange.start;
+      packageStart + Number(packageItems[0].durationMinutes || 0) <= firstRange.end;
+      packageStart += intervalMinutes
+    ) {
+      const startDate = combineDateAndMinutes(dateStr, packageStart);
+      if (startDate < minStartDateTime) continue;
+
+      let cursor = packageStart;
+      const segments = [];
+      let valid = true;
+
+      for (let index = 0; index < packageItems.length; index++) {
+        const item = packageItems[index];
+        const endMinutes = cursor + Number(item.durationMinutes || 0);
+        if (!rangeContains(rangesByItem[index], cursor, endMinutes)) {
+          valid = false;
+          break;
+        }
+
+        segments.push({
+          serviceId: item.serviceId,
+          serviceName: item.serviceName,
+          barberId: item.barberId,
+          barberName: item.barberName || "",
+          start: minutesToHHMM(cursor),
+          end: minutesToHHMM(endMinutes),
+          startAt: combineDateAndMinutes(dateStr, cursor),
+          endAt: combineDateAndMinutes(dateStr, endMinutes),
+          durationMinutes: Number(item.durationMinutes || 0),
+          order: index + 1,
+        });
+        cursor = endMinutes;
+      }
+
+      if (!valid) continue;
+
+      packageSlots.push({
+        start: minutesToHHMM(packageStart),
+        end: minutesToHHMM(packageStart + totalDuration),
+        startAt: startDate,
+        endAt: combineDateAndMinutes(dateStr, packageStart + totalDuration),
+        segments,
+      });
+    }
+  }
+
+  return packageSlots;
+};
+
+const hasPackageAvailabilityForDate = async ({
+  items,
+  dateStr,
+  businessSettings,
+  exceptions = null,
+  appointments = null,
+}) => {
+  const packageItems = Array.isArray(items) ? items : [];
+  if (packageItems.length < 2) return false;
+
+  const settings = businessSettings || getDefaultBusinessSettings();
+  const rangesByItem = await getPackageFreeRangesByItem({
+    packageItems,
+    dateStr,
+    businessSettings: settings,
+    exceptions,
+    appointments,
+  });
+
+  if (rangesByItem.some((ranges) => ranges.length === 0)) return false;
+
+  const intervalMinutes = Number(settings.slotIntervalMinutes || 30);
+  const now = new Date();
+  const minStartDateTime = new Date(
+    now.getTime() + Number(settings.bookingMinNoticeMinutes || 0) * 60 * 1000
   );
 
-  return buildSlots({
-    dateStr,
-    ranges: freeRanges,
-    durationMinutes: Number(service.durationMinutes),
-    intervalMinutes: Number(businessSettings.slotIntervalMinutes || 30),
-    minStartDateTime,
-  });
+  for (const firstRange of rangesByItem[0]) {
+    for (
+      let packageStart = firstRange.start;
+      packageStart + Number(packageItems[0].durationMinutes || 0) <= firstRange.end;
+      packageStart += intervalMinutes
+    ) {
+      if (combineDateAndMinutes(dateStr, packageStart) < minStartDateTime) continue;
+
+      let cursor = packageStart;
+      let valid = true;
+
+      for (let index = 0; index < packageItems.length; index++) {
+        const endMinutes = cursor + Number(packageItems[index].durationMinutes || 0);
+        if (!rangeContains(rangesByItem[index], cursor, endMinutes)) {
+          valid = false;
+          break;
+        }
+        cursor = endMinutes;
+      }
+
+      if (valid) return true;
+    }
+  }
+
+  return false;
+};
+
+export const getAvailableDatesForPackage = async ({
+  items,
+  businessSettings,
+}) => {
+  const packageItems = Array.isArray(items) ? items : [];
+  if (packageItems.length < 2) return [];
+
+  const settings = businessSettings || getDefaultBusinessSettings();
+  const maxDaysAhead = Number(settings.bookingMaxDaysAhead || 30);
+  const today = new Date();
+  const startDate = formatDateLocal(today);
+  const endDate = formatDateLocal(
+    new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + Math.max(maxDaysAhead - 1, 0),
+      0,
+      0,
+      0,
+      0
+    )
+  );
+  const barberIds = [
+    ...new Set(packageItems.map((item) => String(item?.barberId || "")).filter(Boolean)),
+  ];
+
+  const [exceptions, appointments] = await Promise.all([
+    getScheduleExceptionsInRange({
+      startDate,
+      endDate,
+      activeOnly: true,
+    }),
+    Appointment.find({
+      $or: [
+        { barberId: { $in: barberIds } },
+        { "serviceSegments.barberId": { $in: barberIds } },
+      ],
+      status: { $in: ACTIVE_APPOINTMENT_STATUSES },
+      startAt: { $lt: combineDateAndMinutes(endDate, 24 * 60) },
+      endAt: { $gt: combineDateAndMinutes(startDate, 0) },
+    })
+      .select("startAt endAt status barberId serviceSegments")
+      .lean(),
+  ]);
+
+  const dates = [];
+
+  for (let offset = 0; offset < maxDaysAhead; offset++) {
+    const current = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + offset,
+      0,
+      0,
+      0,
+      0
+    );
+    const dateStr = formatDateLocal(current);
+
+    if (!isDateAllowedByMinNotice({ dateStr, businessSettings: settings })) {
+      continue;
+    }
+
+    const hasAvailability = await hasPackageAvailabilityForDate({
+      items: packageItems,
+      dateStr,
+      businessSettings: settings,
+      exceptions,
+      appointments,
+    });
+
+    if (hasAvailability) dates.push(dateStr);
+  }
+
+  return dates;
 };
 
 export const getDefaultBusinessSettings = () => ({

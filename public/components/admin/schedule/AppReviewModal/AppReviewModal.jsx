@@ -196,7 +196,7 @@ export default function AppReviewModal({
 
     if (!open || !appointment) return null;
 
-    const id = appointment?.id || appointment?._id || '';
+    const id = appointment?.rootAppointmentId || appointment?.id || appointment?._id || '';
 
     const clientName =
         appointment?.client?.name ||

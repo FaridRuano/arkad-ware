@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import mongoose from "mongoose";
 import connectMongoDB from "@libs/mongodb";
 import Appointment from "@models/Appointment";
+import Barber from "@models/Barber";
 import BarberSchedule from "@models/BarberSchedule";
 import BusinessSettings from "@models/BusinessSettings";
 import {
@@ -221,7 +222,14 @@ export async function GET(req) {
     const match = {
       startAt: { $gte: start, $lt: end },
       status: { $ne: "cancelled" },
-      ...(barberObjectId ? { barberId: barberObjectId } : {}),
+      ...(barberObjectId
+        ? {
+          $or: [
+            { barberId: barberObjectId },
+            { "serviceSegments.barberId": barberObjectId },
+          ],
+        }
+        : {}),
     };
 
     const pipeline = [
@@ -285,6 +293,8 @@ export async function GET(req) {
           barberId: 1,
           serviceId: 1,
 
+          bookingType: 1,
+          serviceSegments: 1,
           serviceName: 1,
           startAt: 1,
           endAt: 1,
@@ -333,7 +343,33 @@ export async function GET(req) {
 
     const docs = await Appointment.aggregate(pipeline);
 
-    const appointments = (docs || []).map((a) => {
+    const segmentBarberIds = [
+      ...new Set(
+        (docs || []).flatMap((a) =>
+          Array.isArray(a?.serviceSegments)
+            ? a.serviceSegments
+              .map((segment) => segment?.barberId?.toString?.() ?? segment?.barberId ?? "")
+              .filter(Boolean)
+            : []
+        )
+      ),
+    ];
+    const segmentBarbers = segmentBarberIds.length
+      ? await Barber.find({ _id: { $in: segmentBarberIds } })
+        .select("_id name color")
+        .lean()
+      : [];
+    const segmentBarberMap = new Map(
+      segmentBarbers.map((barber) => [
+        barber?._id?.toString?.() ?? barber?._id,
+        {
+          name: barber?.name ?? "",
+          color: barber?.color || "#000000",
+        },
+      ])
+    );
+
+    const baseAppointments = (docs || []).map((a) => {
       const clientFirstName = a?.client?.firstName || "";
       const clientLastName = a?.client?.lastName || "";
       const clientFullName = `${clientFirstName} ${clientLastName}`.trim();
@@ -381,6 +417,25 @@ export async function GET(req) {
           : null,
 
         serviceName: a?.serviceName ?? "",
+        bookingType: a?.bookingType ?? "single",
+        serviceSegments: Array.isArray(a?.serviceSegments)
+          ? a.serviceSegments.map((segment) => ({
+            serviceId: segment?.serviceId?.toString?.() ?? segment?.serviceId ?? null,
+            serviceName: segment?.serviceName ?? "",
+            barberId: segment?.barberId?.toString?.() ?? segment?.barberId ?? null,
+            barberName:
+              segment?.barberName ??
+              segmentBarberMap.get(segment?.barberId?.toString?.() ?? segment?.barberId)?.name ??
+              "",
+            barberColor:
+              segmentBarberMap.get(segment?.barberId?.toString?.() ?? segment?.barberId)
+                ?.color || "#000000",
+            startAt: segment?.startAt ?? null,
+            endAt: segment?.endAt ?? null,
+            durationMinutes: segment?.durationMinutes ?? 0,
+            order: segment?.order ?? 0,
+          }))
+          : [],
         startAt: a?.startAt ?? null,
         endAt: a?.endAt ?? null,
         durationMinutes: a?.durationMinutes ?? 0,
@@ -403,6 +458,51 @@ export async function GET(req) {
       };
     });
 
+    const buildSegmentAppointment = (appointment, segment) => ({
+      ...appointment,
+      id: `${appointment.id}:${segment.order || segment.barberId}`,
+      rootAppointmentId: appointment.id,
+      barberId: segment.barberId,
+      barber: {
+        ...(appointment.barber || {}),
+        id: segment.barberId,
+        name: segment.barberName || appointment.barber?.name || "—",
+        color: segment.barberColor || appointment.barber?.color || "#000000",
+      },
+      serviceName: segment.serviceName || appointment.serviceName,
+      packageName: appointment.serviceName,
+      startAt: segment.startAt,
+      endAt: segment.endAt,
+      durationMinutes: segment.durationMinutes,
+      serviceDurationMinutes: segment.durationMinutes,
+      price: segment.order === 1 ? appointment.price : 0,
+      packageSegment: segment,
+      isPackageSegment: true,
+    });
+
+    const appointments = barberId
+      ? baseAppointments.flatMap((appointment) => {
+        const matchingSegment = appointment.serviceSegments.find(
+          (segment) => String(segment?.barberId || "") === String(barberId)
+        );
+
+        if (matchingSegment) return [buildSegmentAppointment(appointment, matchingSegment)];
+        return [appointment];
+      })
+      : baseAppointments.flatMap((appointment) => {
+        if (
+          appointment.bookingType === "package" &&
+          Array.isArray(appointment.serviceSegments) &&
+          appointment.serviceSegments.length > 0
+        ) {
+          return appointment.serviceSegments.map((segment) =>
+            buildSegmentAppointment(appointment, segment)
+          );
+        }
+
+        return [appointment];
+      });
+
     const stats = {
       total: 0,
       pending: 0,
@@ -415,7 +515,7 @@ export async function GET(req) {
       paid: 0,
     };
 
-    for (const a of appointments) {
+    for (const a of baseAppointments) {
       const st = a?.status || "pending";
 
       if (st === "cancelled") {

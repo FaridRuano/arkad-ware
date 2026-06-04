@@ -247,12 +247,15 @@ export async function POST(req) {
     // Solo validar conflicto si hay barbero asignado
     if (hasBarberAssigned) {
       const conflict = await Appointment.findOne({
-        barberId: barber._id,
+        $or: [
+          { barberId: barber._id },
+          { "serviceSegments.barberId": barber._id },
+        ],
         status: { $nin: excludedStatuses },
         startAt: { $lt: endAt },
         endAt: { $gt: startAt },
       })
-        .select("_id startAt endAt durationMinutes status barberId serviceName")
+        .select("_id startAt endAt durationMinutes status barberId serviceName serviceSegments")
         .lean();
 
       if (conflict) {

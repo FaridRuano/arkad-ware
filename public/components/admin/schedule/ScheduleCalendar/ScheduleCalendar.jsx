@@ -586,6 +586,12 @@ export default function ScheduleCalendar({
                             {serviceName}
                           </div>
 
+                          {appointment?.packageName ? (
+                            <div className={m('schedule-calendar__appointment-service')}>
+                              Combo: {appointment.packageName}
+                            </div>
+                          ) : null}
+
                           <div className={m('schedule-calendar__appointment-footer')}>
                             <span className={m('schedule-calendar__appointment-status')}>
                               {statusLabel}

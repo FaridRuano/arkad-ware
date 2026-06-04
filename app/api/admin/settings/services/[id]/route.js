@@ -4,6 +4,7 @@ import connectMongoDB from "@libs/mongodb";
 import Service from "@models/Service";
 import Barber from "@models/Barber";
 import BusinessSettings from "@models/BusinessSettings";
+import { SERVICE_TYPES, validateAndBuildPackage } from "@libs/services/packages";
 
 function toTitleCase(value = "") {
     return value
@@ -66,8 +67,11 @@ export async function PATCH(req, { params }) {
         const colorRaw = body?.color;
         const barbersRaw = body?.barbers;
         const isActiveRaw = body?.isActive;
+        const serviceTypeRaw = body?.serviceType;
 
-        const current = await Service.findById(id).select("_id name");
+        const current = await Service.findById(id).select(
+            "_id name serviceType packageItems discountType discountValue"
+        );
         if (!current) {
             return NextResponse.json(
                 { error: "Servicio no encontrado" },
@@ -76,6 +80,13 @@ export async function PATCH(req, { params }) {
         }
 
         const update = {};
+        const finalServiceType = SERVICE_TYPES.includes(serviceTypeRaw)
+            ? serviceTypeRaw
+            : current.serviceType || "single";
+
+        if (serviceTypeRaw !== undefined) {
+            update.serviceType = finalServiceType;
+        }
 
         // name
         if (nameRaw !== undefined) {
@@ -109,7 +120,7 @@ export async function PATCH(req, { params }) {
         }
 
         // durationMinutes
-        if (durationRaw !== undefined) {
+        if (finalServiceType === "single" && durationRaw !== undefined) {
             const durationMinutes = cleanDuration(durationRaw);
 
             if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
@@ -137,7 +148,7 @@ export async function PATCH(req, { params }) {
         }
 
         // price
-        if (priceRaw !== undefined) {
+        if (finalServiceType === "single" && priceRaw !== undefined) {
             const price = cleanPrice(priceRaw);
 
             if (!Number.isFinite(price) || price < 0) {
@@ -170,7 +181,7 @@ export async function PATCH(req, { params }) {
         }
 
         // barbers
-        if (barbersRaw !== undefined) {
+        if (finalServiceType === "single" && barbersRaw !== undefined) {
             const barbers = cleanBarbers(barbersRaw);
 
             const invalidBarberId = barbers.find(
@@ -200,6 +211,37 @@ export async function PATCH(req, { params }) {
             update.barbers = barbers;
         }
 
+        if (finalServiceType === "package") {
+            const packageData = await validateAndBuildPackage({
+                packageItems:
+                    body?.packageItems !== undefined ? body.packageItems : current.packageItems,
+                discountType: body?.discountType || current.discountType || "amount",
+                discountValue:
+                    body?.discountValue !== undefined ? body.discountValue : current.discountValue || 0,
+                excludeServiceId: id,
+            });
+
+            if (packageData?.error) {
+                return NextResponse.json(
+                    { error: packageData.error },
+                    { status: 400 }
+                );
+            }
+
+            update.durationMinutes = packageData.durationMinutes;
+            update.price = packageData.price;
+            update.barbers = packageData.barbers;
+            update.packageItems = packageData.packageItems;
+            update.discountType = packageData.discountType;
+            update.discountValue = packageData.discountValue;
+        }
+
+        if (finalServiceType === "single" && serviceTypeRaw === "single") {
+            update.packageItems = [];
+            update.discountType = "amount";
+            update.discountValue = 0;
+        }
+
         if (Object.keys(update).length === 0) {
             return NextResponse.json(
                 { error: "No hay campos para actualizar" },
@@ -214,6 +256,10 @@ export async function PATCH(req, { params }) {
             .populate({
                 path: "barbers",
                 select: "_id name phone color isActive",
+            })
+            .populate({
+                path: "packageItems.service",
+                select: "_id name durationMinutes price color isActive",
             })
             .select("-__v");
 

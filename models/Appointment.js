@@ -55,6 +55,57 @@ const AppointmentSchema = new mongoose.Schema(
       trim: true,
     },
 
+    bookingType: {
+      type: String,
+      enum: ["single", "package"],
+      default: "single",
+      index: true,
+    },
+
+    serviceSegments: [
+      {
+        serviceId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Service",
+          required: true,
+        },
+        serviceName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        barberId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Barber",
+          required: true,
+          index: true,
+        },
+        barberName: {
+          type: String,
+          default: "",
+          trim: true,
+        },
+        startAt: {
+          type: Date,
+          required: true,
+        },
+        endAt: {
+          type: Date,
+          required: true,
+        },
+        durationMinutes: {
+          type: Number,
+          required: true,
+          min: 5,
+        },
+        order: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+      },
+    ],
+
     assignmentStatus: {
       type: String,
       enum: ASSIGNMENT_STATUS,
@@ -235,6 +286,7 @@ AppointmentSchema.pre("save", function (next) {
 // Índices útiles
 AppointmentSchema.index({ barberId: 1, startAt: 1 });
 AppointmentSchema.index({ barberId: 1, endAt: 1 });
+AppointmentSchema.index({ "serviceSegments.barberId": 1, "serviceSegments.startAt": 1 });
 AppointmentSchema.index({ clientId: 1, startAt: 1 });
 AppointmentSchema.index({ status: 1, startAt: 1 });
 AppointmentSchema.index({ assignmentStatus: 1, startAt: 1 });

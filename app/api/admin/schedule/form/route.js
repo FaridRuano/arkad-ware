@@ -315,16 +315,21 @@ export async function POST(req) {
       const excludedStatuses = ["cancelled", "no_assistance"];
 
       const conflicts = await Appointment.find({
-        barberId: { $in: activeBarbers.map((b) => b._id) },
+        $or: [
+          { barberId: { $in: activeBarbers.map((b) => b._id) } },
+          { "serviceSegments.barberId": { $in: activeBarbers.map((b) => b._id) } },
+        ],
         status: { $nin: excludedStatuses },
         startAt: { $lt: parsedEndAt },
         endAt: { $gt: parsedStartAt },
       })
-        .select("_id barberId startAt endAt durationMinutes status serviceName")
+        .select("_id barberId startAt endAt durationMinutes status serviceName serviceSegments")
         .lean();
 
-      conflictsMap = new Map(
-        conflicts.map((c) => [
+      const conflictEntries = [];
+
+      for (const c of conflicts) {
+        conflictEntries.push([
           toId(c.barberId),
           {
             id: toId(c._id),
@@ -334,8 +339,24 @@ export async function POST(req) {
             status: c.status ?? "",
             serviceName: c.serviceName ?? "",
           },
-        ])
-      );
+        ]);
+
+        for (const segment of c.serviceSegments || []) {
+          conflictEntries.push([
+            toId(segment.barberId),
+            {
+              id: toId(c._id),
+              startAt: segment.startAt ?? c.startAt ?? null,
+              endAt: segment.endAt ?? c.endAt ?? null,
+              durationMinutes: segment.durationMinutes ?? c.durationMinutes ?? 0,
+              status: c.status ?? "",
+              serviceName: segment.serviceName ?? c.serviceName ?? "",
+            },
+          ]);
+        }
+      }
+
+      conflictsMap = new Map(conflictEntries);
 
       activeExceptions = await getScheduleExceptionsInRange({
         startDate: body?.date || startAtStr.slice(0, 10),

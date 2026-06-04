@@ -29,13 +29,16 @@ export default function ServiceModal({
   initialData = null,
   saving = false,
   barbers = [],
+  services = [],
   onClose,
   onSave,
 }) {
   const isEdit = mode === 'edit'
+  const initialType = initialData?.serviceType || 'single'
 
   const initialForm = useMemo(
     () => ({
+      serviceType: initialType,
       name: initialData?.name ?? '',
       description: initialData?.description ?? '',
       durationMinutes: initialData?.durationMinutes ?? 30,
@@ -45,11 +48,22 @@ export default function ServiceModal({
           : '',
       color: initialData?.color ?? '#CFB690',
       isActive: initialData?.isActive ?? true,
+      discountType: initialData?.discountType ?? 'amount',
+      discountValue:
+        initialData?.discountValue !== undefined && initialData?.discountValue !== null
+          ? String(initialData.discountValue)
+          : '0',
+      packageItems: Array.isArray(initialData?.packageItems)
+        ? initialData.packageItems
+            .sort((a, b) => Number(a?.order || 0) - Number(b?.order || 0))
+            .map((item) => item?.service?.id || item?.service?._id || item?.service)
+            .filter(Boolean)
+        : ['', ''],
       barbers: Array.isArray(initialData?.barbers)
         ? initialData.barbers.map((b) => b?.id || b?._id).filter(Boolean)
         : [],
     }),
-    [initialData]
+    [initialData, initialType]
   )
 
   const [form, setForm] = useState(initialForm)
@@ -83,6 +97,55 @@ export default function ServiceModal({
 
     return options
   }, [slotIntervalMinutes, form.durationMinutes])
+
+  const availablePackageServices = useMemo(() => {
+    const currentId = initialData?.id || initialData?._id
+    return (Array.isArray(services) ? services : []).filter((service) => {
+      const id = service?.id || service?._id
+      return (
+        id &&
+        String(id) !== String(currentId || '') &&
+        (service?.serviceType || 'single') === 'single' &&
+        service?.isActive !== false
+      )
+    })
+  }, [services, initialData])
+
+  const selectedPackageServices = useMemo(
+    () =>
+      form.packageItems
+        .map((id) => availablePackageServices.find((service) => String(service?.id || service?._id) === String(id)))
+        .filter(Boolean),
+    [form.packageItems, availablePackageServices]
+  )
+
+  const packageSubtotal = useMemo(
+    () =>
+      selectedPackageServices.reduce(
+        (sum, service) => sum + Number(service?.price || 0),
+        0
+      ),
+    [selectedPackageServices]
+  )
+
+  const packageDuration = useMemo(
+    () =>
+      selectedPackageServices.reduce(
+        (sum, service) => sum + Number(service?.durationMinutes || 0),
+        0
+      ),
+    [selectedPackageServices]
+  )
+
+  const packagePrice = useMemo(() => {
+    const discount = Number(String(form.discountValue || 0).replace(',', '.'))
+    if (!Number.isFinite(discount) || discount < 0) return packageSubtotal
+    if (form.discountType === 'percent') {
+      return Math.max(0, packageSubtotal - (packageSubtotal * Math.min(discount, 100)) / 100)
+    }
+    return Math.max(0, packageSubtotal - discount)
+  }, [packageSubtotal, form.discountType, form.discountValue])
+  const packageDiscountAmount = Math.max(0, packageSubtotal - packagePrice)
 
   useEffect(() => {
     if (!open) return
@@ -186,13 +249,36 @@ export default function ServiceModal({
     })
   }
 
+  const setPackageItem = (index, value) => {
+    setForm((prev) => {
+      const nextItems = [...(prev.packageItems?.length ? prev.packageItems : ['', ''])]
+      nextItems[index] = value
+      return { ...prev, packageItems: nextItems }
+    })
+  }
+
   const validate = () => {
     const name = String(form.name || '').trim()
     const color = String(form.color || '').trim()
     const duration = Number(form.durationMinutes)
     const price = Number(String(form.price).replace(',', '.'))
+    const isPackage = form.serviceType === 'package'
 
     if (!name) return 'El nombre del servicio es requerido'
+
+    if (isPackage) {
+      const items = (form.packageItems || []).filter(Boolean)
+      const discount = Number(String(form.discountValue || 0).replace(',', '.'))
+
+      if (items.length !== 2) return 'Selecciona los dos servicios del paquete'
+      if (new Set(items).size !== 2) return 'El paquete no puede repetir el mismo servicio'
+      if (!Number.isFinite(discount) || discount < 0) return 'El descuento debe ser mayor o igual a 0'
+      if (form.discountType === 'percent' && discount > 100) {
+        return 'El porcentaje de descuento no puede superar 100%'
+      }
+      if (!/^#([0-9a-fA-F]{6})$/.test(color)) return 'El color debe ser HEX (#RRGGBB)'
+      return ''
+    }
 
     if (!Number.isInteger(duration) || duration <= 0) {
       return 'La duración debe ser un número entero de minutos mayor a 0'
@@ -228,13 +314,25 @@ export default function ServiceModal({
     }
 
     const payload = {
+      serviceType: form.serviceType,
       name: form.name.trim(),
       description: String(form.description || '').trim(),
-      durationMinutes: Number(form.durationMinutes),
-      price: Number(String(form.price).replace(',', '.')),
       color: form.color.trim(),
       isActive: Boolean(form.isActive),
-      barbers: form.barbers,
+      ...(form.serviceType === 'package'
+        ? {
+            packageItems: form.packageItems.map((serviceId, index) => ({
+              serviceId,
+              order: index + 1,
+            })),
+            discountType: form.discountType,
+            discountValue: Number(String(form.discountValue || 0).replace(',', '.')),
+          }
+        : {
+            durationMinutes: Number(form.durationMinutes),
+            price: Number(String(form.price).replace(',', '.')),
+            barbers: form.barbers,
+          }),
     }
 
     onSave?.(payload)
@@ -273,6 +371,18 @@ export default function ServiceModal({
 
           <div className={m('modalGrid')}>
             <div className={m('field')} style={{ gridColumn: '1 / -1' }}>
+              <label className={m('field__label')}>Tipo</label>
+              <select
+                className={m('field__input')}
+                value={form.serviceType}
+                onChange={(e) => setField('serviceType', e.target.value)}
+              >
+                <option value="single">Servicio individual</option>
+                <option value="package">Paquete de servicios</option>
+              </select>
+            </div>
+
+            <div className={m('field')} style={{ gridColumn: '1 / -1' }}>
               <label className={m('field__label')}>Nombre</label>
               <input
                 className={m('field__input')}
@@ -292,6 +402,85 @@ export default function ServiceModal({
               />
             </div>
 
+            {form.serviceType === 'package' ? (
+              <>
+                {[0, 1].map((index) => (
+                  <div className={m('field')} key={index}>
+                    <label className={m('field__label')}>
+                      Servicio {index + 1}
+                    </label>
+                    <select
+                      className={m('field__input')}
+                      value={form.packageItems?.[index] || ''}
+                      onChange={(e) => setPackageItem(index, e.target.value)}
+                    >
+                      <option value="">Seleccionar servicio</option>
+                      {availablePackageServices
+                        .filter((service) => {
+                          const id = service?.id || service?._id
+                          const otherSelectedId = form.packageItems?.[index === 0 ? 1 : 0]
+                          return !otherSelectedId || String(id) !== String(otherSelectedId)
+                        })
+                        .map((service) => {
+                        const id = service?.id || service?._id
+                        return (
+                          <option key={id} value={id}>
+                            {service?.name} · {service?.durationMinutes} min · ${Number(service?.price || 0).toFixed(2)}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </div>
+                ))}
+
+                <div className={m('field')}>
+                  <label className={m('field__label')}>Descuento</label>
+                  <input
+                    className={m('field__input')}
+                    value={form.discountValue}
+                    onChange={(e) => setField('discountValue', normalizePrice(e.target.value))}
+                    placeholder="Ej: 5"
+                    inputMode="decimal"
+                  />
+                </div>
+
+                <div className={m('field')}>
+                  <label className={m('field__label')}>Tipo de descuento</label>
+                  <select
+                    className={m('field__input')}
+                    value={form.discountType}
+                    onChange={(e) => setField('discountType', e.target.value)}
+                  >
+                    <option value="amount">Valor fijo</option>
+                    <option value="percent">Porcentaje</option>
+                  </select>
+                </div>
+
+                <div className={m('packagePriceSummary')} style={{ gridColumn: '1 / -1' }}>
+                  <div className={m('packagePriceSummary__row')}>
+                    <span>Precio total de servicios</span>
+                    <strong>${packageSubtotal.toFixed(2)}</strong>
+                  </div>
+                  <div className={m('packagePriceSummary__row')}>
+                    <span>
+                      Descuento aplicado
+                      {form.discountType === 'percent'
+                        ? ` (${Number(String(form.discountValue || 0).replace(',', '.')) || 0}%)`
+                        : ''}
+                    </span>
+                    <strong>-${packageDiscountAmount.toFixed(2)}</strong>
+                  </div>
+                  <div className={m('packagePriceSummary__row', 'packagePriceSummary__row--total')}>
+                    <span>Precio final del paquete</span>
+                    <strong>${packagePrice.toFixed(2)}</strong>
+                  </div>
+                  <div className={m('packagePriceSummary__meta')}>
+                    Duración total: {packageDuration || 0} min
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
             <div className={m('field')}>
               <label className={m('field__label')}>Duración</label>
               <select
@@ -322,6 +511,8 @@ export default function ServiceModal({
                 inputMode="decimal"
               />
             </div>
+              </>
+            )}
 
             <div className={m('field')}>
               <label className={m('field__label')}>Color</label>
@@ -379,6 +570,7 @@ export default function ServiceModal({
               </div>
             </div>
 
+            {form.serviceType === 'single' && (
             <div className={m('field')} style={{ gridColumn: '1 / -1' }}>
               <label className={m('field__label')}>Barberos asignados (opcional)</label>
 
@@ -432,6 +624,7 @@ export default function ServiceModal({
                 Puedes dejar este campo vacío y asignar barberos más adelante.
               </div>
             </div>
+            )}
           </div>
 
           <footer className={m('modalFooter')}>

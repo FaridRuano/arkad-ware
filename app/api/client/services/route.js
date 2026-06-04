@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectMongoDB from "@libs/mongodb";
 import Service from "@models/Service";
 import "@models/Barber";
+import { formatPackageItemsForClient } from "@libs/services/packages";
 
 const toSafeNumber = (value, fallback = 0) => {
     const parsed = Number(value);
@@ -14,15 +15,36 @@ export async function GET() {
 
         const services = await Service.find({ isActive: true })
             .sort({ name: 1 })
-            .select("name description durationMinutes price color barbers")
+            .select("serviceType name description durationMinutes price color barbers packageItems discountType discountValue")
             .populate({
                 path: "barbers",
                 select: "name color isActive notes",
+            })
+            .populate({
+                path: "packageItems.service",
+                select: "name durationMinutes price color isActive barbers",
+                populate: {
+                    path: "barbers",
+                    select: "name color isActive notes",
+                },
             })
             .lean();
 
         const formattedServices = services
             .map((service) => {
+                const serviceType = service.serviceType || "single";
+                const packageItems = serviceType === "package"
+                    ? formatPackageItemsForClient(service.packageItems)
+                    : [];
+
+                if (
+                    serviceType === "package" &&
+                    (packageItems.length !== 2 ||
+                        packageItems.some((item) => !item.barbers.length))
+                ) {
+                    return null;
+                }
+
                 const activeBarbers = Array.isArray(service.barbers)
                     ? service.barbers
                         .filter((barber) => barber && barber.isActive)
@@ -35,15 +57,19 @@ export async function GET() {
                         .filter((barber) => barber.name)
                     : [];
 
-                if (activeBarbers.length === 0) return null;
+                if (serviceType === "single" && activeBarbers.length === 0) return null;
 
                 return {
                     id: String(service._id),
+                    serviceType,
                     name: String(service.name || "").trim(),
                     description: String(service.description || "").trim(),
                     durationMinutes: toSafeNumber(service.durationMinutes, 0),
                     price: toSafeNumber(service.price, 0),
                     color: service.color || null,
+                    discountType: service.discountType || "amount",
+                    discountValue: toSafeNumber(service.discountValue, 0),
+                    packageItems,
                     barbers: activeBarbers,
                 };
             })

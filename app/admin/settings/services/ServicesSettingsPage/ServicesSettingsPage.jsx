@@ -102,7 +102,7 @@ const ServicesPage = () => {
     setError('')
 
     try {
-      const res = await fetch('/api/admin/settings/services?includeInactive=true', {
+      const res = await fetch('/api/admin/settings/services?includeInactive=true&limit=100', {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
@@ -218,6 +218,7 @@ const ServicesPage = () => {
         initialData={editingService}
         saving={saving}
         barbers={barbers}
+        services={services}
         onClose={closeServiceModal}
         onSave={handleSaveService}
       />
@@ -288,6 +289,7 @@ const ServicesPage = () => {
                 const isActive = service?.isActive !== false
                 const assignedBarbers = Array.isArray(service?.barbers) ? service.barbers : []
                 const color = service?.color || '#CFB690'
+                const isPackage = service?.serviceType === 'package'
 
                 return (
                   <article
@@ -308,7 +310,7 @@ const ServicesPage = () => {
                               <span
                                 className={m('service-row-card__status', isActive ? 'is-active' : 'is-inactive')}
                               >
-                                {isActive ? 'Activo' : 'Inactivo'}
+                                {isPackage ? 'Paquete' : isActive ? 'Activo' : 'Inactivo'}
                               </span>
 
                               <h2 className={m('service-row-card__name')}>{name}</h2>

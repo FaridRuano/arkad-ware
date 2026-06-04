@@ -353,6 +353,69 @@ textarea.field__input:focus {
     font-size: 12px;
 }
 
+.packagePriceSummary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid color-mix(in oklab, var(--primary) 26%, var(--border) 74%);
+    background: color-mix(in oklab, var(--surface-2) 82%, var(--primary) 8%);
+}
+
+.packagePriceSummary__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    color: color-mix(in oklab, var(--muted) 74%, var(--fg) 26%);
+    font-size: 13px;
+
+    span {
+        min-width: 0;
+        flex: 1 1 auto;
+        line-height: 1.25;
+    }
+
+    strong {
+        color: var(--fg);
+        flex: 0 0 auto;
+        font-size: 14px;
+        margin-left: auto;
+        text-align: right;
+        white-space: nowrap;
+    }
+}
+
+.packagePriceSummary__row--total {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in oklab, var(--border) 74%, transparent 26%);
+    color: var(--fg);
+    font-weight: 700;
+
+    strong {
+        color: var(--primary);
+        font-size: 18px;
+    }
+}
+
+@media (max-width: 420px) {
+    .packagePriceSummary__row {
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .packagePriceSummary__row--total strong {
+        font-size: 16px;
+    }
+}
+
+.packagePriceSummary__meta {
+    color: color-mix(in oklab, var(--muted) 82%, var(--fg) 18%);
+    font-size: 12px;
+}
+
 .fieldToggle {
     position: relative;
     display: flex;

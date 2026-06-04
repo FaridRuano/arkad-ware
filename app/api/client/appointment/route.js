@@ -8,12 +8,14 @@ import Barber from "@models/Barber";
 import Appointment from "@models/Appointment";
 import BusinessSettings from "@models/BusinessSettings";
 import BarberSchedule from "@models/BarberSchedule";
+import { buildPackageBookingItems, parsePackageBarbers } from "@libs/booking/packages";
 
 import {
     isValidDateString,
     isValidTimeHHMM,
     parseDateLocal,
     getAvailabilityForDate,
+    getPackageAvailabilityForDate,
     getDefaultBusinessSettings,
 } from "@libs/booking/availability";
 
@@ -35,6 +37,7 @@ export async function POST(request) {
         const body = await request.json().catch(() => ({}));
         const serviceId = body?.serviceId;
         const barberId = body?.barberId;
+        const packageBarbers = parsePackageBarbers(body?.packageBarbers);
         const date = body?.date;
         const time = body?.time;
 
@@ -45,9 +48,9 @@ export async function POST(request) {
             );
         }
 
-        if (!barberId || !isValidObjectId(barberId)) {
+        if (!barberId && packageBarbers.length === 0) {
             return NextResponse.json(
-                { error: "barberId es obligatorio y debe ser válido" },
+                { error: "barberId o packageBarbers es obligatorio" },
                 { status: 400 }
             );
         }
@@ -68,32 +71,25 @@ export async function POST(request) {
 
         const [service, barber, businessSettings, barberSchedule] = await Promise.all([
             Service.findOne({ _id: serviceId, isActive: true })
-                .select("name durationMinutes price barbers")
+                .select("serviceType name durationMinutes price barbers packageItems")
+                .populate({
+                    path: "packageItems.service",
+                    select: "_id name durationMinutes price barbers isActive serviceType",
+                })
                 .lean(),
-            Barber.findOne({ _id: barberId, isActive: true })
+            barberId && isValidObjectId(barberId)
+                ? Barber.findOne({ _id: barberId, isActive: true })
                 .select("name color")
-                .lean(),
+                .lean()
+                : null,
             BusinessSettings.findOne({ isActive: true }).lean(),
-            BarberSchedule.findOne({ barber: barberId, isActive: true }).lean(),
+            barberId && isValidObjectId(barberId)
+                ? BarberSchedule.findOne({ barber: barberId, isActive: true }).lean()
+                : null,
         ]);
 
         if (!service) {
             return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
-        }
-
-        if (!barber) {
-            return NextResponse.json({ error: "Barbero no encontrado" }, { status: 404 });
-        }
-
-        const barberCanPerformService = Array.isArray(service.barbers)
-            ? service.barbers.some((id) => String(id) === String(barberId))
-            : false;
-
-        if (!barberCanPerformService) {
-            return NextResponse.json(
-                { error: "El barbero no está disponible para este servicio" },
-                { status: 400 }
-            );
         }
 
         const settings = businessSettings || getDefaultBusinessSettings();
@@ -130,6 +126,110 @@ export async function POST(request) {
             );
         }
 
+        const clientId = session.user.id;
+
+        const activeClientAppointmentsCount = await Appointment.countDocuments({
+            clientId,
+            status: { $in: ["pending", "confirmed"] },
+            startAt: { $gte: new Date() },
+        });
+
+        if (activeClientAppointmentsCount >= 2) {
+            return NextResponse.json(
+                { error: "Ya tienes el máximo permitido de citas activas por confirmar." },
+                { status: 400 }
+            );
+        }
+
+        if (service.serviceType === "package") {
+            const built = await buildPackageBookingItems({
+                packageService: service,
+                barberIds: packageBarbers,
+            });
+
+            if (built?.error) {
+                return NextResponse.json({ error: built.error }, { status: 400 });
+            }
+
+            const availableSlots = await getPackageAvailabilityForDate({
+                items: built.items,
+                dateStr: date,
+                businessSettings: settings,
+            });
+
+            const matchedSlot = availableSlots.find((slot) => slot.start === time);
+
+            if (!matchedSlot) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Ese horario ya no está disponible. Actualiza la disponibilidad e intenta nuevamente.",
+                    },
+                    { status: 409 }
+                );
+            }
+
+            const appointment = await Appointment.create({
+                clientId,
+                barberId: built.items[0].barberId,
+                serviceId,
+                serviceName: service.name,
+                bookingType: "package",
+                serviceSegments: matchedSlot.segments.map((segment) => ({
+                    serviceId: segment.serviceId,
+                    serviceName: segment.serviceName,
+                    barberId: segment.barberId,
+                    barberName: segment.barberName,
+                    startAt: segment.startAt,
+                    endAt: segment.endAt,
+                    durationMinutes: segment.durationMinutes,
+                    order: segment.order,
+                })),
+                startAt: matchedSlot.startAt,
+                durationMinutes: Number(service.durationMinutes),
+                serviceDurationMinutes: Number(service.durationMinutes),
+                price: Number(service.price || 0),
+                paymentStatus: "unpaid",
+                status: "pending",
+                source: "client-page",
+                createdBy: clientId,
+                notes: "",
+            });
+
+            return NextResponse.json(
+                {
+                    ok: true,
+                    appointment: {
+                        id: String(appointment._id),
+                        serviceName: appointment.serviceName,
+                        startAt: appointment.startAt,
+                        endAt: appointment.endAt,
+                        durationMinutes: appointment.durationMinutes,
+                        price: appointment.price,
+                        status: appointment.status,
+                        paymentStatus: appointment.paymentStatus,
+                    },
+                    message: "Reserva creada correctamente",
+                },
+                { status: 201 }
+            );
+        }
+
+        if (!barber) {
+            return NextResponse.json({ error: "Barbero no encontrado" }, { status: 404 });
+        }
+
+        const barberCanPerformService = Array.isArray(service.barbers)
+            ? service.barbers.some((id) => String(id) === String(barberId))
+            : false;
+
+        if (!barberCanPerformService) {
+            return NextResponse.json(
+                { error: "El barbero no está disponible para este servicio" },
+                { status: 400 }
+            );
+        }
+
         const availableSlots = await getAvailabilityForDate({
             service,
             barberId,
@@ -147,21 +247,6 @@ export async function POST(request) {
                         "Ese horario ya no está disponible. Actualiza la disponibilidad e intenta nuevamente.",
                 },
                 { status: 409 }
-            );
-        }
-
-        const clientId = session.user.id;
-
-        const activeClientAppointmentsCount = await Appointment.countDocuments({
-            clientId,
-            status: { $in: ["pending", "confirmed"] },
-            startAt: { $gte: new Date() },
-        });
-
-        if (activeClientAppointmentsCount >= 2) {
-            return NextResponse.json(
-                { error: "Ya tienes el máximo permitido de citas activas por confirmar." },
-                { status: 400 }
             );
         }
 

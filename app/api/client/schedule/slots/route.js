@@ -6,10 +6,12 @@ import Service from "@models/Service";
 import Barber from "@models/Barber";
 import BusinessSettings from "@models/BusinessSettings";
 import BarberSchedule from "@models/BarberSchedule";
+import { buildPackageBookingItems, parsePackageBarbers } from "@libs/booking/packages";
 
 import {
     isValidDateString,
     getAvailabilityForDate,
+    getPackageAvailabilityForDate,
     getDefaultBusinessSettings,
 } from "@libs/booking/availability";
 
@@ -22,6 +24,7 @@ export async function GET(request) {
         const { searchParams } = new URL(request.url);
         const serviceId = searchParams.get("serviceId");
         const barberId = searchParams.get("barberId");
+        const packageBarbers = parsePackageBarbers(searchParams.get("packageBarbers"));
         const date = searchParams.get("date");
 
         if (!serviceId || !isValidObjectId(serviceId)) {
@@ -31,9 +34,9 @@ export async function GET(request) {
             );
         }
 
-        if (!barberId || !isValidObjectId(barberId)) {
+        if (!barberId && packageBarbers.length === 0) {
             return NextResponse.json(
-                { error: "barberId es obligatorio y debe ser válido" },
+                { error: "barberId o packageBarbers es obligatorio" },
                 { status: 400 }
             );
         }
@@ -47,17 +50,67 @@ export async function GET(request) {
 
         const [service, barber, businessSettings, barberSchedule] = await Promise.all([
             Service.findOne({ _id: serviceId, isActive: true })
-                .select("name durationMinutes price barbers")
+                .select("serviceType name durationMinutes price barbers packageItems")
+                .populate({
+                    path: "packageItems.service",
+                    select: "_id name durationMinutes price barbers isActive serviceType",
+                })
                 .lean(),
-            Barber.findOne({ _id: barberId, isActive: true })
+            barberId && isValidObjectId(barberId)
+                ? Barber.findOne({ _id: barberId, isActive: true })
                 .select("name color")
-                .lean(),
+                .lean()
+                : null,
             BusinessSettings.findOne({ isActive: true }).lean(),
-            BarberSchedule.findOne({ barber: barberId, isActive: true }).lean(),
+            barberId && isValidObjectId(barberId)
+                ? BarberSchedule.findOne({ barber: barberId, isActive: true }).lean()
+                : null,
         ]);
 
         if (!service) {
             return NextResponse.json({ error: "Servicio no encontrado" }, { status: 404 });
+        }
+
+        const settings = businessSettings || getDefaultBusinessSettings();
+
+        if (service.serviceType === "package") {
+            const built = await buildPackageBookingItems({
+                packageService: service,
+                barberIds: packageBarbers,
+            });
+
+            if (built?.error) {
+                return NextResponse.json({ error: built.error }, { status: 400 });
+            }
+
+            const slots = await getPackageAvailabilityForDate({
+                items: built.items,
+                dateStr: date,
+                businessSettings: settings,
+            });
+
+            return NextResponse.json(
+                {
+                    serviceId: String(service._id),
+                    serviceName: service.name,
+                    date,
+                    durationMinutes: Number(service.durationMinutes),
+                    slotIntervalMinutes: Number(settings.slotIntervalMinutes || 30),
+                    timezone: settings.timezone || "America/Guayaquil",
+                    slots: slots.map((slot) => ({
+                        start: slot.start,
+                        end: slot.end,
+                        startAt: slot.startAt.toISOString(),
+                        endAt: slot.endAt.toISOString(),
+                        segments: slot.segments.map((segment) => ({
+                            ...segment,
+                            startAt: segment.startAt.toISOString(),
+                            endAt: segment.endAt.toISOString(),
+                        })),
+                    })),
+                },
+                { status: 200 }
+            );
         }
 
         if (!barber) {
@@ -74,8 +127,6 @@ export async function GET(request) {
                 { status: 400 }
             );
         }
-
-        const settings = businessSettings || getDefaultBusinessSettings();
 
         const slots = await getAvailabilityForDate({
             service,

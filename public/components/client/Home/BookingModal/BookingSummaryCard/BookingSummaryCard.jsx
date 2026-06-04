@@ -23,10 +23,20 @@ const formatDuration = (minutes) => {
 export default function BookingSummaryCard({
     service,
     selectedBarber,
+    selectedPackageBarbers = [],
     selectedDate,
     selectedTime,
 }) {
-    console.log(service)
+    const isPackage = service?.serviceType === 'package';
+    const packageBarbersLabel = isPackage
+        ? (service?.packageItems || [])
+            .map((item, index) => {
+                const barber = selectedPackageBarbers[index];
+                return `${item?.name || `Servicio ${index + 1}`}: ${barber?.name || 'Pendiente'}`;
+            })
+            .join(' · ')
+        : selectedBarber?.name || 'Pendiente';
+
     return (
         <aside className={styles.card}>
             <div className={styles.topRow}>
@@ -53,7 +63,7 @@ export default function BookingSummaryCard({
                     </div>
                     <div className={styles.selectionText}>
                         <small>Barbero</small>
-                        <span>{selectedBarber?.name || 'Pendiente'}</span>
+                        <span>{packageBarbersLabel}</span>
                     </div>
                 </div>
 

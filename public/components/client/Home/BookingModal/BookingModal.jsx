@@ -12,6 +12,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
     const [currentStep, setCurrentStep] = useState(1);
 
     const [selectedBarber, setSelectedBarber] = useState(null);
+    const [selectedPackageBarbers, setSelectedPackageBarbers] = useState([]);
     const [selectedDate, setSelectedDate] = useState(null);
     const [selectedTime, setSelectedTime] = useState(null);
 
@@ -40,6 +41,21 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         if (!service?.barbers || !Array.isArray(service.barbers)) return [];
         return service.barbers;
     }, [service]);
+    const isPackage = service?.serviceType === 'package';
+    const packageItems = useMemo(
+        () => (Array.isArray(service?.packageItems) ? service.packageItems : []),
+        [service]
+    );
+    const packageBarberIds = useMemo(
+        () =>
+            selectedPackageBarbers
+                .map((barber) => barber?.id || barber?._id)
+                .filter(Boolean),
+        [selectedPackageBarbers]
+    );
+    const hasSelectedRequiredBarbers = isPackage
+        ? packageItems.length > 0 && packageBarberIds.length === packageItems.length
+        : Boolean(selectedBarber);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -47,6 +63,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         setCurrentStep(1);
 
         setSelectedBarber(null);
+        setSelectedPackageBarbers([]);
         setSelectedDate(null);
         setSelectedTime(null);
 
@@ -74,7 +91,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         const barberId = barber?.id || barber?._id;
         const serviceId = service?.id || service?._id;
 
-        if (!barberId || !serviceId) return false;
+        if ((!barberId && !packageBarberIds.length) || !serviceId) return false;
 
         setIsLoadingDates(true);
         setDatesError("");
@@ -87,8 +104,15 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         setSlotsError("");
 
         try {
+            const query = new URLSearchParams({ serviceId });
+            if (isPackage) {
+                query.set('packageBarbers', packageBarberIds.join(','));
+            } else {
+                query.set('barberId', barberId);
+            }
+
             const res = await fetch(
-                `/api/client/schedule/dates?serviceId=${serviceId}&barberId=${barberId}`,
+                `/api/client/schedule/dates?${query.toString()}`,
                 {
                     method: "GET",
                     cache: "no-store",
@@ -125,7 +149,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         const barberId = selectedBarber?.id || selectedBarber?._id;
         const serviceId = service?.id || service?._id;
 
-        if (!barberId || !serviceId || !dateValue) return false;
+        if ((!barberId && !packageBarberIds.length) || !serviceId || !dateValue) return false;
 
         setIsLoadingSlots(true);
         setSlotsError("");
@@ -135,8 +159,15 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         setSelectedTime(null);
 
         try {
+            const query = new URLSearchParams({ serviceId, date: dateValue });
+            if (isPackage) {
+                query.set('packageBarbers', packageBarberIds.join(','));
+            } else {
+                query.set('barberId', barberId);
+            }
+
             const res = await fetch(
-                `/api/client/schedule/slots?serviceId=${serviceId}&barberId=${barberId}&date=${dateValue}`,
+                `/api/client/schedule/slots?${query.toString()}`,
                 {
                     method: "GET",
                     cache: "no-store",
@@ -171,6 +202,22 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         setBookingSuccess('');
     };
 
+    const handleSelectPackageBarber = (index, barber) => {
+        setSelectedPackageBarbers((prev) => {
+            const next = [...prev];
+            next[index] = barber;
+            return next;
+        });
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setAvailableDates([]);
+        setAvailableSlots([]);
+        setDatesError('');
+        setSlotsError('');
+        setBookingError('');
+        setBookingSuccess('');
+    };
+
     const handleSelectDate = (dateValue) => {
         setSelectedDate(dateValue);
         setSelectedTime(null);
@@ -194,7 +241,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
         const date = selectedDate;
         const time = selectedTime?.start;
 
-        if (!serviceId || !barberId || !date || !time) {
+        if (!serviceId || (!barberId && !packageBarberIds.length) || !date || !time) {
             setBookingError('Faltan datos para completar la reserva.');
             return;
         }
@@ -211,7 +258,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
                 },
                 body: JSON.stringify({
                     serviceId,
-                    barberId,
+                    ...(isPackage ? { packageBarbers: packageBarberIds } : { barberId }),
                     date,
                     time,
                 }),
@@ -261,7 +308,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
 
     const handleContinue = async () => {
         if (currentStep === 1) {
-            if (!selectedBarber) return;
+            if (!hasSelectedRequiredBarbers) return;
             const ok = await fetchAvailableDates(selectedBarber);
             if (ok) setCurrentStep(2);
             return;
@@ -312,7 +359,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
     };
 
     const continueDisabled =
-        (currentStep === 1 && !selectedBarber) ||
+        (currentStep === 1 && !hasSelectedRequiredBarbers) ||
         (currentStep === 2 && !selectedDate) ||
         (currentStep === 3 && !selectedTime) ||
         isLoadingDates ||
@@ -332,6 +379,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
                         <BookingSummaryCard
                             service={service}
                             selectedBarber={selectedBarber}
+                            selectedPackageBarbers={selectedPackageBarbers}
                             selectedDate={selectedDate}
                             selectedTime={selectedTime}
                         />
@@ -346,11 +394,36 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
 
                         <div className={styles.selectionViewport}>
                             {currentStep === 1 && (
-                                <BarberSelector
-                                    barbers={availableBarbers}
-                                    selectedBarber={selectedBarber}
-                                    onSelectBarber={handleSelectBarber}
-                                />
+                                isPackage ? (
+                                    <section className={styles.packageBarbers}>
+                                        <div className={styles.packageHeading}>
+                                            <h4>Selecciona los barberos del paquete</h4>
+                                            <p>
+                                                El orden del paquete define el orden de atención y los horarios se calculan consecutivos.
+                                            </p>
+                                        </div>
+
+                                        {packageItems.map((item, index) => (
+                                            <div className={styles.packageBarberBlock} key={item.serviceId || index}>
+                                                <div className={styles.packageBarberTitle}>
+                                                    <span>{index + 1}</span>
+                                                    <strong>{item.name}</strong>
+                                                </div>
+                                                <BarberSelector
+                                                    barbers={item.barbers}
+                                                    selectedBarber={selectedPackageBarbers[index]}
+                                                    onSelectBarber={(barber) => handleSelectPackageBarber(index, barber)}
+                                                />
+                                            </div>
+                                        ))}
+                                    </section>
+                                ) : (
+                                    <BarberSelector
+                                        barbers={availableBarbers}
+                                        selectedBarber={selectedBarber}
+                                        onSelectBarber={handleSelectBarber}
+                                    />
+                                )
                             )}
 
                             {currentStep === 2 && (
@@ -361,7 +434,7 @@ export default function BookingModal({ isOpen, onClose, service, onBookingSucces
                                     maxDaysAhead={scheduleMeta.maxDaysAhead}
                                     isLoading={isLoadingDates}
                                     error={datesError}
-                                    disabled={!selectedBarber}
+                                    disabled={!hasSelectedRequiredBarbers}
                                 />
                             )}
 

@@ -4,6 +4,7 @@ import connectMongoDB from "@libs/mongodb";
 import Service from "@models/Service";
 import Barber from "@models/Barber";
 import BusinessSettings from "@models/BusinessSettings";
+import { SERVICE_TYPES, validateAndBuildPackage } from "@libs/services/packages";
 
 function toTitleCase(value = "") {
     return value
@@ -58,6 +59,7 @@ export async function POST(req) {
         const barbers = cleanBarbers(body?.barbers);
         const color = cleanColor(body?.color);
         const isActive = body?.isActive !== false;
+        const serviceType = SERVICE_TYPES.includes(body?.serviceType) ? body.serviceType : "single";
         const businessSettings = await BusinessSettings.findOne().select("slotIntervalMinutes");
         const slotIntervalMinutes = Number(businessSettings?.slotIntervalMinutes || 30);
 
@@ -74,28 +76,28 @@ export async function POST(req) {
             );
         }
 
-        if (!Number.isInteger(durationMinutes) || durationMinutes <= 0) {
+        if (serviceType === "single" && (!Number.isInteger(durationMinutes) || durationMinutes <= 0)) {
             return NextResponse.json(
                 { error: "La duración debe ser un número entero de minutos mayor a 0" },
                 { status: 400 }
             );
         }
 
-        if (durationMinutes % slotIntervalMinutes !== 0) {
+        if (serviceType === "single" && durationMinutes % slotIntervalMinutes !== 0) {
             return NextResponse.json(
                 { error: `La duración debe ir en bloques de ${slotIntervalMinutes} minutos` },
                 { status: 400 }
             );
         }
 
-        if (durationMinutes > slotIntervalMinutes * 4) {
+        if (serviceType === "single" && durationMinutes > slotIntervalMinutes * 4) {
             return NextResponse.json(
                 { error: `La duración no puede superar ${slotIntervalMinutes * 4} minutos` },
                 { status: 400 }
             );
         }
 
-        if (!Number.isFinite(price) || price < 0) {
+        if (serviceType === "single" && (!Number.isFinite(price) || price < 0)) {
             return NextResponse.json(
                 { error: "El precio debe ser un número válido mayor o igual a 0" },
                 { status: 400 }
@@ -109,25 +111,43 @@ export async function POST(req) {
             );
         }
 
-        // Validar ids de barberos si vienen
-        const invalidBarberId = barbers.find((id) => !mongoose.Types.ObjectId.isValid(id));
-        if (invalidBarberId) {
-            return NextResponse.json(
-                { error: "Uno o más barberos enviados no tienen un ID válido" },
-                { status: 400 }
-            );
-        }
+        let packageData = null;
+        if (serviceType === "package") {
+            packageData = await validateAndBuildPackage({
+                packageItems: body?.packageItems,
+                discountType: body?.discountType || "amount",
+                discountValue: body?.discountValue || 0,
+            });
 
-        if (barbers.length > 0) {
-            const existingBarbers = await Barber.find({
-                _id: { $in: barbers },
-            }).select("_id");
-
-            if (existingBarbers.length !== barbers.length) {
+            if (packageData?.error) {
                 return NextResponse.json(
-                    { error: "Uno o más barberos seleccionados no existen" },
+                    { error: packageData.error },
                     { status: 400 }
                 );
+            }
+        }
+
+        if (serviceType === "single") {
+            // Validar ids de barberos si vienen
+            const invalidBarberId = barbers.find((id) => !mongoose.Types.ObjectId.isValid(id));
+            if (invalidBarberId) {
+                return NextResponse.json(
+                    { error: "Uno o más barberos enviados no tienen un ID válido" },
+                    { status: 400 }
+                );
+            }
+
+            if (barbers.length > 0) {
+                const existingBarbers = await Barber.find({
+                    _id: { $in: barbers },
+                }).select("_id");
+
+                if (existingBarbers.length !== barbers.length) {
+                    return NextResponse.json(
+                        { error: "Uno o más barberos seleccionados no existen" },
+                        { status: 400 }
+                    );
+                }
             }
         }
 
@@ -147,12 +167,16 @@ export async function POST(req) {
         }
 
         const created = await Service.create({
+            serviceType,
             name,
             description,
-            durationMinutes,
-            price,
+            durationMinutes: serviceType === "package" ? packageData.durationMinutes : durationMinutes,
+            price: serviceType === "package" ? packageData.price : price,
             color,
-            barbers,
+            barbers: serviceType === "package" ? packageData.barbers : barbers,
+            packageItems: serviceType === "package" ? packageData.packageItems : [],
+            discountType: serviceType === "package" ? packageData.discountType : "amount",
+            discountValue: serviceType === "package" ? packageData.discountValue : 0,
             isActive,
         });
 
@@ -160,6 +184,10 @@ export async function POST(req) {
             .populate({
                 path: "barbers",
                 select: "_id name phone color isActive",
+            })
+            .populate({
+                path: "packageItems.service",
+                select: "_id name durationMinutes price color isActive",
             })
             .select("-__v");
 

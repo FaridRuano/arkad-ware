@@ -41,6 +41,10 @@ export async function GET(req) {
                     path: "barbers",
                     select: "_id name phone color isActive",
                 })
+                .populate({
+                    path: "packageItems.service",
+                    select: "_id name durationMinutes price color isActive",
+                })
                 .select("-__v"),
         ]);
 

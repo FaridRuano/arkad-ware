@@ -157,9 +157,8 @@ export const applyOpenRange = (ranges, openStart, openEnd) => {
 };
 
 export const getConflictingAppointments = async ({ barberId, dateStr }) => {
-  const startOfDay = parseDateLocal(dateStr);
-  const endOfDay = parseDateLocal(dateStr);
-  endOfDay.setHours(23, 59, 59, 999);
+  const startOfDay = combineDateAndMinutes(dateStr, 0);
+  const endOfDay = combineDateAndMinutes(dateStr, 24 * 60);
 
   return Appointment.find({
     $or: [{ barberId }, { "serviceSegments.barberId": barberId }],

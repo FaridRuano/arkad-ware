@@ -53,7 +53,8 @@ export function parseDateLocal(dateStr) {
 
 export function formatDateLocal(date) {
   const safe = new Date(date);
-  return `${safe.getUTCFullYear()}-${pad(safe.getUTCMonth() + 1)}-${pad(safe.getUTCDate())}`;
+  const local = new Date(safe.getTime() - 5 * 60 * 60 * 1000);
+  return `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}`;
 }
 
 export function combineDateAndMinutes(dateStr, minutes) {

@@ -21,7 +21,7 @@ export {
   parseTimeToMinutes,
 };
 
-export const ACTIVE_APPOINTMENT_STATUSES = ["pending", "confirmed", "in_progress"];
+export const ACTIVE_APPOINTMENT_STATUSES = ["pending", "confirmed", "in_progress", "completed"];
 
 export const pad = (n) => String(n).padStart(2, "0");
 
@@ -658,12 +658,12 @@ export const getAvailableDatesForBarber = async ({
       activeOnly: true,
     }),
     Appointment.find({
-      barberId,
+      $or: [{ barberId }, { "serviceSegments.barberId": barberId }],
       status: { $in: ACTIVE_APPOINTMENT_STATUSES },
       startAt: { $lt: combineDateAndMinutes(endDate, 24 * 60) },
       endAt: { $gt: combineDateAndMinutes(startDate, 0) },
     })
-      .select("startAt endAt status barberId")
+      .select("startAt endAt status barberId serviceSegments")
       .lean(),
   ]);
 

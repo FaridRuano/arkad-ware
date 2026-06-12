@@ -17,9 +17,21 @@ import {
     getAvailabilityForDate,
     getPackageAvailabilityForDate,
     getDefaultBusinessSettings,
+    ACTIVE_APPOINTMENT_STATUSES,
 } from "@libs/booking/availability";
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+async function findBlockingAppointment({ barberId, startAt, endAt }) {
+    return Appointment.findOne({
+        $or: [{ barberId }, { "serviceSegments.barberId": barberId }],
+        status: { $in: ACTIVE_APPOINTMENT_STATUSES },
+        startAt: { $lt: endAt },
+        endAt: { $gt: startAt },
+    })
+        .select("_id barberId startAt endAt status serviceName serviceSegments")
+        .lean();
+}
 
 export async function POST(request) {
     try {
@@ -169,6 +181,26 @@ export async function POST(request) {
                 );
             }
 
+            const packageConflicts = await Promise.all(
+                matchedSlot.segments.map((segment) =>
+                    findBlockingAppointment({
+                        barberId: segment.barberId,
+                        startAt: segment.startAt,
+                        endAt: segment.endAt,
+                    })
+                )
+            );
+
+            if (packageConflicts.some(Boolean)) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "Ese horario ya no está disponible. Actualiza la disponibilidad e intenta nuevamente.",
+                    },
+                    { status: 409 }
+                );
+            }
+
             const appointment = await Appointment.create({
                 clientId,
                 barberId: built.items[0].barberId,
@@ -241,6 +273,22 @@ export async function POST(request) {
         const matchedSlot = availableSlots.find((slot) => slot.start === time);
 
         if (!matchedSlot) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Ese horario ya no está disponible. Actualiza la disponibilidad e intenta nuevamente.",
+                },
+                { status: 409 }
+            );
+        }
+
+        const conflict = await findBlockingAppointment({
+            barberId,
+            startAt: matchedSlot.startAt,
+            endAt: matchedSlot.endAt,
+        });
+
+        if (conflict) {
             return NextResponse.json(
                 {
                     error:

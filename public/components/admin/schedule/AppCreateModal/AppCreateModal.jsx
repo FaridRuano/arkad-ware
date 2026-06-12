@@ -100,14 +100,7 @@ export default function AppCreateModal({
 
   const selectedBarberResolvedMeta = useMemo(() => {
     if (!selectedBarberMeta) return null;
-    if (!selectedBarberId) return selectedBarberMeta;
-
-    return {
-      ...selectedBarberMeta,
-      enabled: true,
-      available: true,
-      reason: '',
-    };
+    return selectedBarberMeta;
   }, [selectedBarberMeta, selectedBarberId]);
 
   const canValidateForm = useMemo(() => {
@@ -313,6 +306,10 @@ export default function AppCreateModal({
 
     const validation = formState?.data?.validation;
 
+    if (!validation) {
+      return 'Espera a que se valide la disponibilidad';
+    }
+
     if (validation && validation?.startAtValid === false) {
       return 'La fecha u hora no son válidas';
     }
@@ -322,7 +319,7 @@ export default function AppCreateModal({
     }
 
     if (finalBarberId) {
-      if (validation && validation?.barberValid === false && !selectedBarberId) {
+      if (validation && validation?.barberValid === false) {
         return 'El barbero seleccionado no está disponible';
       }
 
@@ -672,9 +669,10 @@ export default function AppCreateModal({
               disabled={
                 saving ||
                 formState.loading ||
+                !formState?.data?.validation ||
                 !selectedClient?.id ||
                 !serviceId ||
-                (formState?.data?.validation?.canSubmit === false && !selectedBarberId)
+                formState?.data?.validation?.canSubmit === false
               }
             >
               {saving
